@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --surface: #fcf8fb;
+  --surface-dim: #dcd9dc;
+  --surface-bright: #fcf8fb;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f6f2f5;
+  --surface-container: #f0edf0;
+  --surface-container-high: #eae7ea;
+  --surface-container-highest: #e5e1e4;
+  --on-surface: #1c1b1d;
+  --on-surface-variant: #47464b;
+  --inverse-surface: #18181b;
+  --inverse-on-surface: #f3f0f2;
+  --outline: #77767b;
+  --outline-variant: #d4d4d8;
+  --primary: #18181b;
+  --on-primary: #ffffff;
+}
+
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f6f2f5;
+  color: #1c1b1d;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print\:m-0, .print\:m-0 * {
+    visibility: visible;
+  }
+  .print\:m-0 {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+  }
+}
+
