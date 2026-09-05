@@ -174,9 +174,12 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                         </span>
                       </div>
 
-                      <p className="text-[10px] text-[#77767b] mt-0.5 font-mono">
-                        {cust.totalOrders || 0} Bills • Balance: {currencySymbol}
-                        {cust.creditBalance.toFixed(2)}
+                      <p className="text-[10px] text-[#77767b] mt-0.5 font-mono flex items-center gap-1.5">
+                        <span>{cust.totalOrders || 0} Bills</span>
+                        <span>•</span>
+                        <span className="text-amber-700 font-bold">★ {cust.loyaltyPoints || 0} pts</span>
+                        <span>•</span>
+                        <span>Bal: {currencySymbol}{cust.creditBalance.toFixed(2)}</span>
                       </p>
                     </div>
 
@@ -258,14 +261,14 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                 </div>
               </div>
 
-              {/* Outstanding Due Callout */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3.5 shadow-2xs">
+              {/* Customer Account Stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3 shadow-2xs">
                   <span className="text-[10px] font-bold text-[#77767b] uppercase block">
-                    Outstanding Khata Balance
+                    Khata Due
                   </span>
                   <span
-                    className={`text-xl font-black font-mono ${
+                    className={`text-lg sm:text-xl font-black font-mono ${
                       activeCustomer.creditBalance > 0 ? 'text-[#ba1a1a]' : 'text-emerald-700'
                     }`}
                   >
@@ -274,11 +277,21 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                   </span>
                 </div>
 
-                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3.5 shadow-2xs">
+                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3 shadow-2xs">
                   <span className="text-[10px] font-bold text-[#77767b] uppercase block">
-                    Lifetime Total Purchases
+                    Loyalty Points
                   </span>
-                  <span className="text-xl font-black font-mono text-[#1c1b1d]">
+                  <span className="text-lg sm:text-xl font-black font-mono text-amber-700 flex items-center gap-1">
+                    <span>★</span>
+                    <span>{activeCustomer.loyaltyPoints || 0}</span>
+                  </span>
+                </div>
+
+                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3 shadow-2xs">
+                  <span className="text-[10px] font-bold text-[#77767b] uppercase block">
+                    Lifetime Spend
+                  </span>
+                  <span className="text-lg sm:text-xl font-black font-mono text-[#1c1b1d]">
                     {currencySymbol}
                     {customerOrders.reduce((sum, o) => sum + o.total, 0).toFixed(2)}
                   </span>

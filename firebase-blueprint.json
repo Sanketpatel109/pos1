@@ -1,0 +1,51 @@
+{
+  "$schema": "https://raw.githubusercontent.com/firebase/firebase-tools/master/schema/firestore-blueprint.json",
+  "entities": {
+    "users": {
+      "title": "User Accounts",
+      "description": "Store owner and operator Google accounts",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "email"]
+    },
+    "orders": {
+      "title": "Orders and Invoices",
+      "description": "Sales transactions, invoices, and payment details",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "total"]
+    },
+    "catalog": {
+      "title": "Products and Catalog",
+      "description": "Store items, categories, pricing, and barcodes",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "barcode": { "type": "string" }
+      },
+      "required": ["id", "name", "price"]
+    },
+    "settings": {
+      "title": "Store Settings",
+      "description": "Shop details, GST, tax rates, and print preferences",
+      "properties": {
+        "shopName": { "type": "string" },
+        "currencySymbol": { "type": "string" },
+        "gstin": { "type": "string" }
+      }
+    }
+  }
+}

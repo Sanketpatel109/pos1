@@ -11,30 +11,39 @@ import {
   Search,
   ArrowUpRight,
   Receipt,
+  ShieldCheck,
+  ChevronDown,
+  BarChart3,
+  Layers,
 } from 'lucide-react';
-import { Order, PaymentMethod } from '../types';
+import { Order, PaymentMethod, CatalogItem } from '../types';
 
 interface ReportsScreenProps {
   orders: Order[];
+  catalog?: CatalogItem[];
   currencySymbol: string;
   onViewOrder: (order: Order) => void;
   onEditOrder: (order: Order) => void;
   onPrintOrder: (order: Order) => void;
   onDeleteOrder: (orderId: string) => void;
   onDeleteAllOrders: () => void;
+  onOpenZReport?: () => void;
 }
 
 export const ReportsScreen: React.FC<ReportsScreenProps> = ({
   orders,
+  catalog = [],
   currencySymbol,
   onViewOrder,
   onEditOrder,
   onPrintOrder,
   onDeleteOrder,
   onDeleteAllOrders,
+  onOpenZReport,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | PaymentMethod>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string>(
     orders.length > 0 ? orders[0].id : ''
   );
@@ -75,25 +84,42 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
     .filter((o) => o.paymentMethod === 'CREDIT')
     .reduce((sum, o) => sum + o.total, 0);
 
-  // Export CSV
-  const handleExportCSV = () => {
+  // Generic CSV Download Helper
+  const triggerCsvDownload = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    const csvContent =
+      'data:text/csv;charset=utf-8,\uFEFF' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsExportMenuOpen(false);
+  };
+
+  // 1. Detailed Sales CSV
+  const handleExportSalesCSV = () => {
     const headers = [
       'Order #',
-      'Date',
-      'Customer',
-      'Phone',
+      'Date & Time',
+      'Customer Name',
+      'Customer Phone',
       'Items Count',
       'Subtotal',
-      'Tax',
+      'Tax Amount',
       'Discount',
-      'Total',
+      'Total Amount',
       'Payment Method',
+      'Status',
     ];
 
     const rows = filteredOrders.map((o) => [
       o.orderNumber,
-      new Date(o.createdAt).toLocaleString(),
-      `"${o.customerName || 'Walk-in'}"`,
+      `"${new Date(o.createdAt).toLocaleString()}"`,
+      `"${o.customerName || 'Walk-in Customer'}"`,
       `"${o.customerPhone || ''}"`,
       o.items.reduce((sum, i) => sum + i.quantity, 0),
       o.subtotal.toFixed(2),
@@ -101,19 +127,115 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
       o.discount.toFixed(2),
       o.total.toFixed(2),
       o.paymentMethod,
+      o.status,
     ]);
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    triggerCsvDownload('MonoPOS_Sales_Bills', headers, rows);
+  };
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `MonoPOS_Sales_Report_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // 2. GSTR-1 Indian Tax Breakdown CSV
+  const handleExportGSTR1CSV = () => {
+    const headers = [
+      'Invoice No',
+      'Invoice Date',
+      'Customer Name',
+      'Customer Phone',
+      'Taxable Value',
+      'CGST Rate %',
+      'CGST Amount',
+      'SGST Rate %',
+      'SGST Amount',
+      'Total Tax',
+      'Invoice Total',
+      'Payment Mode',
+    ];
+
+    const rows = filteredOrders.map((o) => {
+      const halfTaxRate = (o.taxRate || 5) / 2;
+      const halfTaxAmount = (o.taxAmount || 0) / 2;
+      return [
+        o.orderNumber,
+        `"${new Date(o.createdAt).toLocaleDateString()}"`,
+        `"${o.customerName || 'B2C Walk-in'}"`,
+        `"${o.customerPhone || ''}"`,
+        o.subtotal.toFixed(2),
+        `${halfTaxRate.toFixed(1)}%`,
+        halfTaxAmount.toFixed(2),
+        `${halfTaxRate.toFixed(1)}%`,
+        halfTaxAmount.toFixed(2),
+        o.taxAmount.toFixed(2),
+        o.total.toFixed(2),
+        o.paymentMethod,
+      ];
+    });
+
+    triggerCsvDownload('MonoPOS_GSTR1_Tax_Report', headers, rows);
+  };
+
+  // 3. Item-Wise Product Sales CSV
+  const handleExportItemWiseCSV = () => {
+    const itemMap = new Map<string, { name: string; qty: number; revenue: number }>();
+
+    filteredOrders.forEach((o) => {
+      o.items.forEach((item) => {
+        const key = item.name.toLowerCase();
+        const existing = itemMap.get(key) || { name: item.name, qty: 0, revenue: 0 };
+        existing.qty += item.quantity;
+        existing.revenue += item.quantity * item.unitPrice;
+        itemMap.set(key, existing);
+      });
+    });
+
+    const headers = ['Product Name', 'Total Units Sold', 'Gross Revenue', 'Average Selling Price'];
+    const rows = Array.from(itemMap.values()).map((data) => [
+      `"${data.name}"`,
+      data.qty,
+      data.revenue.toFixed(2),
+      (data.revenue / (data.qty || 1)).toFixed(2),
+    ]);
+
+    triggerCsvDownload('MonoPOS_Item_Wise_Sales', headers, rows);
+  };
+
+  // 4. Inventory Valuation & Stock Report
+  const handleExportInventoryCSV = () => {
+    const headers = [
+      'Product Name',
+      'Category',
+      'Barcode',
+      'SKU',
+      'In Stock',
+      'Unit',
+      'Low Stock Threshold',
+      'Cost Price',
+      'Selling Price',
+      'Total Inventory Value',
+      'Status',
+    ];
+
+    const rows = catalog.map((item) => {
+      const stock = item.stock ?? 0;
+      const threshold = item.lowStockThreshold ?? 5;
+      const cost = item.costPrice || item.price * 0.7;
+      const totalValuation = stock * cost;
+      const status = stock === 0 ? 'Out of Stock' : stock <= threshold ? 'LOW STOCK' : 'Normal';
+
+      return [
+        `"${item.name}"`,
+        `"${item.category}"`,
+        `"${item.barcode || ''}"`,
+        `"${item.sku || ''}"`,
+        stock,
+        `"${item.unit || 'pcs'}"`,
+        threshold,
+        cost.toFixed(2),
+        item.price.toFixed(2),
+        totalValuation.toFixed(2),
+        status,
+      ];
+    });
+
+    triggerCsvDownload('MonoPOS_Inventory_Stock_Report', headers, rows);
   };
 
   return (
@@ -182,14 +304,92 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                 />
               </div>
 
-              {/* Export Button */}
-              <button
-                onClick={handleExportCSV}
-                className="px-3.5 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 transition-all"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Export</span> CSV
-              </button>
+              {/* Z-Report / Day Close Button */}
+              {onOpenZReport && (
+                <button
+                  type="button"
+                  onClick={onOpenZReport}
+                  className="px-3 py-2 bg-amber-400 hover:bg-amber-300 text-zinc-950 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 transition-all shrink-0"
+                  title="Official End-of-Day Shift Close & Cash Audit"
+                >
+                  <ShieldCheck className="w-4 h-4 text-zinc-950" />
+                  <span className="hidden sm:inline">Z-Report</span>
+                </button>
+              )}
+
+              {/* Export Dropdown Menu */}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                  className="px-3 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export</span>
+                  <ChevronDown className="w-3 h-3 opacity-70" />
+                </button>
+
+                {isExportMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsExportMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-zinc-200 shadow-2xl py-1.5 z-50 text-xs text-zinc-800 animate-in fade-in duration-100">
+                      <div className="px-3 py-1.5 border-b border-zinc-100 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                        Download CSV / Excel
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleExportSalesCSV}
+                        className="w-full px-3 py-2 text-left hover:bg-zinc-50 flex items-center gap-2 cursor-pointer font-bold text-zinc-800"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                        <div>
+                          <div className="leading-tight">Sales Orders Report</div>
+                          <div className="text-[10px] text-zinc-400 font-normal">Detailed customer bills & taxes</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleExportGSTR1CSV}
+                        className="w-full px-3 py-2 text-left hover:bg-zinc-50 flex items-center gap-2 cursor-pointer font-bold text-zinc-800"
+                      >
+                        <Receipt className="w-4 h-4 text-indigo-600" />
+                        <div>
+                          <div className="leading-tight">GSTR-1 Tax Summary</div>
+                          <div className="text-[10px] text-zinc-400 font-normal">CGST & SGST sales tax breakdown</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleExportItemWiseCSV}
+                        className="w-full px-3 py-2 text-left hover:bg-zinc-50 flex items-center gap-2 cursor-pointer font-bold text-zinc-800"
+                      >
+                        <BarChart3 className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <div className="leading-tight">Item-Wise Sales Breakdown</div>
+                          <div className="text-[10px] text-zinc-400 font-normal">Units sold & revenue per dish</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleExportInventoryCSV}
+                        className="w-full px-3 py-2 text-left hover:bg-zinc-50 flex items-center gap-2 cursor-pointer font-bold text-zinc-800"
+                      >
+                        <Layers className="w-4 h-4 text-amber-600" />
+                        <div>
+                          <div className="leading-tight">Inventory & Valuation</div>
+                          <div className="text-[10px] text-zinc-400 font-normal">Current stock & low stock alerts</div>
+                        </div>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Filter Chips */}

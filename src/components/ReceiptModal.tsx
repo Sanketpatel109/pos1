@@ -80,6 +80,13 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     });
     text += `--------------------------------\n`;
     text += `Total: *${shopSettings.currencySymbol}${activeTotal.toFixed(2)}* (${activePaymentMethod})\n`;
+    if (activePaymentMethod === 'CASH' && order?.tenderedAmount !== undefined && order.tenderedAmount > 0) {
+      text += `Cash Tendered: ${shopSettings.currencySymbol}${order.tenderedAmount.toFixed(2)}\n`;
+      const changeVal = order.changeDue !== undefined ? order.changeDue : Math.max(0, order.tenderedAmount - activeTotal);
+      if (changeVal > 0) {
+        text += `Change Returned: ${shopSettings.currencySymbol}${changeVal.toFixed(2)}\n`;
+      }
+    }
     text += `Thank you for your visit!`;
 
     const encoded = encodeURIComponent(text);
@@ -238,6 +245,28 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   {activeTotal.toFixed(2)}
                 </span>
               </div>
+
+              {/* Cash Tendered & Change Return Slip Information */}
+              {activePaymentMethod === 'CASH' && order?.tenderedAmount !== undefined && order.tenderedAmount > 0 && (
+                <div className="pt-2 border-t border-dashed border-[#77767b] space-y-1 text-[11px]">
+                  <div className="flex justify-between text-[#47464b]">
+                    <span>Cash Tendered (Received):</span>
+                    <span className="font-mono font-bold text-[#1c1b1d]">
+                      {shopSettings.currencySymbol}{order.tenderedAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between font-bold text-emerald-800">
+                    <span>Change Returned:</span>
+                    <span className="font-mono font-black text-xs">
+                      {shopSettings.currencySymbol}
+                      {(order.changeDue !== undefined
+                        ? order.changeDue
+                        : Math.max(0, order.tenderedAmount - activeTotal)
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* India UPI QR Code Payment Block */}

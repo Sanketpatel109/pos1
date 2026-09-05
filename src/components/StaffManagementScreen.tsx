@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UserCheck, Shield, KeyRound, Plus, Check, X } from 'lucide-react';
-import { StaffMember } from '../types';
+import { UserCheck, Shield, KeyRound, Plus, Check, X, ShieldCheck, Lock } from 'lucide-react';
+import { StaffMember, StaffRole } from '../types';
+import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
 
 interface StaffManagementScreenProps {
   staffList: StaffMember[];
@@ -19,7 +20,7 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'MANAGER' | 'CASHIER'>('CASHIER');
+  const [role, setRole] = useState<StaffRole>('CASHIER');
   const [pin, setPin] = useState('');
 
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -125,11 +126,13 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
                 </label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as any)}
+                  onChange={(e) => setRole(e.target.value as StaffRole)}
                   className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-2 text-xs text-[#1c1b1d] focus:outline-hidden focus:border-[#18181b]"
                 >
-                  <option value="CASHIER">CASHIER (Standard POS)</option>
-                  <option value="MANAGER">MANAGER (Full Admin Access)</option>
+                  <option value="OWNER">OWNER (Master Store Admin)</option>
+                  <option value="MANAGER">MANAGER (Operations & Approvals)</option>
+                  <option value="CASHIER">CASHIER (Standard POS Checkout)</option>
+                  <option value="WORKER">WORKER (Stock Receiving & Labels)</option>
                 </select>
               </div>
 
@@ -184,9 +187,17 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
                       </div>
                       <div>
                         <h3 className="font-extrabold text-xs sm:text-sm text-[#1c1b1d]">{staff.name}</h3>
-                        <span className="text-[10px] font-mono bg-[#eae7ea] px-1.5 py-0.5 rounded text-[#1c1b1d] font-bold">
-                          {staff.role}
-                        </span>
+                        {(() => {
+                          const normRole = normalizeRole(staff.role);
+                          const meta = ROLE_DEFINITIONS[normRole];
+                          return (
+                            <span
+                              className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}
+                            >
+                              {meta.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -262,11 +273,13 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
                 </label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as any)}
+                  onChange={(e) => setRole(e.target.value as StaffRole)}
                   className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
                 >
-                  <option value="CASHIER">CASHIER</option>
-                  <option value="MANAGER">MANAGER / ADMIN</option>
+                  <option value="OWNER">OWNER (Master Store Admin)</option>
+                  <option value="MANAGER">MANAGER (Operations & Approvals)</option>
+                  <option value="CASHIER">CASHIER (Standard POS Checkout)</option>
+                  <option value="WORKER">WORKER (Stock Receiving & Labels)</option>
                 </select>
               </div>
 

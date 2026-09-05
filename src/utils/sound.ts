@@ -17,6 +17,42 @@ class SoundEffects {
     }
   }
 
+  playBeep() {
+    // Signature retail POS laser barcode scanner chirp (2400Hz 50ms)
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2400, ctx.currentTime);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.06);
+    } catch {}
+  }
+
+  playBuzzer() {
+    // Error buzz for unregistered barcode
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.18);
+    } catch {}
+  }
+
   playTap() {
     const ctx = this.getContext();
     if (!ctx) return;
@@ -92,6 +128,19 @@ class SoundEffects {
         osc.stop(startTime + 0.25);
       });
     } catch {}
+  }
+
+  play(type: 'tap' | 'add' | 'remove' | 'success') {
+    switch (type) {
+      case 'tap':
+        return this.playTap();
+      case 'add':
+        return this.playAdd();
+      case 'remove':
+        return this.playRemove();
+      case 'success':
+        return this.playSuccess();
+    }
   }
 }
 

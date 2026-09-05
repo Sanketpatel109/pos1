@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#18181b"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#27272a" stroke-width="8"/>
+  
+  <!-- Terminal / Register Frame -->
+  <rect x="80" y="96" width="352" height="230" rx="24" fill="#09090b" stroke="#3f3f46" stroke-width="6"/>
+  
+  <!-- Screen Glow / Display -->
+  <rect x="104" y="120" width="304" height="130" rx="12" fill="#18181b"/>
+  
+  <!-- Barcode glyph on screen -->
+  <line x1="130" y1="148" x2="130" y2="222" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <line x1="150" y1="148" x2="150" y2="222" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+  <line x1="168" y1="148" x2="168" y2="222" stroke="#10b981" stroke-width="12" stroke-linecap="round"/>
+  <line x1="194" y1="148" x2="194" y2="222" stroke="#10b981" stroke-width="6" stroke-linecap="round"/>
+  <line x1="214" y1="148" x2="214" y2="222" stroke="#10b981" stroke-width="14" stroke-linecap="round"/>
+  <line x1="242" y1="148" x2="242" y2="222" stroke="#10b981" stroke-width="6" stroke-linecap="round"/>
+  <line x1="262" y1="148" x2="262" y2="222" stroke="#10b981" stroke-width="10" stroke-linecap="round"/>
+  <line x1="284" y1="148" x2="284" y2="222" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Currency / Status badge -->
+  <rect x="312" y="160" width="76" height="50" rx="8" fill="#10b981"/>
+  <text x="350" y="195" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="900" fill="#ffffff" text-anchor="middle">₹</text>
+
+  <!-- Keypad / Base Deck -->
+  <rect x="80" y="346" width="352" height="70" rx="16" fill="#27272a"/>
+  <circle cx="130" cy="381" r="14" fill="#3f3f46"/>
+  <circle cx="180" cy="381" r="14" fill="#3f3f46"/>
+  <circle cx="230" cy="381" r="14" fill="#3f3f46"/>
+  <circle cx="280" cy="381" r="14" fill="#3f3f46"/>
+  <rect x="320" y="367" width="88" height="28" rx="8" fill="#10b981"/>
+</svg>

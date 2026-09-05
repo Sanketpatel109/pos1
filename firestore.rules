@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Store settings
+    match /settings/{storeId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Catalog items
+    match /catalog/{itemId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Orders / Invoices
+    match /orders/{orderId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Customers
+    match /customers/{customerId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Cash register entries
+    match /cashEntries/{entryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

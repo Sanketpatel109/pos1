@@ -8,6 +8,47 @@ export interface CatalogItem {
   sku?: string;
   barcode?: string;
   description?: string;
+  stock?: number;
+  lowStockThreshold?: number;
+  unit?: string; // 'pcs' | 'kg' | 'g' | 'pack' | 'ltr'
+  costPrice?: number;
+}
+
+export interface InwardStockItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface InwardStockEntry {
+  id: string;
+  supplierName: string;
+  invoiceNumber: string;
+  date: string;
+  items: InwardStockItem[];
+  totalAmount: number;
+  notes?: string;
+  receivedBy: string;
+}
+
+export interface ZReportData {
+  id: string;
+  date: string;
+  closedAt: string;
+  staffName: string;
+  openingFloat: number;
+  cashSales: number;
+  onlineSales: number;
+  creditSales: number;
+  totalSales: number;
+  totalOrders: number;
+  cashIn: number;
+  cashOut: number;
+  expectedDrawerCash: number;
+  actualCountedCash: number;
+  variance: number; // actualCountedCash - expectedDrawerCash
+  note?: string;
 }
 
 export interface Category {
@@ -41,6 +82,7 @@ export interface Customer {
   email?: string;
   address?: string;
   creditBalance: number;
+  loyaltyPoints?: number;
   totalOrders?: number;
   createdAt?: string;
 }
@@ -54,10 +96,12 @@ export interface CashEntry {
   createdAt: string;
 }
 
+export type StaffRole = 'OWNER' | 'MANAGER' | 'CASHIER' | 'WORKER' | 'Store Manager' | 'WAITER';
+
 export interface StaffMember {
   id: string;
   name: string;
-  role: 'MANAGER' | 'CASHIER' | 'WAITER' | 'Store Manager';
+  role: StaffRole;
   pin: string;
   phone?: string;
   active: boolean;
@@ -109,6 +153,10 @@ export interface ShopSettings {
   connectedBluetoothDevice?: string;
   showBarcode?: boolean;
   subscriptionExpiry?: string;
+  hardwareDrawerKickEnabled?: boolean;
+  autoDrawerKick?: boolean;
+  weighingScaleEnabled?: boolean;
+  weighingScaleBaudRate?: number;
 }
 
 export type ActiveScreen =
@@ -121,4 +169,6 @@ export type ActiveScreen =
   | 'cash-management'
   | 'staff-management'
   | 'print-settings'
-  | 'training-videos';
+  | 'training-videos'
+  | 'barcode-generator'
+  | 'purchase-inward';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, Banknote, QrCode, CreditCard, ArrowRight, Printer } from 'lucide-react';
+import { X, CheckCircle2, Banknote, QrCode, CreditCard, ArrowRight, Printer, Vault } from 'lucide-react';
 import { BillItem, PaymentMethod } from '../types';
+import { hardware } from '../utils/hardware';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -46,8 +47,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const discountVal = (subtotal * discountPercent) / 100;
   const netTotal = Math.max(0, subtotal + taxAmount - discountVal);
-  const tenderedNumeric = parseFloat(tenderedAmount) || netTotal;
+  const hasEnteredTender = Boolean(tenderedAmount && !isNaN(parseFloat(tenderedAmount)));
+  const tenderedNumeric = hasEnteredTender ? parseFloat(tenderedAmount) || 0 : netTotal;
   const changeDue = Math.max(0, tenderedNumeric - netTotal);
+  const shortAmount = Math.max(0, netTotal - tenderedNumeric);
 
   const quickCashPresets = (
     currencySymbol === '$'
@@ -61,16 +64,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         ]
       : [
           { label: 'Exact', amount: Math.ceil(netTotal) },
+          { label: `${currencySymbol}10`, amount: 10 },
+          { label: `${currencySymbol}20`, amount: 20 },
+          { label: `${currencySymbol}50`, amount: 50 },
           { label: `${currencySymbol}100`, amount: 100 },
           { label: `${currencySymbol}200`, amount: 200 },
           { label: `${currencySymbol}500`, amount: 500 },
           { label: `${currencySymbol}2000`, amount: 2000 },
         ]
-  ).filter((p) => p.amount >= netTotal || p.label === 'Exact');
+  ).filter((p) => p.amount >= netTotal || p.label === 'Exact' || p.amount >= 20);
 
   const handleFinish = () => {
     setCompletedOrderNum(orderNumber);
     setIsCompleted(true);
+
+    // Physical Cash Drawer Kick for cash tenders
+    if (method === 'cash') {
+      hardware.kickCashDrawer();
+    }
+
     onCompleteOrder({
       method,
       tendered: method === 'cash' ? tenderedNumeric : netTotal,
@@ -246,12 +258,45 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </div>
                 </div>
 
-                {/* Change Due readout */}
-                <div className="flex items-center justify-between pt-1.5 border-t border-zinc-200 text-xs">
-                  <span className="font-semibold text-zinc-700">Change to Return:</span>
-                  <span className={`font-mono font-bold text-sm ${changeDue > 0 ? 'text-emerald-700' : 'text-zinc-800'}`}>
-                    {currencySymbol}{changeDue.toFixed(2)}
-                  </span>
+                {/* Change Due readout & Drawer Kick */}
+                <div className="pt-2 border-t border-zinc-200 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      {hasEnteredTender && tenderedNumeric > netTotal ? (
+                        <span className="font-extrabold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded text-[11px]">
+                          Return Change:
+                        </span>
+                      ) : hasEnteredTender && tenderedNumeric < netTotal ? (
+                        <span className="font-extrabold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded text-[11px]">
+                          Still Owed (Short):
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-zinc-600">Change Due:</span>
+                      )}
+                      <span
+                        className={`font-mono font-black text-base ${
+                          hasEnteredTender && tenderedNumeric > netTotal
+                            ? 'text-emerald-700'
+                            : hasEnteredTender && tenderedNumeric < netTotal
+                            ? 'text-amber-700'
+                            : 'text-zinc-800'
+                        }`}
+                      >
+                        {currencySymbol}
+                        {(hasEnteredTender && tenderedNumeric < netTotal ? shortAmount : changeDue).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => hardware.kickCashDrawer()}
+                      className="px-2 py-1 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors active:scale-95"
+                      title="Open physical USB/RJ11 cash drawer"
+                    >
+                      <Vault className="w-3 h-3 text-zinc-700" />
+                      <span>Pop Drawer</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

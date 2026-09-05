@@ -20,6 +20,7 @@ import {
   ActiveScreen,
   PaymentMethod,
   SplitPaymentDetail,
+  InwardStockEntry,
 } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -37,20 +38,71 @@ import { ReceiptModal } from './components/ReceiptModal';
 import { CustomItemModal } from './components/CustomItemModal';
 import { SearchModal } from './components/SearchModal';
 import { BarcodeScannerModal, ScannerMode } from './components/BarcodeScannerModal';
+import { PurchaseInwardModal } from './components/PurchaseInwardModal';
+import { BarcodeGeneratorModal } from './components/BarcodeGeneratorModal';
+import { PriceCheckModal } from './components/PriceCheckModal';
+import { ManagerPinModal } from './components/ManagerPinModal';
+import { RolePermissionsModal } from './components/RolePermissionsModal';
+import {
+  canAccessScreen,
+  canDeleteOrder,
+  getRequiredRoleForScreen,
+  normalizeRole,
+  ROLE_DEFINITIONS,
+} from './utils/permissions';
+import { hardware } from './utils/hardware';
+import { Zap } from 'lucide-react';
 import { posSound } from './utils/sound';
+import { auth, onAuthStateChanged, User } from './firebase';
+import { CloudSyncModal } from './components/CloudSyncModal';
+import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { pushAllToCloud, pullAllFromCloud, pushSingleOrder } from './services/cloudSync';
 
 export default function App() {
   // Screen Routing
   const [activeScreen, setActiveScreen] = useState<ActiveScreen>('item-wise');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
+  // Firebase Auth & Cloud Sync State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Settings & Staff State
   const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
     const saved = localStorage.getItem('monopos_industrial_settings');
     return saved ? JSON.parse(saved) : DEFAULT_SHOP_SETTINGS;
   });
-  const [staffList, setStaffList] = useState<StaffMember[]>(SAMPLE_STAFF);
-  const [activeStaffId, setActiveStaffId] = useState<string>('staff-1');
+  const [staffList, setStaffList] = useState<StaffMember[]>(() => {
+    const saved = localStorage.getItem('monopos_staff_list');
+    if (!saved) return SAMPLE_STAFF;
+    try {
+      const parsed: StaffMember[] = JSON.parse(saved);
+      const existingIds = new Set(parsed.map((s) => s.id));
+      const merged = [...parsed];
+      for (const sample of SAMPLE_STAFF) {
+        if (!existingIds.has(sample.id)) {
+          merged.push(sample);
+        }
+      }
+      return merged;
+    } catch {
+      return SAMPLE_STAFF;
+    }
+  });
+  const [activeStaffId, setActiveStaffId] = useState<string>(() => {
+    const saved = localStorage.getItem('monopos_active_staff_id');
+    return saved || 'staff-1';
+  });
 
   // Categories & Catalog State
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
@@ -98,15 +150,44 @@ export default function App() {
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [scannerMode, setScannerMode] = useState<ScannerMode>('add-to-bill');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
+  const [isStaffSwitchModalOpen, setIsStaffSwitchModalOpen] = useState<boolean>(false);
+  const [isPurchaseInwardOpen, setIsPurchaseInwardOpen] = useState<boolean>(false);
+  const [isBarcodeGeneratorOpen, setIsBarcodeGeneratorOpen] = useState<boolean>(false);
+  const [barcodeSelectedProductId, setBarcodeSelectedProductId] = useState<string | undefined>(undefined);
+  const [isPriceCheckOpen, setIsPriceCheckOpen] = useState<boolean>(false);
+  const [laserScanNotification, setLaserScanNotification] = useState<{
+    productName: string;
+    price: number;
+    stock?: number;
+    cartQty: number;
+  } | null>(null);
   const [activeReceiptOrder, setActiveReceiptOrder] = useState<Order | null>(null);
+
+  // RBAC Manager Override & Matrix Modals
+  const [isManagerPinModalOpen, setIsManagerPinModalOpen] = useState<boolean>(false);
+  const [pendingRestrictedAction, setPendingRestrictedAction] = useState<{
+    title: string;
+    description: string;
+    requiredRoleLabel?: string;
+    onAuthorize: (authorizingStaff: StaffMember) => void;
+  } | null>(null);
+  const [isRolePermissionsOpen, setIsRolePermissionsOpen] = useState<boolean>(false);
 
   // Active staff object
   const activeStaff = staffList.find((s) => s.id === activeStaffId) || staffList[0];
 
-  // Save settings to localStorage on change
+  // Save settings and staff to localStorage on change
   useEffect(() => {
     localStorage.setItem('monopos_industrial_settings', JSON.stringify(shopSettings));
   }, [shopSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('monopos_staff_list', JSON.stringify(staffList));
+  }, [staffList]);
+
+  useEffect(() => {
+    localStorage.setItem('monopos_active_staff_id', activeStaffId);
+  }, [activeStaffId]);
 
   // Audio helper
   const playSfx = (action: 'tap' | 'add' | 'remove' | 'success') => {
@@ -124,55 +205,17 @@ export default function App() {
     setIsScannerOpen(true);
   };
 
-  // Hardware USB/Bluetooth barcode scanner global keypress buffer
+  // Hotkey F2 listener to toggle Price Check & Product Info
   useEffect(() => {
-    let buffer = '';
-    let lastKeyTime = Date.now();
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture when typing in text inputs or textareas
-      const target = e.target as HTMLElement;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-
-      const currentTime = Date.now();
-      if (currentTime - lastKeyTime > 100) {
-        buffer = '';
-      }
-      lastKeyTime = currentTime;
-
-      if (e.key === 'Enter') {
-        if (buffer.length >= 3) {
-          const rawCode = buffer.trim();
-          const match = catalog.find(
-            (item) =>
-              (item.barcode && item.barcode.toLowerCase() === rawCode.toLowerCase()) ||
-              (item.sku && item.sku.toLowerCase() === rawCode.toLowerCase())
-          );
-
-          if (match) {
-            handleAddItem(match);
-          } else {
-            // Open scanner to price check or show item not found
-            setScannerMode('add-to-bill');
-            setIsScannerOpen(true);
-          }
-          buffer = '';
-        }
-      } else if (e.key.length === 1) {
-        buffer += e.key;
+      if (e.key === 'F2') {
+        e.preventDefault();
+        setIsPriceCheckOpen((prev) => !prev);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [catalog]);
+  }, []);
 
   // Calculations for current bill
   const subtotal = currentBillItems.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0);
@@ -200,6 +243,57 @@ export default function App() {
         },
       ];
     });
+  };
+
+  // Hardware Laser Barcode Scanner Gun Driver (USB / Bluetooth HID Keyboard Wedge)
+  useEffect(() => {
+    const unsubscribe = hardware.onLaserScan((scannedCode) => {
+      if (isPriceCheckOpen) return;
+
+      const clean = scannedCode.trim().toLowerCase();
+      const match = catalog.find(
+        (item) =>
+          (item.barcode && item.barcode.toLowerCase() === clean) ||
+          (item.sku && item.sku.toLowerCase() === clean) ||
+          item.name.toLowerCase() === clean
+      );
+
+      if (match) {
+        posSound.playBeep();
+        handleAddItem(match);
+
+        const existingInCart = currentBillItems.find((b) => b.name === match.name);
+        const currentCartQty = existingInCart ? existingInCart.quantity + 1 : 1;
+
+        setLaserScanNotification({
+          productName: match.name,
+          price: match.price,
+          stock: match.stock !== undefined ? Math.max(0, match.stock - currentCartQty) : undefined,
+          cartQty: currentCartQty,
+        });
+      } else {
+        posSound.playBuzzer();
+        setIsPriceCheckOpen(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [catalog, isPriceCheckOpen, currentBillItems]);
+
+  // Auto-dismiss laser scan floating notification
+  useEffect(() => {
+    if (laserScanNotification) {
+      const timer = setTimeout(() => {
+        setLaserScanNotification(null);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [laserScanNotification]);
+
+  const handleUpdateProductStock = (productId: string, newStock: number) => {
+    setCatalog((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p))
+    );
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -268,6 +362,8 @@ export default function App() {
     grandTotal: number;
     paymentMode: PaymentMethod;
     splitDetails?: SplitPaymentDetail;
+    tenderedAmount?: number;
+    changeDue?: number;
     note?: string;
     orderDate: string;
   }) => {
@@ -286,6 +382,8 @@ export default function App() {
       total: data.grandTotal,
       paymentMethod: data.paymentMode,
       splitDetails: data.splitDetails,
+      tenderedAmount: data.tenderedAmount,
+      changeDue: data.changeDue,
       customerName: data.customerName || 'Walk-in Customer',
       customerPhone: data.customerPhone || '',
       staffName: activeStaff.name,
@@ -300,19 +398,21 @@ export default function App() {
       } else if (data.paymentMode === 'SPLIT' && data.splitDetails?.credit) {
         creditToAdd = data.splitDetails.credit;
       }
-      if (creditToAdd > 0) {
-        setCustomers((prev) =>
-          prev.map((c) =>
-            c.id === data.customerId
-              ? {
-                  ...c,
-                  creditBalance: (c.creditBalance || 0) + creditToAdd,
-                  totalOrders: (c.totalOrders || 0) + 1,
-                }
-              : c
-          )
-        );
-      }
+      // Calculate loyalty points: 1 point per 100 spent
+      const earnedPoints = Math.floor(data.grandTotal / 100);
+
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.id === data.customerId
+            ? {
+                ...c,
+                creditBalance: (c.creditBalance || 0) + creditToAdd,
+                loyaltyPoints: (c.loyaltyPoints || 0) + earnedPoints,
+                totalOrders: (c.totalOrders || 0) + 1,
+              }
+            : c
+        )
+      );
     }
 
     // Add to cash entries if Cash was received
@@ -342,11 +442,94 @@ export default function App() {
       ]);
     }
 
+    // Auto-decrement inventory stock from catalog in real time
+    setCatalog((prevCatalog) => {
+      const stockDeductions = new Map<string, number>();
+      newOrder.items.forEach((item) => {
+        stockDeductions.set(item.name, (stockDeductions.get(item.name) || 0) + item.quantity);
+      });
+
+      return prevCatalog.map((prod) => {
+        const deductQty = stockDeductions.get(prod.name);
+        if (deductQty !== undefined && prod.stock !== undefined) {
+          return {
+            ...prod,
+            stock: Math.max(0, prod.stock - deductQty),
+          };
+        }
+        return prod;
+      });
+    });
+
     setOrders((prev) => [newOrder, ...prev]);
     setActiveReceiptOrder(newOrder);
     setIsReceiptModalOpen(true);
     setCurrentBillItems([]);
     setOrderNumber((prev) => prev + 1);
+
+    // Auto-backup to Firebase if signed in
+    if (currentUser) {
+      pushSingleOrder(newOrder);
+    }
+  };
+
+  // INWARD STOCK RECEIVING
+  const handleInwardStock = (entry: InwardStockEntry) => {
+    playSfx('success');
+    setCatalog((prevCatalog) => {
+      const itemUpdates = new Map<string, { qty: number; unitCost: number }>();
+      entry.items.forEach((it) => {
+        itemUpdates.set(it.productId, { qty: it.quantity, unitCost: it.unitCost });
+      });
+
+      return prevCatalog.map((prod) => {
+        const incoming = itemUpdates.get(prod.id);
+        if (incoming) {
+          const currentStock = prod.stock ?? 0;
+          return {
+            ...prod,
+            stock: currentStock + incoming.qty,
+            costPrice: incoming.unitCost > 0 ? incoming.unitCost : prod.costPrice,
+          };
+        }
+        return prod;
+      });
+    });
+  };
+
+  // CLOUD SYNC HANDLERS
+  const handleManualCloudSync = async () => {
+    setIsSyncing(true);
+    try {
+      await pushAllToCloud(
+        {
+          orders,
+          catalog,
+          customers,
+          cashEntries,
+          shopSettings,
+        },
+        currentUser?.email || undefined
+      );
+      setLastSyncedAt(new Date());
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handlePullFromCloud = async () => {
+    setIsSyncing(true);
+    try {
+      const pulled = await pullAllFromCloud();
+      if (pulled.orders && pulled.orders.length > 0) setOrders(pulled.orders);
+      if (pulled.catalog && pulled.catalog.length > 0) setCatalog(pulled.catalog);
+      if (pulled.customers && pulled.customers.length > 0) setCustomers(pulled.customers);
+      if (pulled.cashEntries && pulled.cashEntries.length > 0) setCashEntries(pulled.cashEntries);
+      if (pulled.shopSettings) setShopSettings(pulled.shopSettings);
+      setLastSyncedAt(new Date());
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // QUICK BILL HANDLERS
@@ -529,25 +712,74 @@ export default function App() {
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    playSfx('remove');
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
-  };
-
-  const handleDeleteAllOrders = () => {
-    if (window.confirm('Are you sure you want to clear all report records?')) {
+    const currentRole = activeStaff?.role || 'CASHIER';
+    if (canDeleteOrder(currentRole)) {
       playSfx('remove');
-      setOrders([]);
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } else {
+      setPendingRestrictedAction({
+        title: 'Void Sale Authorization',
+        description: 'Deleting or voiding sales records requires Manager or Store Owner PIN authorization.',
+        requiredRoleLabel: 'MANAGER / OWNER',
+        onAuthorize: () => {
+          playSfx('remove');
+          setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        },
+      });
+      setIsManagerPinModalOpen(true);
     }
   };
 
-  // Navigation router
+  const handleDeleteAllOrders = () => {
+    const currentRole = activeStaff?.role || 'CASHIER';
+    if (canDeleteOrder(currentRole)) {
+      if (window.confirm('Are you sure you want to clear all report records?')) {
+        playSfx('remove');
+        setOrders([]);
+      }
+    } else {
+      setPendingRestrictedAction({
+        title: 'Bulk Void Sales Authorization',
+        description: 'Purging sales history requires Manager or Store Owner authorization.',
+        requiredRoleLabel: 'MANAGER / OWNER',
+        onAuthorize: () => {
+          if (window.confirm('Are you sure you want to clear all report records?')) {
+            playSfx('remove');
+            setOrders([]);
+          }
+        },
+      });
+      setIsManagerPinModalOpen(true);
+    }
+  };
+
+  // Navigation router with RBAC access control
   const handleNavigate = (screen: ActiveScreen) => {
     if (screen === 'print-settings') {
       setIsPrintSettingsOpen(true);
-    } else if (screen === 'training-videos') {
+      return;
+    }
+    if (screen === 'training-videos') {
       setIsTrainingVideosOpen(true);
-    } else {
+      return;
+    }
+
+    const currentRole = activeStaff?.role || 'CASHIER';
+    if (canAccessScreen(currentRole, screen)) {
       setActiveScreen(screen);
+      setIsSidebarOpen(false);
+    } else {
+      const reqRole = getRequiredRoleForScreen(screen);
+      setPendingRestrictedAction({
+        title: `Manager Authorization Required`,
+        description: `The "${screen.replace(/-/g, ' ')}" screen is restricted to ${reqRole}. Please enter a Manager or Store Owner 4-digit PIN to access.`,
+        requiredRoleLabel: reqRole,
+        onAuthorize: () => {
+          setActiveScreen(screen);
+          setIsSidebarOpen(false);
+        },
+      });
+      setIsManagerPinModalOpen(true);
     }
   };
 
@@ -562,6 +794,10 @@ export default function App() {
           heldOrdersCount={heldOrders.length}
           soundEnabled={shopSettings.soundEnabled}
           activeStaffName={activeStaff.name}
+          activeStaffRole={activeStaff.role}
+          user={currentUser}
+          isSyncing={isSyncing}
+          onOpenCloudModal={() => setIsCloudModalOpen(true)}
           onToggleSound={() =>
             setShopSettings((prev) => ({
               ...prev,
@@ -573,6 +809,8 @@ export default function App() {
           onOpenSearch={() => setIsSearchModalOpen(true)}
           onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
           onOpenCustomItem={() => setIsCustomProductModalOpen(true)}
+          onOpenStaffSwitch={() => setIsStaffSwitchModalOpen(true)}
+          onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
         />
 
         {/* Active Screen Surface */}
@@ -592,6 +830,7 @@ export default function App() {
               onHoldBill={handleHoldBill}
               onOpenAddCustomProduct={() => setIsCustomProductModalOpen(true)}
               onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
+              onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
               onPrintBill={() => {
                 setActiveReceiptOrder(null);
                 setIsReceiptModalOpen(true);
@@ -632,6 +871,11 @@ export default function App() {
               onUpdateProduct={handleUpdateProduct}
               onDeleteProduct={handleDeleteProduct}
               onImportCatalogFromXls={handleImportCatalogFromXls}
+              onOpenPurchaseInward={() => setIsPurchaseInwardOpen(true)}
+              onOpenBarcodeGenerator={(productId) => {
+                setBarcodeSelectedProductId(productId);
+                setIsBarcodeGeneratorOpen(true);
+              }}
             />
           )}
 
@@ -672,9 +916,18 @@ export default function App() {
         activeScreen={activeScreen}
         shopSettings={shopSettings}
         activeStaffName={activeStaff.name}
+        activeStaffRole={activeStaff.role}
+        user={currentUser}
         onSelectScreen={handleNavigate}
+        onRequestManagerOverride={(screen) => handleNavigate(screen)}
+        onOpenPermissionsModal={() => {
+          setIsSidebarOpen(false);
+          setIsRolePermissionsOpen(true);
+        }}
         onClose={() => setIsSidebarOpen(false)}
         onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
+        onOpenCloudModal={() => setIsCloudModalOpen(true)}
+        onOpenStaffSwitch={() => setIsStaffSwitchModalOpen(true)}
       />
 
       {/* Barcode & QR Code Scanner / Price Checker Modal */}
@@ -765,6 +1018,147 @@ export default function App() {
         isOpen={isTrainingVideosOpen}
         onClose={() => setIsTrainingVideosOpen(false)}
       />
+
+      {/* Cloud Sync & Google Auth Modal */}
+      <CloudSyncModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        user={currentUser}
+        orders={orders}
+        catalog={catalog}
+        customers={customers}
+        cashEntries={cashEntries}
+        shopSettings={shopSettings}
+        isSyncing={isSyncing}
+        lastSyncedAt={lastSyncedAt}
+        onManualSync={handleManualCloudSync}
+        onPullFromCloud={handlePullFromCloud}
+      />
+
+      {/* 1-Second 4-Digit Staff Shift Switch Modal */}
+      <QuickStaffSwitchModal
+        isOpen={isStaffSwitchModalOpen}
+        staffList={staffList}
+        activeStaffId={activeStaffId}
+        onClose={() => setIsStaffSwitchModalOpen(false)}
+        onSwitchStaff={handleSwitchStaff}
+        onNavigateToStaffManagement={() => setActiveScreen('staff-management')}
+      />
+
+      {/* Purchase Inward Stock Receiving Modal */}
+      <PurchaseInwardModal
+        isOpen={isPurchaseInwardOpen}
+        catalog={catalog}
+        currencySymbol={shopSettings.currencySymbol}
+        activeStaffName={activeStaff.name}
+        onClose={() => setIsPurchaseInwardOpen(false)}
+        onInwardStock={handleInwardStock}
+      />
+
+      {/* Barcode & Price Sticker Sheet Generator Modal */}
+      <BarcodeGeneratorModal
+        isOpen={isBarcodeGeneratorOpen}
+        catalog={catalog}
+        currencySymbol={shopSettings.currencySymbol}
+        shopName={shopSettings.shopName}
+        initialProductId={barcodeSelectedProductId}
+        onClose={() => {
+          setIsBarcodeGeneratorOpen(false);
+          setBarcodeSelectedProductId(undefined);
+        }}
+      />
+
+      {/* Laser Gun Price Check & Info Modal */}
+      <PriceCheckModal
+        isOpen={isPriceCheckOpen}
+        onClose={() => setIsPriceCheckOpen(false)}
+        catalog={catalog}
+        currencySymbol={shopSettings.currencySymbol}
+        staffRole={activeStaff.role}
+        onRequestManagerOverride={() => {
+          setPendingRestrictedAction({
+            title: 'Manager Authorization for Stock Editing',
+            description: 'Direct shelf count adjustments require Manager or Store Owner PIN authorization.',
+            requiredRoleLabel: 'MANAGER / OWNER',
+            onAuthorize: () => {
+              // Once authorized by manager PIN, grant temporary ability to edit stock in the open modal
+            },
+          });
+          setIsManagerPinModalOpen(true);
+        }}
+        onUpdateStock={handleUpdateProductStock}
+        onAddToCart={(item) => {
+          handleAddItem(item);
+          setIsPriceCheckOpen(false);
+        }}
+      />
+
+      {/* Manager PIN Authorization Modal */}
+      <ManagerPinModal
+        isOpen={isManagerPinModalOpen}
+        staffList={staffList}
+        title={pendingRestrictedAction?.title || 'Manager Authorization'}
+        description={pendingRestrictedAction?.description}
+        requiredRoleLabel={pendingRestrictedAction?.requiredRoleLabel || 'MANAGER / OWNER'}
+        onClose={() => {
+          setIsManagerPinModalOpen(false);
+          setPendingRestrictedAction(null);
+        }}
+        onSuccess={(authorizingStaff) => {
+          const action = pendingRestrictedAction;
+          setIsManagerPinModalOpen(false);
+          setPendingRestrictedAction(null);
+          if (action?.onAuthorize) {
+            action.onAuthorize(authorizingStaff);
+          }
+        }}
+      />
+
+      {/* Role & Permissions Capability Matrix Modal */}
+      <RolePermissionsModal
+        isOpen={isRolePermissionsOpen}
+        staffList={staffList}
+        activeStaffId={activeStaffId}
+        onClose={() => setIsRolePermissionsOpen(false)}
+        onSwitchStaff={(staffId) => {
+          handleSwitchStaff(staffId);
+          setIsRolePermissionsOpen(false);
+        }}
+        onOpenStaffSwitch={() => {
+          setIsRolePermissionsOpen(false);
+          setIsStaffSwitchModalOpen(true);
+        }}
+      />
+
+      {/* Floating Laser Gun Instant Scan Toast Notification */}
+      {laserScanNotification && (
+        <div className="fixed bottom-5 right-5 z-50 bg-zinc-900/95 text-white backdrop-blur-md px-4 py-3 rounded-2xl shadow-2xl border border-zinc-700/80 flex items-center gap-3.5 max-w-sm">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Zap className="w-5 h-5 fill-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
+                Laser Gun Scanned ⚡
+              </span>
+              <span className="text-[11px] font-mono font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">
+                Qty in Bill: {laserScanNotification.cartQty}
+              </span>
+            </div>
+            <p className="text-xs font-bold text-white truncate mt-0.5">
+              {laserScanNotification.productName} • {shopSettings.currencySymbol}{laserScanNotification.price.toFixed(2)}
+            </p>
+            {laserScanNotification.stock !== undefined && (
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Remaining Stock: <span className={`font-bold ${laserScanNotification.stock <= 5 ? 'text-amber-400' : 'text-zinc-200'}`}>{laserScanNotification.stock} units</span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Real-Time Connectivity Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

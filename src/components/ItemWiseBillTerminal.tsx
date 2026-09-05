@@ -15,8 +15,11 @@ import {
   ShoppingBag,
   Scan,
   Barcode,
+  Scale,
+  AlertTriangle,
 } from 'lucide-react';
 import { CatalogItem, Category, BillItem } from '../types';
+import { hardware } from '../utils/hardware';
 
 interface ItemWiseBillTerminalProps {
   currentBillItems: BillItem[];
@@ -35,6 +38,7 @@ interface ItemWiseBillTerminalProps {
   onPrintBill: () => void;
   onSaveBill: () => void;
   onOpenScanner?: (mode?: 'add-to-bill' | 'price-check' | 'search') => void;
+  onOpenPriceCheck?: () => void;
 }
 
 export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
@@ -53,10 +57,46 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   onPrintBill,
   onSaveBill,
   onOpenScanner,
+  onOpenPriceCheck,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All Items');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState<boolean>(false);
+  const [scaleWeight, setScaleWeight] = useState<number>(0.0);
+  const [isScaleConnected, setIsScaleConnected] = useState<boolean>(false);
+  const [isScaleModalOpen, setIsScaleModalOpen] = useState<boolean>(false);
+
+  // Connect or simulate scale
+  const handleConnectScale = async () => {
+    const res = await hardware.connectWeighingScale();
+    if (res.success) {
+      setIsScaleConnected(true);
+      hardware.onScaleReading((reading) => {
+        setScaleWeight(reading.weight);
+      });
+    } else {
+      // If Web Serial not supported or rejected, prompt simulated scale modal
+      setIsScaleModalOpen(true);
+    }
+  };
+
+  const handleSimulateWeight = (kg: number) => {
+    hardware.simulateScaleWeight(kg);
+    setScaleWeight(kg);
+  };
+
+  // Enhanced onAddItem that checks for weight scale
+  const handleItemClick = (item: CatalogItem) => {
+    if (item.unit === 'kg' && scaleWeight > 0) {
+      // Add as weighted item
+      onAddItem({
+        ...item,
+        price: item.price,
+      });
+    } else {
+      onAddItem(item);
+    }
+  };
 
   // Filter products by selected category and search query (including barcode / SKU)
   const filteredCatalog = catalog.filter((item) => {
@@ -220,14 +260,43 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
                 )}
               </div>
 
+              {/* Digital Weighing Scale Button */}
+              <button
+                type="button"
+                onClick={handleConnectScale}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 cursor-pointer border ${
+                  scaleWeight > 0
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                    : 'bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border-[#d4d4d8]'
+                }`}
+                title="Connect Digital Weighing Scale (Web Serial)"
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span>{scaleWeight > 0 ? `${scaleWeight.toFixed(3)} kg` : 'Scale'}</span>
+              </button>
+
+              {/* Price Check & Info (Laser Gun) Button */}
+              {onOpenPriceCheck && (
+                <button
+                  type="button"
+                  onClick={onOpenPriceCheck}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 cursor-pointer"
+                  title="Price Check & Product Stock Info (F2 or Laser Gun)"
+                >
+                  <Scan className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>Price Check</span>
+                  <span className="text-[10px] font-mono bg-zinc-200 text-zinc-700 px-1 rounded">F2</span>
+                </button>
+              )}
+
               {onOpenScanner && (
                 <button
                   onClick={() => onOpenScanner('add-to-bill')}
                   className="flex items-center gap-1.5 px-3 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 cursor-pointer shadow-2xs"
-                  title="Scan Barcode or QR Code"
+                  title="Camera Barcode / QR Scanner"
                 >
                   <Scan className="w-3.5 h-3.5" />
-                  <span>Scan</span>
+                  <span>Camera</span>
                 </button>
               )}
 
@@ -296,18 +365,38 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
                   <button
                     key={item.id}
                     id={`product-card-${item.id}`}
-                    onClick={() => onAddItem(item)}
+                    onClick={() => handleItemClick(item)}
                     className={`bg-white border rounded-xl sm:rounded-2xl p-1.5 sm:p-2.5 flex flex-col justify-between text-left transition-all active:scale-95 cursor-pointer relative group ${
                       isInCart
                         ? 'border-[#18181b] ring-2 ring-[#18181b]/10 shadow-sm'
                         : 'border-[#d4d4d8] hover:border-[#18181b] hover:shadow-sm'
-                    }`}
+                    } ${item.stock !== undefined && item.stock <= 0 ? 'opacity-65' : ''}`}
                   >
                     {/* Active Cart Counter Badge */}
                     {isInCart && (
                       <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10 bg-[#18181b] text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm font-mono flex items-center gap-0.5 sm:gap-1">
                         <Check className="w-2.5 h-2.5 stroke-[3]" />
                         <span>{qtyInCart}</span>
+                      </div>
+                    )}
+
+                    {/* Stock Status Badge */}
+                    {item.stock !== undefined && (
+                      <div className="absolute top-1.5 left-1.5 z-10">
+                        {item.stock <= 0 ? (
+                          <span className="text-[8px] font-black uppercase tracking-wider bg-red-600 text-white px-1.5 py-0.5 rounded shadow-xs">
+                            Out of Stock
+                          </span>
+                        ) : item.stock <= (item.lowStockThreshold ?? 5) ? (
+                          <span className="text-[8px] font-bold uppercase tracking-wider bg-amber-500 text-zinc-950 px-1.5 py-0.5 rounded shadow-xs flex items-center gap-0.5">
+                            <AlertTriangle className="w-2 h-2" />
+                            {item.stock} left
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-mono font-medium text-zinc-600 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded border border-zinc-200">
+                            {item.stock} {item.unit || 'pcs'}
+                          </span>
+                        )}
                       </div>
                     )}
 
@@ -528,6 +617,122 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Digital Weighing Scale Modal */}
+      {isScaleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#d4d4d8] bg-[#fcf8fb]">
+              <div className="flex items-center gap-2">
+                <Scale className="w-5 h-5 text-[#18181b]" />
+                <h3 className="text-sm font-bold text-[#1c1b1d]">Digital Weighing Scale</h3>
+              </div>
+              <button
+                onClick={() => setIsScaleModalOpen(false)}
+                className="text-[#77767b] hover:text-[#1c1b1d] p-1 rounded-lg hover:bg-[#eae7ea] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Digital LED Display */}
+              <div className="bg-[#18181b] text-emerald-400 font-mono rounded-xl p-4 text-center border-2 border-[#27272a] shadow-inner">
+                <p className="text-[10px] text-zinc-400 uppercase tracking-widest mb-1">Scale Readout</p>
+                <div className="text-4xl font-black tracking-wider">
+                  {scaleWeight.toFixed(3)} <span className="text-xl font-normal text-emerald-500">kg</span>
+                </div>
+                <div className="flex justify-center items-center gap-3 mt-2 text-[10px]">
+                  <span className={`px-2 py-0.5 rounded-full ${scaleWeight > 0 ? 'bg-emerald-950 text-emerald-300' : 'bg-zinc-800 text-zinc-400'}`}>
+                    {scaleWeight > 0 ? '● STABLE' : '○ ZERO'}
+                  </span>
+                  <span className="text-zinc-400">
+                    {isScaleConnected ? 'USB Serial COM: Connected' : 'Manual / Simulation Mode'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Physical USB Serial Connect */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await hardware.connectWeighingScale();
+                  if (res.success) {
+                    setIsScaleConnected(true);
+                    hardware.onScaleReading((reading) => setScaleWeight(reading.weight));
+                  }
+                }}
+                className="w-full py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span>Pair Physical Scale (Web Serial API)</span>
+              </button>
+
+              {/* Quick Weight & Tare Controls */}
+              <div>
+                <label className="text-[10px] font-bold text-[#77767b] uppercase block mb-1.5">
+                  Quick Tare & Preset Weights
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateWeight(0)}
+                    className="py-1.5 bg-[#f6f2f5] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-lg text-xs font-bold text-red-600 cursor-pointer"
+                  >
+                    Tare (0.0)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateWeight(0.25)}
+                    className="py-1.5 bg-[#f6f2f5] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-lg text-xs font-mono font-bold text-[#1c1b1d] cursor-pointer"
+                  >
+                    0.250kg
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateWeight(0.5)}
+                    className="py-1.5 bg-[#f6f2f5] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-lg text-xs font-mono font-bold text-[#1c1b1d] cursor-pointer"
+                  >
+                    0.500kg
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateWeight(1.0)}
+                    className="py-1.5 bg-[#f6f2f5] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-lg text-xs font-mono font-bold text-[#1c1b1d] cursor-pointer"
+                  >
+                    1.000kg
+                  </button>
+                </div>
+              </div>
+
+              {/* Manual numeric input */}
+              <div>
+                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                  Manual Weight Input (kg)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.005"
+                    min="0"
+                    placeholder="e.g. 1.350"
+                    value={scaleWeight || ''}
+                    onChange={(e) => handleSimulateWeight(parseFloat(e.target.value) || 0)}
+                    className="flex-1 bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-[#1c1b1d] focus:outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsScaleModalOpen(false)}
+                    className="px-4 py-1.5 bg-[#18181b] text-white rounded-xl text-xs font-bold cursor-pointer"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

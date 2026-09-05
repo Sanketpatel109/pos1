@@ -13,6 +13,9 @@ import {
   Tag,
   Search,
   Barcode,
+  AlertTriangle,
+  Truck,
+  Printer,
 } from 'lucide-react';
 import { Category, CatalogItem } from '../types';
 
@@ -30,6 +33,8 @@ interface CategoryProductManagerProps {
     categories: string[],
     items: Omit<CatalogItem, 'id'>[]
   ) => void;
+  onOpenPurchaseInward?: () => void;
+  onOpenBarcodeGenerator?: (productId?: string) => void;
 }
 
 export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
@@ -43,8 +48,11 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   onUpdateProduct,
   onDeleteProduct,
   onImportCatalogFromXls,
+  onOpenPurchaseInward,
+  onOpenBarcodeGenerator,
 }) => {
   const [activeTab, setActiveTab] = useState<'categories' | 'products'>('categories');
+  const [productFilter, setProductFilter] = useState<'ALL' | 'LOW_STOCK'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals state
@@ -60,6 +68,15 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   const [prodBarcode, setProdBarcode] = useState('');
   const [prodSku, setProdSku] = useState('');
   const [prodImageUrl, setProdImageUrl] = useState('');
+  const [prodStock, setProdStock] = useState('20');
+  const [prodThreshold, setProdThreshold] = useState('5');
+  const [prodUnit, setProdUnit] = useState('pcs');
+  const [prodCostPrice, setProdCostPrice] = useState('');
+
+  // Low stock count calculation
+  const lowStockCount = catalog.filter(
+    (item) => (item.stock ?? 0) <= (item.lowStockThreshold ?? 5)
+  ).length;
 
   // XLS Import Modal
   const [isXlsModalOpen, setIsXlsModalOpen] = useState(false);
@@ -100,6 +117,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
     setProdBarcode('');
     setProdSku('');
     setProdImageUrl('');
+    setProdStock('25');
+    setProdThreshold('5');
+    setProdUnit('pcs');
+    setProdCostPrice('');
     setIsProductModalOpen(true);
   };
 
@@ -111,6 +132,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
     setProdBarcode(item.barcode || '');
     setProdSku(item.sku || '');
     setProdImageUrl(item.image || '');
+    setProdStock(String(item.stock ?? 20));
+    setProdThreshold(String(item.lowStockThreshold ?? 5));
+    setProdUnit(item.unit || 'pcs');
+    setProdCostPrice(item.costPrice ? String(item.costPrice) : '');
     setIsProductModalOpen(true);
   };
 
@@ -118,6 +143,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
     e.preventDefault();
     const priceNum = parseFloat(prodPrice);
     if (!prodName.trim() || isNaN(priceNum)) return;
+
+    const stockNum = parseInt(prodStock) || 0;
+    const threshNum = parseInt(prodThreshold) || 5;
+    const costNum = parseFloat(prodCostPrice) || undefined;
 
     if (editingProduct) {
       onUpdateProduct({
@@ -128,6 +157,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         barcode: prodBarcode.trim() || undefined,
         sku: prodSku.trim() || undefined,
         image: prodImageUrl.trim() || undefined,
+        stock: stockNum,
+        lowStockThreshold: threshNum,
+        unit: prodUnit.trim() || 'pcs',
+        costPrice: costNum,
       });
     } else {
       onAddProduct({
@@ -137,6 +170,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         barcode: prodBarcode.trim() || undefined,
         sku: prodSku.trim() || undefined,
         image: prodImageUrl.trim() || undefined,
+        stock: stockNum,
+        lowStockThreshold: threshNum,
+        unit: prodUnit.trim() || 'pcs',
+        costPrice: costNum,
       });
     }
     setIsProductModalOpen(false);
@@ -336,41 +373,99 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
           } md:flex flex-col md:w-2/3 lg:w-7/10 bg-white min-h-0 flex-1`}
         >
           {/* Products Filter & Actions Header */}
-          <div className="p-3.5 border-b border-[#d4d4d8] bg-white flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between shrink-0">
-            <div className="flex-1 bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl px-3 py-2 flex items-center gap-2 focus-within:border-[#18181b] focus-within:bg-white transition-all">
-              <Search className="w-4 h-4 text-[#77767b] shrink-0" />
-              <input
-                type="text"
-                placeholder="Search catalog items by name or category..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs text-[#1c1b1d] bg-transparent focus:outline-hidden placeholder-[#77767b]"
-              />
-              {searchQuery && (
+          <div className="p-3.5 border-b border-[#d4d4d8] bg-white flex flex-col gap-2.5 shrink-0">
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between">
+              <div className="flex-1 bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl px-3 py-2 flex items-center gap-2 focus-within:border-[#18181b] focus-within:bg-white transition-all">
+                <Search className="w-4 h-4 text-[#77767b] shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search catalog items by name, barcode, SKU, category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full text-xs text-[#1c1b1d] bg-transparent focus:outline-hidden placeholder-[#77767b]"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-[#77767b] hover:text-[#1c1b1d] p-0.5 rounded-full cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {onOpenPurchaseInward && (
+                  <button
+                    type="button"
+                    onClick={onOpenPurchaseInward}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                    title="Receive vendor stock & inward purchase"
+                  >
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>Inward Stock</span>
+                  </button>
+                )}
+
+                {onOpenBarcodeGenerator && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenBarcodeGenerator()}
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                    title="Print barcode stickers sheet"
+                  >
+                    <Barcode className="w-3.5 h-3.5" />
+                    <span>Print Labels</span>
+                  </button>
+                )}
+
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-[#77767b] hover:text-[#1c1b1d] p-0.5 rounded-full"
+                  type="button"
+                  onClick={() => setIsXlsModalOpen(true)}
+                  className="px-3 py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Import CSV</span>
                 </button>
-              )}
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddProduct}
+                  className="px-3.5 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>Add Product</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            {/* Quick Stock Filters */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsXlsModalOpen(true)}
-                className="px-3 py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                type="button"
+                onClick={() => setProductFilter('ALL')}
+                className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  productFilter === 'ALL'
+                    ? 'bg-[#18181b] text-white shadow-2xs'
+                    : 'bg-[#f6f2f5] text-[#47464b] border border-[#d4d4d8] hover:bg-[#eae7ea]'
+                }`}
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Import CSV</span>
+                All Items ({catalog.length})
               </button>
 
               <button
-                onClick={handleOpenAddProduct}
-                className="px-3.5 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                type="button"
+                onClick={() => setProductFilter('LOW_STOCK')}
+                className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  productFilter === 'LOW_STOCK'
+                    ? 'bg-amber-500 text-zinc-950 shadow-2xs'
+                    : lowStockCount > 0
+                    ? 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
+                    : 'bg-[#f6f2f5] text-[#77767b] border border-[#d4d4d8]'
+                }`}
               >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                <span>Add Product</span>
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Low Stock Alerts ({lowStockCount})</span>
               </button>
             </div>
           </div>
@@ -386,74 +481,127 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {catalog
-                  .filter(
-                    (item) =>
+                  .filter((item) => {
+                    const matchesSearch =
                       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      item.category.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-white border border-[#d4d4d8] rounded-2xl p-3 flex flex-col justify-between shadow-2xs hover:border-[#18181b] hover:shadow-xs transition-all gap-2"
-                    >
-                      <div className="w-full h-24 bg-[#f0edf0] rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
-                        {item.image ? (
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <Tag className="w-7 h-7 text-[#77767b]" />
-                        )}
-                      </div>
+                      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (item.barcode && item.barcode.includes(searchQuery)) ||
+                      (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase()));
 
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-extrabold text-xs sm:text-sm text-[#1c1b1d] truncate">
-                          {item.name}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          <span className="text-[10px] font-bold text-[#77767b] bg-[#f0edf0] px-2 py-0.5 rounded inline-block uppercase">
-                            {item.category}
-                          </span>
-                          {(item.barcode || item.sku) && (
-                            <span className="text-[10px] font-mono text-[#1c1b1d] bg-[#eae7ea] px-1.5 py-0.5 rounded flex items-center gap-1">
-                              <Barcode className="w-2.5 h-2.5 text-[#77767b]" />
-                              <span>{item.barcode || item.sku}</span>
-                            </span>
+                    if (!matchesSearch) return false;
+
+                    if (productFilter === 'LOW_STOCK') {
+                      return (item.stock ?? 0) <= (item.lowStockThreshold ?? 5);
+                    }
+                    return true;
+                  })
+                  .map((item) => {
+                    const currentStock = item.stock ?? 0;
+                    const threshold = item.lowStockThreshold ?? 5;
+                    const isOutOfStock = currentStock <= 0;
+                    const isLowStock = !isOutOfStock && currentStock <= threshold;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-white border border-[#d4d4d8] rounded-2xl p-3 flex flex-col justify-between shadow-2xs hover:border-[#18181b] hover:shadow-xs transition-all gap-2"
+                      >
+                        <div className="w-full h-24 bg-[#f0edf0] rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <Tag className="w-7 h-7 text-[#77767b]" />
                           )}
+
+                          {/* Live Stock Overlay Pill */}
+                          <div className="absolute top-2 right-2">
+                            {isOutOfStock ? (
+                              <span className="text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded-md shadow-xs">
+                                Out of Stock
+                              </span>
+                            ) : isLowStock ? (
+                              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                {currentStock} {item.unit || 'pcs'} left
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold bg-white/90 backdrop-blur-xs text-zinc-800 border border-zinc-200 px-2 py-0.5 rounded-md shadow-xs">
+                                {currentStock} {item.unit || 'pcs'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-extrabold text-xs sm:text-sm text-[#1c1b1d] truncate">
+                            {item.name}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="text-[10px] font-bold text-[#77767b] bg-[#f0edf0] px-2 py-0.5 rounded inline-block uppercase">
+                              {item.category}
+                            </span>
+                            {(item.barcode || item.sku) && (
+                              <span className="text-[10px] font-mono text-[#1c1b1d] bg-[#eae7ea] px-1.5 py-0.5 rounded flex items-center gap-1">
+                                <Barcode className="w-2.5 h-2.5 text-[#77767b]" />
+                                <span>{item.barcode || item.sku}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-[#f0edf0]">
+                          <div>
+                            <span className="font-black text-sm font-mono text-[#1c1b1d]">
+                              {currencySymbol}
+                              {item.price.toFixed(2)}
+                            </span>
+                            {item.costPrice && (
+                              <span className="text-[10px] text-zinc-400 block font-mono">
+                                Cost: {currencySymbol}{item.costPrice.toFixed(0)}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {onOpenBarcodeGenerator && (
+                              <button
+                                type="button"
+                                onClick={() => onOpenBarcodeGenerator(item.id)}
+                                className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-indigo-50 text-indigo-700 cursor-pointer transition-colors"
+                                title="Print Barcode Label for this item"
+                              >
+                                <Barcode className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditProduct(item)}
+                              className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] cursor-pointer"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteProduct(item.id)}
+                              className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#ffdad6] text-[#ba1a1a] cursor-pointer"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-[#f0edf0]">
-                        <span className="font-black text-sm font-mono text-[#1c1b1d]">
-                          {currencySymbol}
-                          {item.price.toFixed(2)}
-                        </span>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleOpenEditProduct(item)}
-                            className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] cursor-pointer"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => onDeleteProduct(item.id)}
-                            className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#ffdad6] text-[#ba1a1a] cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -573,6 +721,61 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                     value={prodSku}
                     onChange={(e) => setProdSku(e.target.value)}
                     className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#f6f2f5] p-2.5 rounded-xl border border-[#d4d4d8]">
+                <div>
+                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                    Stock on Hand
+                  </label>
+                  <input
+                    type="number"
+                    value={prodStock}
+                    onChange={(e) => setProdStock(e.target.value)}
+                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#1c1b1d] focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                    Reorder Alert (&lt;)
+                  </label>
+                  <input
+                    type="number"
+                    value={prodThreshold}
+                    onChange={(e) => setProdThreshold(e.target.value)}
+                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#1c1b1d] focus:outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                    Inventory Unit
+                  </label>
+                  <select
+                    value={prodUnit}
+                    onChange={(e) => setProdUnit(e.target.value)}
+                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2 py-1 text-xs font-bold text-[#1c1b1d] focus:outline-hidden"
+                  >
+                    <option value="pcs">pcs</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                    <option value="ltr">ltr</option>
+                    <option value="ml">ml</option>
+                    <option value="box">box</option>
+                    <option value="pack">pack</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                    Cost Price ({currencySymbol})
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Optional"
+                    value={prodCostPrice}
+                    onChange={(e) => setProdCostPrice(e.target.value)}
+                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2 py-1 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
                   />
                 </div>
               </div>

@@ -14,8 +14,12 @@ import {
   Wallet,
   UserCheck,
   Scan,
+  Cloud,
 } from 'lucide-react';
-import { ActiveScreen } from '../types';
+import { ActiveScreen, StaffRole } from '../types';
+import { User } from '../firebase';
+import { PWAInstallButton } from './PWAInstallButton';
+import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
 
 interface HeaderProps {
   activeScreen: ActiveScreen;
@@ -23,12 +27,18 @@ interface HeaderProps {
   heldOrdersCount?: number;
   soundEnabled?: boolean;
   activeStaffName?: string;
+  activeStaffRole?: StaffRole;
+  user?: User | null;
+  isSyncing?: boolean;
+  onOpenCloudModal?: () => void;
   onToggleSound?: () => void;
   onOpenMenu: () => void;
   onNavigate: (screen: ActiveScreen) => void;
   onOpenSearch?: () => void;
   onOpenCustomItem?: () => void;
   onOpenScanner?: (mode?: 'add-to-bill' | 'price-check' | 'search') => void;
+  onOpenStaffSwitch?: () => void;
+  onOpenPriceCheck?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -37,13 +47,21 @@ export const Header: React.FC<HeaderProps> = ({
   heldOrdersCount = 0,
   soundEnabled = true,
   activeStaffName = 'Alex Cashier',
+  activeStaffRole = 'CASHIER',
+  user = null,
+  isSyncing = false,
+  onOpenCloudModal,
   onToggleSound,
   onOpenMenu,
   onNavigate,
   onOpenSearch,
   onOpenCustomItem,
   onOpenScanner,
+  onOpenStaffSwitch,
+  onOpenPriceCheck,
 }) => {
+  const currentRole = normalizeRole(activeStaffRole);
+  const roleMeta = ROLE_DEFINITIONS[currentRole];
   const getScreenTitle = () => {
     switch (activeScreen) {
       case 'item-wise':
@@ -130,12 +148,87 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Cashier Badge & Actions */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Operator info pill */}
-        <div className="hidden md:flex items-center gap-1.5 bg-[#f0edf0] border border-[#d4d4d8] rounded-xl px-2.5 py-1 text-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-[#77767b] font-medium">Operator:</span>
-          <span className="text-[#1c1b1d] font-bold">{activeStaffName}</span>
-        </div>
+        {/* Operator info pill - Quick Staff Switch (1-Second 4-Digit PIN) */}
+        <button
+          id="btn-header-operator-pill"
+          onClick={onOpenStaffSwitch ? onOpenStaffSwitch : () => onNavigate('staff-management')}
+          title={`Active Operator: ${activeStaffName} (${roleMeta.label}) - Click to Switch Shift`}
+          className="flex items-center gap-1 sm:gap-1.5 bg-[#f0edf0] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-xl px-2 sm:px-2.5 py-1 text-xs cursor-pointer transition-all active:scale-95 shadow-2xs"
+        >
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${
+              currentRole === 'OWNER'
+                ? 'bg-amber-500'
+                : currentRole === 'MANAGER'
+                ? 'bg-indigo-500'
+                : currentRole === 'CASHIER'
+                ? 'bg-emerald-500 animate-pulse'
+                : 'bg-zinc-500'
+            }`}
+          />
+          <span className="hidden sm:inline text-[#77767b] font-medium">Operator:</span>
+          <span className="text-[#1c1b1d] font-bold max-w-[80px] sm:max-w-[120px] truncate">
+            {activeStaffName}
+          </span>
+          <span
+            className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded border ${roleMeta.badgeBg} ${roleMeta.badgeText} ${roleMeta.badgeBorder} hidden xs:inline-block`}
+          >
+            {roleMeta.badgeLabel}
+          </span>
+        </button>
+
+        {/* Laser Gun / Price Check Pill */}
+        {onOpenPriceCheck && (
+          <button
+            id="btn-header-price-check"
+            onClick={onOpenPriceCheck}
+            title="Laser Scanner Gun Price Check & Info (F2)"
+            className="flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 bg-white hover:bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs text-zinc-800"
+          >
+            <Scan className="w-3.5 h-3.5 text-zinc-700" />
+            <span className="hidden md:inline">Price Check</span>
+            <kbd className="hidden lg:inline text-[9px] font-mono bg-zinc-100 text-zinc-600 px-1 py-0.2 rounded border border-zinc-200">
+              F2
+            </kbd>
+          </button>
+        )}
+
+        {/* Cloud Sync & Google Auth Pill */}
+        {onOpenCloudModal && (
+          <button
+            id="btn-header-cloud-sync"
+            onClick={onOpenCloudModal}
+            title={user ? `Cloud Connected: ${user.email}` : 'Connect Google Account for Cloud Sync'}
+            className="flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 bg-white hover:bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs"
+          >
+            {user ? (
+              <>
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'Google'}
+                    className="w-4 h-4 rounded-full border border-zinc-300"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                )}
+                <span className="text-zinc-800 font-bold hidden sm:inline">
+                  {isSyncing ? 'Syncing...' : 'Cloud Synced'}
+                </span>
+                <Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-indigo-600' : 'text-emerald-600'}`} />
+              </>
+            ) : (
+              <>
+                <Cloud className="w-3.5 h-3.5 text-zinc-500" />
+                <span className="text-zinc-700 hidden sm:inline">Sign In (Cloud)</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {/* PWA In-App Install Prompt */}
+        <PWAInstallButton variant="header" />
 
         {onToggleSound && (
           <button
