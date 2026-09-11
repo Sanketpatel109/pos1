@@ -1404,6 +1404,8 @@ export default function App() {
       <div className="w-full h-full bg-background flex flex-col overflow-hidden relative">
         {/* Top App Bar Header */}
         <Header
+          storeName={shopSettings.shopName}
+          storeLogoUrl={shopSettings.logoUrl}
           activeScreen={activeScreen}
           orderNumber={orderNumber}
           heldOrdersCount={heldOrders.length}

@@ -293,6 +293,8 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   showBarcode: true,
   subscriptionExpiry: '31 Dec 2026',
   permissions: DEFAULT_STORE_PERMISSIONS,
+  logoUrl: '',
+  printLogoOnReceipt: true,
 };
 
 export const SAMPLE_ORDERS: Order[] = [

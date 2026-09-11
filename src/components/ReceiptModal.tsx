@@ -135,9 +135,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           >
             {/* Store Header */}
             <div className="text-center space-y-1 border-b border-dashed border-border pb-3">
-              <div className="w-10 h-10 bg-foreground text-background text-white rounded-full mx-auto flex items-center justify-center font-bold text-sm">
-                M
-              </div>
+              {shopSettings.logoUrl && shopSettings.printLogoOnReceipt !== false ? (
+                <div className="mb-2 flex justify-center">
+                  <img
+                    src={shopSettings.logoUrl}
+                    alt={shopSettings.shopName}
+                    className="max-h-12 max-w-[140px] object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-10 h-10 bg-foreground text-background text-white rounded-full mx-auto flex items-center justify-center font-bold text-sm">
+                  {shopSettings.shopName ? shopSettings.shopName.charAt(0).toUpperCase() : 'M'}
+                </div>
+              )}
               <h3 className="font-extrabold text-sm uppercase tracking-wider text-foreground">
                 {shopSettings.shopName}
               </h3>

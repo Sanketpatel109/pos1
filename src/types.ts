@@ -201,6 +201,8 @@ export interface ShopSettings {
   weighingScaleEnabled?: boolean;
   weighingScaleBaudRate?: number;
   permissions?: StorePermissions;
+  logoUrl?: string;
+  printLogoOnReceipt?: boolean;
 }
 
 export type ActiveScreen =

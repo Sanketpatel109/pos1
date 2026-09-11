@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export interface HeaderProps {
+  storeName?: string;
+  storeLogoUrl?: string;
   activeScreen?: ActiveScreen;
   orderNumber?: number;
   heldOrdersCount?: number;
@@ -34,6 +36,8 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  storeName = 'Anand Supermarket',
+  storeLogoUrl = '',
   heldOrdersCount = 0,
   activeStaffName = 'Anand',
   activeStaffRole = 'OWNER',
@@ -98,15 +102,22 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="size-4" />
         </Button>
 
-        {/* Store Monogram & Name */}
+        {/* Store Monogram / Logo & Name */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-xs">
-            A
-          </div>
+          {storeLogoUrl ? (
+            <img
+              src={storeLogoUrl}
+              alt={storeName}
+              className="w-8 h-8 rounded-md object-contain shrink-0 border border-border/40 bg-muted/20"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-xs">
+              {storeName ? storeName.charAt(0).toUpperCase() : 'A'}
+            </div>
+          )}
           <div className="flex items-center gap-1.5 min-w-0 truncate">
             <span className="text-xs sm:text-sm font-bold text-foreground tracking-tight truncate">
-              Anand
-              <span className="hidden sm:inline"> Supermarket</span>
+              {storeName}
             </span>
             <span className="text-border text-xs font-semibold hidden md:inline">·</span>
 

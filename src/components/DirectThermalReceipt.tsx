@@ -48,6 +48,15 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
     >
       {/* Store Header */}
       <div className="text-center space-y-0.5 border-b border-dashed border-black pb-2 mb-2">
+        {shopSettings.logoUrl && shopSettings.printLogoOnReceipt !== false && (
+          <div className="mb-1 flex justify-center">
+            <img
+              src={shopSettings.logoUrl}
+              alt={shopSettings.shopName}
+              className="max-h-12 max-w-[130px] object-contain mx-auto filter grayscale contrast-200"
+            />
+          </div>
+        )}
         <h3 className="font-extrabold text-sm uppercase tracking-wider text-black">
           {shopSettings.shopName}
         </h3>

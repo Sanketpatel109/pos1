@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Printer,
   Bluetooth,
@@ -28,6 +28,9 @@ import {
   PauseCircle,
   CheckCircle2,
   AlertCircle,
+  Image as ImageIcon,
+  Trash2,
+  UploadCloud,
 } from 'lucide-react';
 import {
   ShopSettings,
@@ -118,6 +121,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
     currencySymbol: settings.currencySymbol || '₹',
   });
   const [isScanningBluetooth, setIsScanningBluetooth] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Cloud Diagnostics Auth & Sync state
   const [authError, setAuthError] = useState<string | null>(null);
@@ -169,6 +173,63 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
         connectedBluetoothDevice: 'MonoPOS Thermal-58',
       }));
     }, 1500);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Logo file size exceeds 5MB. Please choose a smaller image.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Optimize for ESC/POS thermal printers & fast storage (max 280px dimension)
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 280;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/png');
+          setFormData((prev) => ({
+            ...prev,
+            logoUrl: dataUrl,
+            printLogoOnReceipt: prev.printLogoOnReceipt !== false,
+          }));
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveLogo = () => {
+    setFormData((prev) => ({
+      ...prev,
+      logoUrl: '',
+    }));
+    if (logoInputRef.current) {
+      logoInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -685,6 +746,98 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
           {/* TAB 2: STORE PROFILE & TAX */}
           {activeTab === 'store' && (
             <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Store Logo Section */}
+              <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-zinc-900 block">
+                      Store Brand Logo
+                    </label>
+                    <p className="text-[10px] text-zinc-500">
+                      Upload transparent PNG or JPG logo for receipts & header.
+                    </p>
+                  </div>
+                  {formData.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+
+                {formData.logoUrl ? (
+                  <div className="flex items-center gap-3 p-2 bg-white border border-zinc-200 rounded-lg">
+                    <div className="w-14 h-14 bg-zinc-50 rounded-md border border-zinc-200 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img
+                        src={formData.logoUrl}
+                        alt="Store Logo"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-zinc-900">Custom Logo Active</p>
+                      <p className="text-[10px] text-zinc-500 truncate">
+                        Optimized for 58mm / 80mm thermal receipts & station header
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="text-[11px] font-bold text-blue-600 hover:underline mt-0.5 inline-block cursor-pointer"
+                      >
+                        Change Logo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => logoInputRef.current?.click()}
+                    className="border-2 border-dashed border-zinc-300 hover:border-blue-500 hover:bg-blue-50/40 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all text-center"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <UploadCloud className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-zinc-800">
+                        Click to upload store logo
+                      </span>
+                      <p className="text-[10px] text-zinc-500">
+                        PNG, JPG, or WebP (max 5MB, auto-optimized)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Print on Receipt Checkbox */}
+                <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.printLogoOnReceipt !== false}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        printLogoOnReceipt: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-zinc-700 font-medium">
+                    Print store logo at the top of thermal paper receipts
+                  </span>
+                </label>
+              </div>
+
               <div>
                 <label className="text-[10px] font-bold text-zinc-600 block mb-1">
                   Store / Brand Name
@@ -693,6 +846,19 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                   type="text"
                   value={formData.shopName}
                   onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
+                  className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-zinc-600 block mb-1">
+                  Tagline / Slogan (Printed on Receipt)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fresh Groceries & Everyday Essentials"
+                  value={formData.tagline || ''}
+                  onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
                   className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden focus:ring-1 focus:ring-blue-600"
                 />
               </div>
