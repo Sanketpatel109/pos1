@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Share2, X, Smartphone } from 'lucide-react';
+import { Download, Share2, X, Smartphone } from '../icons/faIcons';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'banner' }> = ({

@@ -12,6 +12,7 @@ export interface CatalogItem {
   lowStockThreshold?: number;
   unit?: string; // 'pcs' | 'kg' | 'g' | 'pack' | 'ltr'
   costPrice?: number;
+  gstRate?: number;
 }
 
 export interface InwardStockItem {
@@ -63,6 +64,12 @@ export interface BillItem {
   name: string;
   unitPrice: number;
   quantity: number;
+  gstRate?: number;
+  taxableAmount?: number; // Snapshot of taxable value (unitPrice * quantity)
+  cgst?: number;          // Snapshot of CGST amount
+  sgst?: number;          // Snapshot of SGST amount
+  totalTax?: number;      // Snapshot of combined tax amount
+  itemTotal?: number;     // Snapshot of total amount (taxable + tax)
   note?: string;
 }
 
@@ -82,6 +89,7 @@ export interface Customer {
   email?: string;
   address?: string;
   creditBalance: number;
+  creditLimit?: number;
   loyaltyPoints?: number;
   totalOrders?: number;
   createdAt?: string;
@@ -96,7 +104,7 @@ export interface CashEntry {
   createdAt: string;
 }
 
-export type StaffRole = 'OWNER' | 'MANAGER' | 'CASHIER' | 'WORKER' | 'Store Manager' | 'WAITER';
+export type StaffRole = 'OWNER' | 'MANAGER' | 'CASHIER';
 
 export interface StaffMember {
   id: string;
@@ -110,6 +118,8 @@ export interface StaffMember {
 export interface Order {
   id: string;
   orderNumber: number;
+  terminalPrefix?: string;
+  orderNumberFormatted?: string;
   createdAt: string;
   items: BillItem[];
   status: OrderStatus;
@@ -131,9 +141,38 @@ export interface Order {
   notes?: string;
   note?: string;
   tableOrToken?: string;
+  tokenNumber?: number; // Rolling pickup token 1-99999
+  customerGstin?: string; // Optional B2B Customer GSTIN
+  upiRefNumber?: string;
+  isVerified?: boolean;
+  verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
 }
 
-export type MarketRegion = 'IN' | 'US';
+export type MarketRegion = 'IN';
+
+export interface StorePermissions {
+  staff: {
+    allowKhata: boolean;          // Sell on customer credit
+    allowPriceOverride: boolean;   // Modify cart item prices
+    allowStockInward: boolean;    // Receive supplier crates
+  };
+  manager: {
+    viewCostPrice: boolean;       // View buying rates & margins
+    allowBillVoid: boolean;       // Cancel completed invoices
+  };
+}
+
+export const DEFAULT_STORE_PERMISSIONS: StorePermissions = {
+  staff: {
+    allowKhata: false,          // Sell on customer credit
+    allowPriceOverride: false,   // Modify cart item prices
+    allowStockInward: true,     // Receive supplier crates
+  },
+  manager: {
+    viewCostPrice: true,        // View buying rates & margins
+    allowBillVoid: true,        // Cancel completed invoices
+  },
+};
 
 export interface ShopSettings {
   marketRegion?: MarketRegion;
@@ -142,8 +181,12 @@ export interface ShopSettings {
   address: string;
   phone: string;
   email?: string;
+  terminalPrefix?: string; // e.g. "A" for Multi-Device terminal ID
+  enableDailyToken?: boolean; // Rolling 1-99999 pickup token for fast food / counters
   gstin: string; // GSTIN for India, or EIN / Sales Tax ID for US
   upiId?: string; // UPI ID for India (e.g. store@upi)
+  upiPayeeName?: string;
+  upiVerificationMode?: 'manual' | 'auto';
   currencySymbol: string;
   taxRate: number; // percentage, e.g. 5
   taxLabel?: string; // 'GST' or 'Sales Tax'
@@ -157,6 +200,7 @@ export interface ShopSettings {
   autoDrawerKick?: boolean;
   weighingScaleEnabled?: boolean;
   weighingScaleBaudRate?: number;
+  permissions?: StorePermissions;
 }
 
 export type ActiveScreen =

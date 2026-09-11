@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Split, Banknote, Smartphone, CreditCard, Check } from 'lucide-react';
+import { X, Split, Banknote, Smartphone, CreditCard, Check } from '../icons/faIcons';
 import { SplitPaymentDetail } from '../types';
 
 interface SplitPaymentModalProps {

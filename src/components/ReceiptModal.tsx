@@ -2,14 +2,14 @@ import React, { useRef } from 'react';
 import {
   Printer,
   Share2,
-  Edit3,
   X,
   CheckCircle,
   Copy,
   Receipt,
   QrCode,
-} from 'lucide-react';
+} from '../icons/faIcons';
 import { Order, ShopSettings, BillItem } from '../types';
+import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -21,8 +21,8 @@ interface ReceiptModalProps {
   taxAmount?: number;
   total?: number;
   shopSettings: ShopSettings;
+  isDuplicate?: boolean;
   onClose: () => void;
-  onEditOrder?: () => void;
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({
@@ -35,8 +35,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   taxAmount = 0,
   total = 0,
   shopSettings,
+  isDuplicate = false,
   onClose,
-  onEditOrder,
 }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -45,9 +45,22 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   // Resolve active data from order or live items
   const activeOrderNum = order ? order.orderNumber : orderNumber;
   const activeItems = order ? order.items : items;
-  const activeSubtotal = order ? order.subtotal : subtotal;
+  
+  // Calculate immutable tax totals from snapshot
+  const taxSnapshotTotals = calculateOrderTaxFromSnapshot(activeItems);
+  const activeSubtotal =
+    taxSnapshotTotals.taxableSubtotal > 0
+      ? taxSnapshotTotals.taxableSubtotal
+      : order
+      ? order.subtotal
+      : subtotal;
   const activeTaxRate = order ? order.taxRate : taxRate;
-  const activeTaxAmount = order ? order.taxAmount : taxAmount;
+  const activeTaxAmount =
+    taxSnapshotTotals.totalTax > 0
+      ? taxSnapshotTotals.totalTax
+      : order
+      ? order.taxAmount
+      : taxAmount;
   const activeDiscount = order ? order.discount : 0;
   const activeTotal = order ? order.total : total;
   const activeDate = order ? new Date(order.createdAt) : new Date();
@@ -135,18 +148,38 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <p className="text-[10px] text-[#47464b]">Tel: {shopSettings.phone}</p>
               {shopSettings.gstin && (
                 <p className="text-[10px] text-[#47464b] font-bold">
-                  {shopSettings.currencySymbol === '₹' || shopSettings.marketRegion === 'IN'
-                    ? `GSTIN: ${shopSettings.gstin}`
-                    : `Tax ID / EIN: ${shopSettings.gstin}`}
+                  GSTIN: {shopSettings.gstin}
                 </p>
+              )}
+              {(isDuplicate || order?.isDuplicate) && (
+                <div className="mt-1.5 py-1 px-2 text-center bg-zinc-100 border-y border-dashed border-zinc-400 font-bold text-[11px] tracking-widest text-zinc-900 uppercase font-mono">
+                  *** DUPLICATE COPY ***
+                </div>
               )}
             </div>
 
             {/* Invoice Meta */}
             <div className="text-[11px] space-y-0.5 border-b border-dashed border-[#77767b] pb-2">
+              {Boolean(shopSettings.enableDailyToken) && (
+                <div className="my-1.5 py-1.5 px-2 bg-slate-900 text-white rounded-lg flex items-center justify-between text-center">
+                  <div>
+                    <span className="text-[10px] font-bold tracking-wider uppercase text-slate-300 block text-left">
+                      PICKUP TOKEN
+                    </span>
+                    {order?.tableOrToken && (
+                      <span className="text-[9px] text-slate-400 block text-left">
+                        {order.tableOrToken}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xl font-black tracking-tight font-mono text-emerald-400">
+                    #{String(order?.tokenNumber || (typeof activeOrderNum === 'number' ? ((activeOrderNum - 1) % 99999) + 1 : 1)).padStart(2, '0')}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#77767b]">Invoice No:</span>
-                <span className="font-bold">#{activeOrderNum}</span>
+                <span className="font-bold">#{order?.orderNumberFormatted || `${shopSettings.terminalPrefix || 'A'}-${activeOrderNum}`}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#77767b]">Date & Time:</span>
@@ -207,35 +240,38 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 </div>
               )}
 
-              {activeTaxAmount > 0 && (
-                <>
-                  {shopSettings.currencySymbol === '₹' || shopSettings.marketRegion === 'IN' ? (
-                    <>
-                      <div className="flex justify-between text-[#47464b]">
-                        <span>CGST ({(activeTaxRate / 2).toFixed(1)}%):</span>
-                        <span>
-                          +{shopSettings.currencySymbol}
-                          {(activeTaxAmount / 2).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[#47464b]">
-                        <span>SGST ({(activeTaxRate / 2).toFixed(1)}%):</span>
-                        <span>
-                          +{shopSettings.currencySymbol}
-                          {(activeTaxAmount / 2).toFixed(2)}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between text-[#47464b]">
-                      <span>Sales Tax ({activeTaxRate}%):</span>
+              {taxSnapshotTotals.taxRateBreakdown.filter(
+                (b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0)
+              ).length > 0 ? (
+                taxSnapshotTotals.taxRateBreakdown
+                  .filter((b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0))
+                  .map((b) => (
+                    <div key={b.rate} className="flex justify-between text-[#47464b]">
+                      <span>GST {b.rate}% (CGST {(b.rate / 2).toFixed(1)}% + SGST {(b.rate / 2).toFixed(1)}%):</span>
                       <span>
                         +{shopSettings.currencySymbol}
-                        {activeTaxAmount.toFixed(2)}
+                        {b.totalTax.toFixed(2)}
                       </span>
                     </div>
-                  )}
-                </>
+                  ))
+              ) : activeTaxAmount > 0 ? (
+                <div className="flex justify-between text-[#47464b]">
+                  <span>GST {activeTaxRate}% (CGST {(activeTaxRate / 2).toFixed(1)}% + SGST {(activeTaxRate / 2).toFixed(1)}%):</span>
+                  <span>
+                    +{shopSettings.currencySymbol}
+                    {activeTaxAmount.toFixed(2)}
+                  </span>
+                </div>
+              ) : null}
+
+              {activeTaxAmount > 0 && (
+                <div className="flex justify-between font-bold text-[#1c1b1d] border-t border-dotted border-[#d4d4d8] pt-1">
+                  <span>Total Tax:</span>
+                  <span>
+                    +{shopSettings.currencySymbol}
+                    {activeTaxAmount.toFixed(2)}
+                  </span>
+                </div>
               )}
 
               <div className="flex justify-between text-sm font-extrabold text-[#1c1b1d] border-t border-[#d4d4d8] pt-1">
@@ -269,13 +305,39 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               )}
             </div>
 
-            {/* India UPI QR Code Payment Block */}
-            {(shopSettings.currencySymbol === '₹' || shopSettings.marketRegion === 'IN') &&
+            {/* Payment Status & Verification Proof (No payment QR on paid receipts) */}
+            {activePaymentMethod === 'ONLINE' ? (
+              <div className="text-center py-2 px-2 bg-emerald-50 rounded-xl border border-emerald-300 space-y-1 my-1">
+                <div className="text-[10px] font-black text-emerald-800 uppercase tracking-wider flex items-center justify-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                  <span>Paid In Full • Verified UPI</span>
+                </div>
+                {order?.upiRefNumber && (
+                  <div className="text-[11px] font-mono font-black text-emerald-950">
+                    UTR / Ref: {order.upiRefNumber}
+                  </div>
+                )}
+                <div className="text-[9px] font-mono text-emerald-700">
+                  Verification: {order?.verificationMethod?.toUpperCase() || 'CONFIRMED'} &middot; Status: SUCCESS
+                </div>
+              </div>
+            ) : activePaymentMethod === 'CASH' ? (
+              <div className="text-center py-2 px-2 bg-zinc-50 rounded-xl border border-zinc-300 space-y-0.5 my-1">
+                <div className="text-[10px] font-black text-zinc-900 uppercase tracking-wider flex items-center justify-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                  <span>Paid In Full • Cash Tender</span>
+                </div>
+                <div className="text-[9px] font-mono text-zinc-600">
+                  Cash collected at billing counter &middot; No balance due
+                </div>
+              </div>
+            ) : (activePaymentMethod === 'CREDIT' || activePaymentMethod === 'KHATA' || order?.status === 'unpaid') ? (
+              /* Reserve QR codes strictly for unpaid / Khata credit slips so customers can pay outstanding balance */
               shopSettings.upiId && (
-                <div className="text-center py-2 px-1 bg-[#faf8fb] rounded-xl border border-dashed border-[#d4d4d8] space-y-1.5">
-                  <div className="text-[10px] font-bold text-[#1c1b1d] uppercase tracking-wider flex items-center justify-center gap-1">
-                    <QrCode className="w-3 h-3 text-[#18181b]" />
-                    <span>Scan & Pay via UPI</span>
+                <div className="text-center py-2 px-1 bg-amber-50 rounded-xl border border-amber-300 space-y-1.5 my-1">
+                  <div className="text-[10px] font-black text-amber-900 uppercase tracking-wider flex items-center justify-center gap-1">
+                    <QrCode className="w-3.5 h-3.5 text-amber-800" />
+                    <span>Unpaid Khata Credit • Scan to Pay</span>
                   </div>
                   <div className="flex justify-center">
                     <img
@@ -285,30 +347,27 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                         )}&am=${activeTotal.toFixed(2)}&cu=INR`
                       )}`}
                       alt="UPI QR Code"
-                      className="w-24 h-24 border border-[#d4d4d8] rounded-lg p-0.5 bg-white"
+                      className="w-24 h-24 border border-amber-300 rounded-lg p-0.5 bg-white shadow-2xs"
                       loading="lazy"
                     />
                   </div>
-                  <div className="text-[9px] font-mono text-[#77767b] leading-tight">
+                  <div className="text-[9px] font-mono text-amber-900 leading-tight">
+                    <span className="font-bold">Balance Due: {shopSettings.currencySymbol}{activeTotal.toFixed(2)}</span>
+                    <br />
                     <span>UPI ID: {shopSettings.upiId}</span>
                     <br />
-                    <span className="text-[8px] text-[#99989d]">GPay · PhonePe · Paytm · BHIM</span>
+                    <span className="text-[8px] text-amber-700">Scan with GPay, PhonePe, Paytm, or BHIM to clear balance</span>
                   </div>
                 </div>
-              )}
-
-            {/* US Tip & Signature Guide */}
-            {(shopSettings.currencySymbol === '$' || shopSettings.marketRegion === 'US') && (
-              <div className="text-[10px] text-[#47464b] border-b border-dashed border-[#77767b] pb-2 space-y-1">
-                <div className="font-bold text-[9px] text-[#77767b] uppercase">Suggested Gratuity:</div>
-                <div className="flex justify-between text-[10px] font-mono">
-                  <span>15%: ${(activeSubtotal * 0.15).toFixed(2)}</span>
-                  <span>18%: ${(activeSubtotal * 0.18).toFixed(2)}</span>
-                  <span>20%: ${(activeSubtotal * 0.2).toFixed(2)}</span>
+              )
+            ) : (
+              <div className="text-center py-2 px-2 bg-zinc-50 rounded-xl border border-zinc-300 space-y-0.5 my-1">
+                <div className="text-[10px] font-black text-zinc-900 uppercase tracking-wider flex items-center justify-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                  <span>Paid In Full • {activePaymentMethod}</span>
                 </div>
-                <div className="pt-2 flex justify-between text-[11px] font-mono">
-                  <span>Tip: ____________</span>
-                  <span>Total: ____________</span>
+                <div className="text-[9px] font-mono text-zinc-600">
+                  Transaction Authorized &middot; No balance due
                 </div>
               </div>
             )}
@@ -327,19 +386,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
         {/* Action Buttons Footer */}
         <div className="p-3 bg-[#f6f2f5] border-t border-[#d4d4d8] flex items-center gap-2 shrink-0">
-          {onEditOrder && (
-            <button
-              onClick={() => {
-                onClose();
-                onEditOrder();
-              }}
-              className="flex-1 py-2.5 rounded-xl bg-white hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>EDIT</span>
-            </button>
-          )}
-
           <button
             onClick={handleShareWhatsApp}
             className="flex-1 py-2.5 rounded-xl bg-white hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"

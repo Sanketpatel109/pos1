@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Check, Delete, ShieldCheck, UserCheck, KeyRound, AlertCircle } from 'lucide-react';
+import { X, Check, Delete, ShieldCheck, UserCheck, KeyRound, AlertCircle } from '../icons/faIcons';
 import { StaffMember } from '../types';
 import { posSound } from '../utils/sound';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
@@ -135,25 +135,25 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/40 backdrop-blur-xs animate-in fade-in duration-150">
       <div
         className="w-full max-w-md bg-white rounded-3xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-zinc-900 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-white border-b border-zinc-100 text-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-xs">
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white leading-tight">Switch Cashier Shift</h2>
-              <p className="text-xs text-zinc-400 font-medium">1-Second Counter Switch with 4-Digit PIN</p>
+              <h2 className="text-base font-bold text-zinc-900 leading-tight">Switch Cashier Shift</h2>
+              <p className="text-xs text-zinc-500 font-normal">1-Second Counter Switch with 4-Digit PIN</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -177,7 +177,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
                     onClick={() => handleSelectStaff(staff)}
                     className={`p-2.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-zinc-900 border-zinc-900 text-white shadow-md scale-[1.02]'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs scale-[1.02]'
                         : 'bg-zinc-50 border-zinc-200 text-zinc-800 hover:bg-zinc-100'
                     }`}
                   >
@@ -189,7 +189,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
                           <span
                             className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono uppercase ${
                               isSelected
-                                ? 'bg-zinc-800 text-emerald-300'
+                                ? 'bg-white/20 text-white'
                                 : `${meta.badgeBg} ${meta.badgeText} border ${meta.badgeBorder}`
                             }`}
                           >
@@ -204,7 +204,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
                     <span className="text-xs font-black truncate">{staff.name}</span>
                     <span
                       className={`text-[10px] font-mono mt-0.5 ${
-                        isSelected ? 'text-zinc-400' : 'text-zinc-500'
+                        isSelected ? 'text-blue-100' : 'text-zinc-500'
                       }`}
                     >
                       {isCurrentActive ? 'Active Now' : 'Tap to Switch'}
@@ -253,9 +253,9 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
               </div>
             )}
 
-            {/* Demo PIN quick hint so testing is instant */}
-            <p className="text-[11px] text-zinc-500 font-mono">
-              Demo PIN for {selectedStaff.name}: <span className="font-bold text-zinc-900 bg-zinc-200 px-1.5 py-0.5 rounded">{selectedStaff.pin}</span>
+            {/* Security note */}
+            <p className="text-[11px] text-zinc-400 font-medium">
+              Authorized operators enter 4-digit terminal security PIN
             </p>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, Plus, Scan, Barcode } from 'lucide-react';
+import { Search, X, Plus, Scan, Barcode } from '../icons/faIcons';
 import { CatalogItem } from '../types';
 
 interface SearchModalProps {

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, X, Tag } from 'lucide-react';
+import { Plus, X, Tag } from '../icons/faIcons';
 import { BillItem } from '../types';
+import { GST_SLABS, calculateItemTaxSnapshot } from '../constants/taxRates';
 
-interface CustomItemModalProps {
+export interface CustomItemModalProps {
   isOpen: boolean;
   currencySymbol: string;
   onClose: () => void;
@@ -18,27 +19,45 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('1');
+  const [gstRate, setGstRate] = useState<string>('0');
+  const [customGstRate, setCustomGstRate] = useState<string>('');
 
   if (!isOpen) return null;
+
+  const isCustom = gstRate === 'custom';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = parseFloat(price);
     const qtyNum = parseInt(quantity, 10);
+    const effectiveGstRate = isCustom
+      ? parseFloat(customGstRate) || 0
+      : parseFloat(gstRate) || 0;
 
     if (!name.trim() || isNaN(priceNum) || priceNum <= 0) return;
+
+    const validQty = isNaN(qtyNum) || qtyNum <= 0 ? 1 : qtyNum;
+    const taxSnapshot = calculateItemTaxSnapshot(priceNum, validQty, effectiveGstRate);
 
     onAddCustomItem({
       id: `custom-${Date.now()}`,
       name: name.trim(),
       unitPrice: priceNum,
-      quantity: isNaN(qtyNum) || qtyNum <= 0 ? 1 : qtyNum,
+      quantity: validQty,
+      gstRate: taxSnapshot.gstRate,
+      taxableAmount: taxSnapshot.taxableAmount,
+      cgst: taxSnapshot.cgst,
+      sgst: taxSnapshot.sgst,
+      totalTax: taxSnapshot.totalTax,
+      itemTotal: taxSnapshot.itemTotal,
     });
 
     onClose();
     setName('');
     setPrice('');
     setQuantity('1');
+    setGstRate('0');
+    setCustomGstRate('');
   };
 
   return (
@@ -100,6 +119,41 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
             </div>
           </div>
 
+          <div>
+            <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+              GST Slab (%) *
+            </label>
+            <select
+              value={gstRate}
+              onChange={(e) => setGstRate(e.target.value)}
+              required
+              className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1c1b1d] focus:outline-hidden"
+            >
+              {GST_SLABS.map((slab) => (
+                <option key={slab.label} value={slab.isCustom ? 'custom' : String(slab.rate)}>
+                  {slab.label}
+                </option>
+              ))}
+            </select>
+            {isCustom && (
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder="Enter custom GST % (e.g. 7.5)"
+                  value={customGstRate}
+                  onChange={(e) => setCustomGstRate(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
+                />
+                <span className="text-xs font-bold text-[#77767b] shrink-0">%</span>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-2">
             <button
               type="button"
@@ -120,3 +174,6 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
     </div>
   );
 };
+
+export const AddCustomItemModal = CustomItemModal;
+export default CustomItemModal;

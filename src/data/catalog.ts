@@ -6,6 +6,7 @@ import {
   CashEntry,
   Order,
   ShopSettings,
+  DEFAULT_STORE_PERMISSIONS,
 } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
@@ -240,13 +241,6 @@ export const SAMPLE_STAFF: StaffMember[] = [
     pin: '1234',
     active: true,
   },
-  {
-    id: 'staff-worker',
-    name: 'Vikram (Store Worker)',
-    role: 'WORKER',
-    pin: '2222',
-    active: true,
-  },
 ];
 
 export const SAMPLE_CASH_ENTRIES: CashEntry[] = [
@@ -283,35 +277,42 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   address: 'Commercial Hub, Terminal Bay #4',
   phone: '+91 99999 00000',
   email: 'store@monopos.billing',
+  terminalPrefix: 'A',
   gstin: '24AAACC1206D1ZH',
   upiId: 'monopos.merchant@okhdfcbank',
+  upiPayeeName: 'MonoPOS Express',
+  upiVerificationMode: 'manual',
   currencySymbol: '₹',
   taxRate: 5,
   taxLabel: 'GST (2.5% CGST + 2.5% SGST)',
   soundEnabled: true,
+  enableDailyToken: true,
   paperWidth: '58mm',
   printerPaperWidth: '58mm',
   connectedBluetoothDevice: 'MonoPOS Thermal-58',
   showBarcode: true,
   subscriptionExpiry: '31 Dec 2026',
+  permissions: DEFAULT_STORE_PERMISSIONS,
 };
 
 export const SAMPLE_ORDERS: Order[] = [
   {
     id: 'inv-042',
     orderNumber: 42,
+    tokenNumber: 42,
     createdAt: new Date().toISOString(),
     items: [
       { id: 'bi-1', name: 'French Fries', unitPrice: 50, quantity: 1 },
       { id: 'bi-2', name: 'Pav Bhaji', unitPrice: 70, quantity: 1 },
       { id: 'bi-3', name: 'Samosa', unitPrice: 15, quantity: 1 },
+      { id: 'bi-4', name: 'Cold Coffee', unitPrice: 45, quantity: 1 },
     ],
     status: 'completed',
-    subtotal: 135.00,
+    subtotal: 180.00,
     taxRate: 0,
     taxAmount: 0,
     discount: 0,
-    total: 135.00,
+    total: 180.00,
     paymentMethod: 'CASH',
     customerName: 'Walk-in Customer',
     staffName: 'Terminal 01',
@@ -320,6 +321,7 @@ export const SAMPLE_ORDERS: Order[] = [
   {
     id: 'inv-041',
     orderNumber: 41,
+    tokenNumber: 41,
     createdAt: '2025-07-08T10:41:55Z',
     items: [
       { id: 'bi-7', name: 'Cheesy 7 Pizza', unitPrice: 220, quantity: 2 },
@@ -341,6 +343,7 @@ export const SAMPLE_ORDERS: Order[] = [
   {
     id: 'inv-040',
     orderNumber: 40,
+    tokenNumber: 40,
     createdAt: '2025-07-08T09:15:00Z',
     items: [
       { id: 'bi-13', name: 'Margherita Pizza', unitPrice: 110, quantity: 1 },

@@ -3,7 +3,7 @@
   "entities": {
     "users": {
       "title": "User Accounts",
-      "description": "Store owner and operator Google accounts",
+      "description": "Store owner and operator accounts",
       "properties": {
         "id": { "type": "string" },
         "email": { "type": "string" },
@@ -15,37 +15,169 @@
     },
     "orders": {
       "title": "Orders and Invoices",
-      "description": "Sales transactions, invoices, and payment details",
+      "description": "Sales transactions, invoices, items, and payment details",
       "properties": {
         "id": { "type": "string" },
         "orderNumber": { "type": "number" },
+        "terminalPrefix": { "type": "string" },
+        "orderNumberFormatted": { "type": "string" },
         "total": { "type": "number" },
+        "subtotal": { "type": "number" },
+        "taxAmount": { "type": "number" },
         "paymentMethod": { "type": "string" },
         "status": { "type": "string" },
+        "customerName": { "type": "string" },
+        "staffName": { "type": "string" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "total"]
+      "required": ["id", "orderNumber", "total"]
+    },
+    "bills": {
+      "title": "Bills Snapshots",
+      "description": "Settled bills including item snapshots and tender breakdown",
+      "properties": {
+        "id": { "type": "string" },
+        "billNo": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "billNo", "total"]
     },
     "catalog": {
       "title": "Products and Catalog",
-      "description": "Store items, categories, pricing, and barcodes",
+      "description": "Store items, categories, pricing, stock levels, and barcodes",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "price": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "stock": { "type": "number" },
         "category": { "type": "string" },
-        "barcode": { "type": "string" }
+        "barcode": { "type": "string" },
+        "unit": { "type": "string" },
+        "gstRate": { "type": "number" }
       },
       "required": ["id", "name", "price"]
     },
+    "categories": {
+      "title": "Product Categories",
+      "description": "Catalog departments and category groupings",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "customers": {
+      "title": "Customers & Khata Ledger",
+      "description": "Customer profiles, credit balances, limits, and loyalty points",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "creditLimit": { "type": "number" },
+        "creditBalance": { "type": "number" },
+        "loyaltyPoints": { "type": "number" },
+        "totalOrders": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "cashEntries": {
+      "title": "Cash Drawer Ledger",
+      "description": "Cash IN/OUT entries, float adjustments, and shift balance logs",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["IN", "OUT"] },
+        "amount": { "type": "number" },
+        "reason": { "type": "string" },
+        "staffName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "amount"]
+    },
     "settings": {
       "title": "Store Settings",
-      "description": "Shop details, GST, tax rates, and print preferences",
+      "description": "Shop details, GSTIN, tax rates, print preferences, and store permissions",
       "properties": {
         "shopName": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
         "currencySymbol": { "type": "string" },
-        "gstin": { "type": "string" }
+        "gstin": { "type": "string" },
+        "taxRate": { "type": "number" },
+        "storeUPI": { "type": "string" },
+        "terminalPrefix": { "type": "string" }
       }
+    },
+    "staff": {
+      "title": "Staff & Operators",
+      "description": "Cashiers, managers, store owner profiles, and access PINs",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["CASHIER", "MANAGER", "OWNER"] },
+        "pin": { "type": "string" },
+        "phone": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "name", "role", "pin"]
+    },
+    "heldOrders": {
+      "title": "Held and Parked Bills",
+      "description": "Temporarily parked tickets awaiting customer resumption",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "number" },
+        "total": { "type": "number" },
+        "customerName": { "type": "string" },
+        "staffName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "orderNumber", "total"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile accounts"
+    },
+    "/catalog/{itemId}": {
+      "schema": "catalog",
+      "description": "Live store catalog items and inventory stock"
+    },
+    "/categories/{categoryId}": {
+      "schema": "categories",
+      "description": "Store department categories"
+    },
+    "/orders/{orderId}": {
+      "schema": "orders",
+      "description": "Sales orders and invoices history"
+    },
+    "/bills/{billId}": {
+      "schema": "bills",
+      "description": "Completed bill tender snapshots"
+    },
+    "/customers/{customerId}": {
+      "schema": "customers",
+      "description": "Khata accounts and customer records"
+    },
+    "/cashEntries/{entryId}": {
+      "schema": "cashEntries",
+      "description": "Cash drawer movement logs"
+    },
+    "/settings/{storeId}": {
+      "schema": "settings",
+      "description": "Store configuration and operational preferences"
+    },
+    "/staff/{staffId}": {
+      "schema": "staff",
+      "description": "Staff members, PINs, and permissions"
+    },
+    "/heldOrders/{orderId}": {
+      "schema": "heldOrders",
+      "description": "Parked bills on hold"
     }
   }
 }

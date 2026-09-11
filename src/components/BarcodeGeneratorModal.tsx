@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, Barcode as BarcodeIcon, Tag, Sliders, Check, Copy, Sparkles } from 'lucide-react';
+import { X, Printer, Barcode as BarcodeIcon, Tag, Sliders, Check, Copy, Sparkles } from '../icons/faIcons';
 import { CatalogItem } from '../types';
 
 interface BarcodeGeneratorModalProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, PauseCircle, CheckCircle, BarChart3, Settings, Play, Trash2, Printer, Volume2, VolumeX } from 'lucide-react';
+import { X, PauseCircle, CheckCircle, BarChart3, Settings, Play, Trash2, Printer, Volume2, VolumeX } from '../icons/faIcons';
 import { Order, ShopSettings } from '../types';
 
 interface OrdersDrawerProps {

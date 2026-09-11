@@ -1,5 +1,5 @@
 import React from 'react';
-import { HelpCircle, Play, X, CheckCircle, ArrowRight } from 'lucide-react';
+import { HelpCircle, Play, X, CheckCircle, ArrowRight } from '../icons/faIcons';
 
 interface TrainingVideosModalProps {
   isOpen: boolean;

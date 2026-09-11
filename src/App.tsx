@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   INITIAL_CATALOG,
   INITIAL_CATEGORIES,
@@ -21,11 +21,14 @@ import {
   PaymentMethod,
   SplitPaymentDetail,
   InwardStockEntry,
+  StorePermissions,
+  DEFAULT_STORE_PERMISSIONS,
 } from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ItemWiseBillTerminal } from './components/ItemWiseBillTerminal';
 import { QuickBillTerminal } from './components/QuickBillTerminal';
+import { getNextDailyToken } from './utils/token';
 import { ReportsScreen } from './components/ReportsScreen';
 import { CategoryProductManager } from './components/CategoryProductManager';
 import { CustomerManagementScreen } from './components/CustomerManagementScreen';
@@ -34,6 +37,7 @@ import { StaffManagementScreen } from './components/StaffManagementScreen';
 import { PrintSettingsModal } from './components/PrintSettingsModal';
 import { TrainingVideosModal } from './components/TrainingVideosModal';
 import { SaveBillModal } from './components/SaveBillModal';
+import { PaymentModal } from './components/checkout/PaymentModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { CustomItemModal } from './components/CustomItemModal';
 import { SearchModal } from './components/SearchModal';
@@ -41,23 +45,61 @@ import { BarcodeScannerModal, ScannerMode } from './components/BarcodeScannerMod
 import { PurchaseInwardModal } from './components/PurchaseInwardModal';
 import { BarcodeGeneratorModal } from './components/BarcodeGeneratorModal';
 import { PriceCheckModal } from './components/PriceCheckModal';
+import { QuickAddProductModal } from './components/QuickAddProductModal';
 import { ManagerPinModal } from './components/ManagerPinModal';
 import { RolePermissionsModal } from './components/RolePermissionsModal';
+import { HeldOrdersModal } from './components/HeldOrdersModal';
+import { ZReportModal } from './components/ZReportModal';
 import {
   canAccessScreen,
   canDeleteOrder,
+  canStaffSellKhata,
+  canStaffOverridePrice,
+  canStaffInwardStock,
+  canViewCostPrice,
   getRequiredRoleForScreen,
   normalizeRole,
   ROLE_DEFINITIONS,
 } from './utils/permissions';
 import { hardware } from './utils/hardware';
-import { Zap } from 'lucide-react';
+import { Zap, PauseCircle, CheckCircle2, Printer, X } from './icons/faIcons';
 import { posSound } from './utils/sound';
 import { auth, onAuthStateChanged, User } from './firebase';
-import { CloudSyncModal } from './components/CloudSyncModal';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { pushAllToCloud, pullAllFromCloud, pushSingleOrder } from './services/cloudSync';
+import {
+  testFirestoreConnection,
+  subscribeSyncState,
+  listenToLiveCatalog,
+  listenToLiveCategories,
+  listenToLiveOrders,
+  listenToLiveCustomers,
+  listenToLiveCashEntries,
+  listenToLiveSettings,
+  listenToLiveStaff,
+  listenToLiveHeldOrders,
+  liveSaveOrder,
+  liveDeleteOrder,
+  liveDeleteAllOrders,
+  liveSaveProduct,
+  liveDeleteProduct,
+  liveUpdateProductStock,
+  liveBatchDeductStock,
+  liveSaveCategory,
+  liveDeleteCategory,
+  liveSaveCustomer,
+  liveSettleCustomerCredit,
+  liveSaveCashEntry,
+  liveSaveSettings,
+  liveSaveStaff,
+  liveUpdateStaffPin,
+  liveSaveHeldOrder,
+  liveDeleteHeldOrder,
+  liveClearAllHeldOrders,
+} from './services/liveSync';
+import { useCart } from './context/CartContext';
+import { DirectThermalReceipt } from './components/DirectThermalReceipt';
 
 export default function App() {
   // Screen Routing
@@ -69,6 +111,8 @@ export default function App() {
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud'>('hardware');
+  const [settingsInitialSubView, setSettingsInitialSubView] = useState<'overview' | 'diagnostics'>('overview');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -80,7 +124,27 @@ export default function App() {
   // Settings & Staff State
   const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
     const saved = localStorage.getItem('monopos_industrial_settings');
-    return saved ? JSON.parse(saved) : DEFAULT_SHOP_SETTINGS;
+    if (!saved) return DEFAULT_SHOP_SETTINGS;
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        ...DEFAULT_SHOP_SETTINGS,
+        ...parsed,
+        enableDailyToken: parsed.enableDailyToken !== undefined ? parsed.enableDailyToken : true,
+        permissions: {
+          staff: {
+            ...DEFAULT_STORE_PERMISSIONS.staff,
+            ...(parsed.permissions?.staff || {}),
+          },
+          manager: {
+            ...DEFAULT_STORE_PERMISSIONS.manager,
+            ...(parsed.permissions?.manager || {}),
+          },
+        },
+      };
+    } catch {
+      return DEFAULT_SHOP_SETTINGS;
+    }
   });
   const [staffList, setStaffList] = useState<StaffMember[]>(() => {
     const saved = localStorage.getItem('monopos_staff_list');
@@ -94,7 +158,12 @@ export default function App() {
           merged.push(sample);
         }
       }
-      return merged;
+      return merged
+        .filter((s) => s.id !== 'staff-worker')
+        .map((s) => ({
+          ...s,
+          role: normalizeRole(s.role),
+        }));
     } catch {
       return SAMPLE_STAFF;
     }
@@ -114,36 +183,58 @@ export default function App() {
   // Cash Drawer Entries
   const [cashEntries, setCashEntries] = useState<CashEntry[]>(SAMPLE_CASH_ENTRIES);
 
-  // Active Billing State - Start with 3 default items matching the prompt screenshot
+  // Active Billing State - Shared via CartContext
   const [orderNumber, setOrderNumber] = useState<number>(42);
-  const [currentBillItems, setCurrentBillItems] = useState<BillItem[]>([
-    {
-      id: 'bi-1',
-      name: 'French Fries',
-      unitPrice: 50.0,
-      quantity: 1,
-    },
-    {
-      id: 'bi-2',
-      name: 'Pav Bhaji',
-      unitPrice: 70.0,
-      quantity: 1,
-    },
-    {
-      id: 'bi-3',
-      name: 'Samosa',
-      unitPrice: 15.0,
-      quantity: 1,
-    },
-  ]);
+  const {
+    currentBillItems,
+    addItem: cartAddItem,
+    removeItem: cartRemoveItem,
+    updateQty: cartUpdateQty,
+    updateItemRate: cartUpdateItemRate,
+    clearCart: cartClearCart,
+    setCartItems: setCurrentBillItems,
+  } = useCart();
 
   // Orders and Invoices History
   const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
-  const [heldOrders, setHeldOrders] = useState<Order[]>([]);
+  const [heldOrders, setHeldOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('monopos_held_orders');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isHeldOrdersModalOpen, setIsHeldOrdersModalOpen] = useState<boolean>(false);
+  const [heldToastNotification, setHeldToastNotification] = useState<{
+    id: number;
+    orderNumber: number;
+    itemsCount: number;
+    total: number;
+    action: 'parked' | 'resumed';
+  } | null>(null);
+
+  // Sync held orders to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('monopos_held_orders', JSON.stringify(heldOrders));
+    } catch {}
+  }, [heldOrders]);
+
+  // Auto-dismiss held order toast notification
+  useEffect(() => {
+    if (!heldToastNotification) return;
+    const timer = setTimeout(() => {
+      setHeldToastNotification(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [heldToastNotification]);
 
   // Modals
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
   const [isSaveBillModalOpen, setIsSaveBillModalOpen] = useState<boolean>(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
+  const [isReceiptDuplicate, setIsReceiptDuplicate] = useState<boolean>(false);
   const [isCustomProductModalOpen, setIsCustomProductModalOpen] = useState<boolean>(false);
   const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState<boolean>(false);
   const [isTrainingVideosOpen, setIsTrainingVideosOpen] = useState<boolean>(false);
@@ -155,6 +246,7 @@ export default function App() {
   const [isBarcodeGeneratorOpen, setIsBarcodeGeneratorOpen] = useState<boolean>(false);
   const [barcodeSelectedProductId, setBarcodeSelectedProductId] = useState<string | undefined>(undefined);
   const [isPriceCheckOpen, setIsPriceCheckOpen] = useState<boolean>(false);
+  const [quickAddBarcode, setQuickAddBarcode] = useState<string | null>(null);
   const [laserScanNotification, setLaserScanNotification] = useState<{
     productName: string;
     price: number;
@@ -162,6 +254,9 @@ export default function App() {
     cartQty: number;
   } | null>(null);
   const [activeReceiptOrder, setActiveReceiptOrder] = useState<Order | null>(null);
+  const lastSettledOrderRef = useRef<Order | null>(null);
+  const [directPrintOrder, setDirectPrintOrder] = useState<Order | null>(null);
+  const [isZReportOpen, setIsZReportOpen] = useState<boolean>(false);
 
   // RBAC Manager Override & Matrix Modals
   const [isManagerPinModalOpen, setIsManagerPinModalOpen] = useState<boolean>(false);
@@ -169,6 +264,7 @@ export default function App() {
     title: string;
     description: string;
     requiredRoleLabel?: string;
+    requiredRole?: 'MANAGER' | 'OWNER';
     onAuthorize: (authorizingStaff: StaffMember) => void;
   } | null>(null);
   const [isRolePermissionsOpen, setIsRolePermissionsOpen] = useState<boolean>(false);
@@ -188,6 +284,68 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('monopos_active_staff_id', activeStaffId);
   }, [activeStaffId]);
+
+  // Real-time live Firestore synchronization across all 9 database points / collections
+  useEffect(() => {
+    testFirestoreConnection();
+
+    const unsubSyncState = subscribeSyncState((state) => {
+      setIsSyncing(state.isSyncing);
+      if (state.lastSyncAt) setLastSyncedAt(state.lastSyncAt);
+    });
+
+    const unsubCatalog = listenToLiveCatalog((items) => {
+      if (items.length > 0) setCatalog(items);
+    });
+
+    const unsubCategories = listenToLiveCategories((cats) => {
+      if (cats.length > 0) setCategories(cats);
+    });
+
+    const unsubOrders = listenToLiveOrders((remoteOrders) => {
+      if (remoteOrders.length > 0) {
+        setOrders(remoteOrders);
+        const maxOrderNum = Math.max(...remoteOrders.map((o) => o.orderNumber || 0), 0);
+        if (maxOrderNum > 0) {
+          setOrderNumber((prev) => Math.max(prev, maxOrderNum + 1));
+        }
+      }
+    });
+
+    const unsubCustomers = listenToLiveCustomers((custs) => {
+      if (custs.length > 0) setCustomers(custs);
+    });
+
+    const unsubCash = listenToLiveCashEntries((entries) => {
+      if (entries.length > 0) setCashEntries(entries);
+    });
+
+    const unsubSettings = listenToLiveSettings((remoteSettings) => {
+      if (remoteSettings) {
+        setShopSettings((prev) => ({ ...prev, ...remoteSettings }));
+      }
+    });
+
+    const unsubStaff = listenToLiveStaff((staff) => {
+      if (staff.length > 0) setStaffList(staff);
+    });
+
+    const unsubHeld = listenToLiveHeldOrders((held) => {
+      setHeldOrders(held);
+    });
+
+    return () => {
+      unsubSyncState();
+      unsubCatalog();
+      unsubCategories();
+      unsubOrders();
+      unsubCustomers();
+      unsubCash();
+      unsubSettings();
+      unsubStaff();
+      unsubHeld();
+    };
+  }, []);
 
   // Audio helper
   const playSfx = (action: 'tap' | 'add' | 'remove' | 'success') => {
@@ -225,24 +383,7 @@ export default function App() {
   // ITEM-WISE BILLING HANDLERS
   const handleAddItem = (item: CatalogItem) => {
     playSfx('add');
-    setCurrentBillItems((prev) => {
-      const existing = prev.find((i) => i.name === item.name);
-      if (existing) {
-        return prev.map((i) =>
-          i.name === item.name ? { ...i, quantity: i.quantity + 1 } : i
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: `bill-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          itemId: item.id,
-          name: item.name,
-          unitPrice: item.price,
-          quantity: 1,
-        },
-      ];
-    });
+    cartAddItem(item);
   };
 
   // Hardware Laser Barcode Scanner Gun Driver (USB / Bluetooth HID Keyboard Wedge)
@@ -273,7 +414,7 @@ export default function App() {
         });
       } else {
         posSound.playBuzzer();
-        setIsPriceCheckOpen(true);
+        setQuickAddBarcode(scannedCode);
       }
     });
 
@@ -294,60 +435,196 @@ export default function App() {
     setCatalog((prev) =>
       prev.map((p) => (p.id === productId ? { ...p, stock: newStock } : p))
     );
+    liveUpdateProductStock(productId, newStock).catch((err) =>
+      console.warn('Live stock update deferred:', err)
+    );
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
     if (delta > 0) playSfx('add');
     else playSfx('remove');
+    cartUpdateQty(id, delta);
+  };
 
-    setCurrentBillItems((prev) =>
-      prev
-        .map((item) => {
-          if (item.id === id) {
-            const newQty = item.quantity + delta;
-            return newQty > 0 ? { ...item, quantity: newQty } : null;
-          }
-          return item;
-        })
-        .filter(Boolean) as BillItem[]
-    );
+  const handleUpdateItemRate = (id: string, newRate: number) => {
+    playSfx('add');
+    cartUpdateItemRate(id, newRate);
   };
 
   const handleRemoveItem = (id: string) => {
     playSfx('remove');
-    setCurrentBillItems((prev) => prev.filter((i) => i.id !== id));
+    cartRemoveItem(id);
   };
 
   const handleClearBill = () => {
     playSfx('remove');
-    setCurrentBillItems([]);
+    cartClearCart();
   };
 
-  const handleHoldBill = () => {
-    if (currentBillItems.length === 0) return;
+  const handleHoldBill = (customItems?: BillItem[]) => {
+    const itemsToHold = customItems && customItems.length > 0 ? customItems : currentBillItems;
+    if (itemsToHold.length === 0) return;
     playSfx('tap');
+    const itemsSubtotal = itemsToHold.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0);
+    const itemsTax = (itemsSubtotal * shopSettings.taxRate) / 100;
+    const itemsTotal = itemsSubtotal + itemsTax;
     const held: Order = {
       id: `held-${Date.now()}`,
       orderNumber,
       createdAt: new Date().toISOString(),
-      items: [...currentBillItems],
-      status: 'completed',
-      subtotal,
+      items: [...itemsToHold],
+      status: 'held',
+      subtotal: itemsSubtotal,
       taxRate: shopSettings.taxRate,
-      taxAmount,
+      taxAmount: itemsTax,
       discount: 0,
-      total: grandTotal,
-      paymentMethod: 'CASH',
+      total: itemsTotal,
+      paymentMethod: 'NONE',
       staffName: activeStaff.name,
     };
+    const heldOrderNum = orderNumber;
+    const itemsCount = itemsToHold.reduce((acc, i) => acc + i.quantity, 0);
+    const amount = itemsTotal;
+
     setHeldOrders((prev) => [held, ...prev]);
-    setCurrentBillItems([]);
+    liveSaveHeldOrder(held).catch((err) => console.warn('Live held order save:', err));
+    cartClearCart();
     setOrderNumber((prev) => prev + 1);
+
+    setHeldToastNotification({
+      id: Date.now(),
+      orderNumber: heldOrderNum,
+      itemsCount,
+      total: amount,
+      action: 'parked',
+    });
+  };
+
+  const handleResumeHeldOrder = (
+    order: Order,
+    strategy: 'replace' | 'merge' | 'swap' = 'replace'
+  ) => {
+    playSfx('success');
+    if (strategy === 'swap' && currentBillItems.length > 0) {
+      // Park current items
+      const swappedHeld: Order = {
+        id: `held-${Date.now()}`,
+        orderNumber,
+        createdAt: new Date().toISOString(),
+        items: [...currentBillItems],
+        status: 'held',
+        subtotal,
+        taxRate: shopSettings.taxRate,
+        taxAmount,
+        discount: 0,
+        total: grandTotal,
+        paymentMethod: 'NONE',
+        staffName: activeStaff.name,
+      };
+      setHeldOrders((prev) => [swappedHeld, ...prev.filter((o) => o.id !== order.id)]);
+      liveSaveHeldOrder(swappedHeld).catch((err) => console.warn('Live swap save:', err));
+      liveDeleteHeldOrder(order.id).catch((err) => console.warn('Live delete resumed:', err));
+      setCurrentBillItems([...order.items]);
+      setOrderNumber(order.orderNumber);
+    } else if (strategy === 'merge') {
+      // Merge items into current cart
+      setCurrentBillItems((prev) => {
+        const merged = [...prev];
+        order.items.forEach((newItem) => {
+          const existing = merged.find(
+            (i) => (newItem.itemId && i.itemId === newItem.itemId) || i.name === newItem.name
+          );
+          if (existing) {
+            existing.quantity += newItem.quantity;
+          } else {
+            merged.push({
+              ...newItem,
+              id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            });
+          }
+        });
+        return merged;
+      });
+      setHeldOrders((prev) => prev.filter((o) => o.id !== order.id));
+      liveDeleteHeldOrder(order.id).catch((err) => console.warn('Live delete resumed:', err));
+    } else {
+      // Replace
+      setCurrentBillItems([...order.items]);
+      setOrderNumber(order.orderNumber);
+      setHeldOrders((prev) => prev.filter((o) => o.id !== order.id));
+      liveDeleteHeldOrder(order.id).catch((err) => console.warn('Live delete resumed:', err));
+    }
+
+    setIsHeldOrdersModalOpen(false);
+
+    setHeldToastNotification({
+      id: Date.now(),
+      orderNumber: order.orderNumber,
+      itemsCount: order.items.reduce((sum, i) => sum + i.quantity, 0),
+      total: order.total,
+      action: 'resumed',
+    });
+  };
+
+  const handleDeleteHeldOrder = (orderId: string) => {
+    playSfx('remove');
+    setHeldOrders((prev) => prev.filter((o) => o.id !== orderId));
+    liveDeleteHeldOrder(orderId).catch((err) => console.warn('Live delete held order:', err));
+  };
+
+  const handleClearAllHeldOrders = () => {
+    if (window.confirm('Clear all parked tickets?')) {
+      playSfx('remove');
+      setHeldOrders([]);
+      liveClearAllHeldOrders().catch((err) => console.warn('Live clear held orders:', err));
+    }
   };
 
   const handleAddCustomProduct = (customItem: BillItem) => {
     playSfx('add');
-    setCurrentBillItems((prev) => [...prev, customItem]);
+    cartAddItem(customItem);
+  };
+
+  // Send formatted bill via WhatsApp (Standard for Indian retail)
+  const handleShareOrderWhatsApp = (order: Order) => {
+    const formattedDate = new Date(order.createdAt).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    let text = `*${shopSettings.shopName}*\n`;
+    text += `Invoice #${order.orderNumber} | ${formattedDate}\n`;
+    text += `Customer: ${order.customerName}\n`;
+    text += `--------------------------------\n`;
+    order.items.forEach((i) => {
+      text += `${i.name} x ${i.quantity} = ${shopSettings.currencySymbol}${(i.unitPrice * i.quantity).toFixed(2)}\n`;
+    });
+    text += `--------------------------------\n`;
+    text += `Total Paid: *${shopSettings.currencySymbol}${order.total.toFixed(2)}* (${order.paymentMethod})\n`;
+    if (order.paymentMethod === 'ONLINE' && order.upiRefNumber) {
+      text += `UPI Ref / UTR: *${order.upiRefNumber}*\n`;
+      text += `Payment Verification: *VERIFIED (${order.verificationMethod?.toUpperCase() || 'CONFIRMED'})*\n`;
+    }
+    if (order.paymentMethod === 'CASH' && order.tenderedAmount !== undefined && order.tenderedAmount > 0) {
+      text += `Cash Tendered: ${shopSettings.currencySymbol}${order.tenderedAmount.toFixed(2)}\n`;
+      const chg =
+        order.changeDue !== undefined
+          ? order.changeDue
+          : Math.max(0, order.tenderedAmount - order.total);
+      if (chg > 0) {
+        text += `Change Returned: ${shopSettings.currencySymbol}${chg.toFixed(2)}\n`;
+      }
+    }
+    text += `\nThank you for shopping with us!`;
+
+    const encoded = encodeURIComponent(text);
+    const cleanPhone = order.customerPhone?.replace(/\D/g, '') || '';
+    const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    if (phoneWithCountry) {
+      window.open(`https://wa.me/${phoneWithCountry}?text=${encoded}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+    }
   };
 
   // SAVE BILL & COMPLETE INVOICE
@@ -366,16 +643,36 @@ export default function App() {
     changeDue?: number;
     note?: string;
     orderDate: string;
+    printReceipt?: boolean;
+    shareWhatsApp?: boolean;
+    upiRefNumber?: string;
+    isVerified?: boolean;
+    verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
+    items?: BillItem[];
+    fromPaymentModal?: boolean;
+    tokenNumber?: number;
+    tableOrToken?: string;
   }) => {
     playSfx('success');
+
+    const orderItems = (data.items && data.items.length > 0) ? [...data.items] : [...currentBillItems];
+    const orderSubtotal = orderItems.reduce((acc, it) => acc + it.unitPrice * it.quantity, 0);
+
+    const tokenNum = shopSettings.enableDailyToken
+      ? (data.tokenNumber || getNextDailyToken())
+      : undefined;
 
     const newOrder: Order = {
       id: `order-${orderNumber}-${Date.now()}`,
       orderNumber,
+      terminalPrefix: shopSettings.terminalPrefix || 'A',
+      orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
+      tokenNumber: tokenNum,
+      tableOrToken: data.tableOrToken,
       createdAt: data.orderDate,
-      items: [...currentBillItems],
+      items: orderItems,
       status: 'completed',
-      subtotal,
+      subtotal: orderSubtotal,
       taxRate: data.includeGst ? shopSettings.taxRate : 0,
       taxAmount: data.taxAmount,
       discount: data.discountAmount,
@@ -388,6 +685,9 @@ export default function App() {
       customerPhone: data.customerPhone || '',
       staffName: activeStaff.name,
       notes: data.note,
+      upiRefNumber: data.upiRefNumber,
+      isVerified: data.isVerified,
+      verificationMethod: data.verificationMethod,
     };
 
     // If payment was CREDIT or SPLIT with credit, update customer khata balance
@@ -443,12 +743,12 @@ export default function App() {
     }
 
     // Auto-decrement inventory stock from catalog in real time
-    setCatalog((prevCatalog) => {
-      const stockDeductions = new Map<string, number>();
-      newOrder.items.forEach((item) => {
-        stockDeductions.set(item.name, (stockDeductions.get(item.name) || 0) + item.quantity);
-      });
+    const stockDeductions = new Map<string, number>();
+    newOrder.items.forEach((item) => {
+      stockDeductions.set(item.name, (stockDeductions.get(item.name) || 0) + item.quantity);
+    });
 
+    setCatalog((prevCatalog) => {
       return prevCatalog.map((prod) => {
         const deductQty = stockDeductions.get(prod.name);
         if (deductQty !== undefined && prod.stock !== undefined) {
@@ -463,41 +763,176 @@ export default function App() {
 
     setOrders((prev) => [newOrder, ...prev]);
     setActiveReceiptOrder(newOrder);
-    setIsReceiptModalOpen(true);
-    setCurrentBillItems([]);
-    setOrderNumber((prev) => prev + 1);
+    lastSettledOrderRef.current = newOrder;
+    setIsReceiptDuplicate(false);
+
+    // Live real-time bidirectional Firestore synchronization
+    liveSaveOrder(newOrder).catch((err) => console.warn('Live order save failed:', err));
+    liveBatchDeductStock(stockDeductions, catalog).catch((err) => console.warn('Live stock deduction failed:', err));
+
+    if (data.paymentMode === 'CASH') {
+      const cashSaleEntry: CashEntry = {
+        id: `cash-sale-${newOrder.id}`,
+        type: 'IN',
+        amount: newOrder.total,
+        reason: `Bill #${orderNumber} Sale (${data.customerName || 'Walk-in'})`,
+        staffName: activeStaff.name,
+        createdAt: data.orderDate,
+      };
+      liveSaveCashEntry(cashSaleEntry).catch((err) => console.warn('Live cash entry save:', err));
+    } else if (data.paymentMode === 'SPLIT' && data.splitDetails?.cash && data.splitDetails.cash > 0) {
+      const cashSplitEntry: CashEntry = {
+        id: `cash-split-${newOrder.id}`,
+        type: 'IN',
+        amount: data.splitDetails.cash,
+        reason: `Bill #${orderNumber} Split (${data.customerName || 'Walk-in'})`,
+        staffName: activeStaff.name,
+        createdAt: data.orderDate,
+      };
+      liveSaveCashEntry(cashSplitEntry).catch((err) => console.warn('Live cash split save:', err));
+    }
 
     // Auto-backup to Firebase if signed in
     if (currentUser) {
       pushSingleOrder(newOrder);
     }
+
+    // If completed from SaveBillModal directly (not from PaymentModal interactive success screen)
+    if (!data.fromPaymentModal) {
+      setCurrentBillItems([]);
+      setOrderNumber((prev) => prev + 1);
+      setIsSaveBillModalOpen(false);
+      setIsReceiptModalOpen(false);
+
+      if (data.shareWhatsApp) {
+        handleShareOrderWhatsApp(newOrder);
+      } else if (data.printReceipt) {
+        setDirectPrintOrder(newOrder);
+        setTimeout(() => {
+          window.print();
+          setTimeout(() => setDirectPrintOrder(null), 1000);
+        }, 50);
+      }
+    }
+  };
+
+  // Indian Payment Engine Handler (Phase 2)
+  const handlePaymentModalComplete = (details: {
+    billNo: number;
+    paymentMethod: 'CASH' | 'UPI' | 'KHATA';
+    tenderedAmount: number;
+    changeDue: number;
+    items: BillItem[];
+    subtotal: number;
+    taxAmount: number;
+    total: number;
+    customerId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    upiRefNumber?: string;
+    isVerified?: boolean;
+    verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
+  }) => {
+    // Map Phase 2 method to PaymentMethod enum
+    let mappedMode: PaymentMethod = 'CASH';
+    if (details.paymentMethod === 'UPI') mappedMode = 'ONLINE';
+    else if (details.paymentMethod === 'KHATA') mappedMode = 'CREDIT';
+
+    handleSaveAndCompleteOrder({
+      customerName: details.customerName || (details.paymentMethod === 'KHATA' ? 'Khata Customer' : 'Walk-in Customer'),
+      customerPhone: details.customerPhone || '',
+      customerId: details.customerId,
+      discountPercent: 0,
+      discountAmount: 0,
+      includeGst: details.taxAmount > 0,
+      taxAmount: details.taxAmount,
+      grandTotal: details.total,
+      paymentMode: mappedMode,
+      orderDate: new Date().toISOString(),
+      tenderedAmount: details.tenderedAmount,
+      changeDue: details.changeDue,
+      upiRefNumber: details.upiRefNumber,
+      isVerified: details.isVerified,
+      verificationMethod: details.verificationMethod,
+      printReceipt: false,
+      shareWhatsApp: false,
+      items: details.items,
+      fromPaymentModal: true,
+      tokenNumber: shopSettings.enableDailyToken ? getNextDailyToken() : undefined,
+    });
+  };
+
+  // Checkout completion flow: "Print & Next Customer"
+  const handlePrintAndNextCustomer = () => {
+    posSound?.playTap?.();
+    const orderToPrint = lastSettledOrderRef.current || activeReceiptOrder;
+
+    // 1. Close all modals immediately - DO NOT open receipt preview screen
+    setIsPaymentModalOpen(false);
+    setIsSaveBillModalOpen(false);
+    setIsReceiptModalOpen(false);
+
+    // 2. Clear cart completely
+    setCurrentBillItems([]);
+
+    // 3. Increment bill number for next customer (e.g. #44 to #45)
+    setOrderNumber((prev) => prev + 1);
+
+    // 4. Trigger printer directly in the background using the bill that was just paid
+    if (orderToPrint) {
+      setDirectPrintOrder(orderToPrint);
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          setDirectPrintOrder(null);
+        }, 1000);
+      }, 50);
+    }
+  };
+
+  // Checkout completion flow: "Done (No Print)"
+  const handleDoneNoPrint = () => {
+    posSound?.playTap?.();
+
+    // 1. Close all modals immediately - DO NOT open any receipt screen
+    setIsPaymentModalOpen(false);
+    setIsSaveBillModalOpen(false);
+    setIsReceiptModalOpen(false);
+
+    // 2. Clear the cart completely
+    setCurrentBillItems([]);
+
+    // 3. Increment the bill number for the next customer (e.g. #44 to #45)
+    setOrderNumber((prev) => prev + 1);
   };
 
   // INWARD STOCK RECEIVING
   const handleInwardStock = (entry: InwardStockEntry) => {
     playSfx('success');
-    setCatalog((prevCatalog) => {
-      const itemUpdates = new Map<string, { qty: number; unitCost: number }>();
-      entry.items.forEach((it) => {
-        itemUpdates.set(it.productId, { qty: it.quantity, unitCost: it.unitCost });
-      });
+    const itemUpdates = new Map<string, { qty: number; unitCost: number }>();
+    entry.items.forEach((it) => {
+      itemUpdates.set(it.productId, { qty: it.quantity, unitCost: it.unitCost });
+    });
 
+    setCatalog((prevCatalog) => {
       return prevCatalog.map((prod) => {
         const incoming = itemUpdates.get(prod.id);
         if (incoming) {
           const currentStock = prod.stock ?? 0;
-          return {
+          const updatedProd = {
             ...prod,
             stock: currentStock + incoming.qty,
             costPrice: incoming.unitCost > 0 ? incoming.unitCost : prod.costPrice,
           };
+          liveSaveProduct(updatedProd).catch((err) => console.warn('Live inward stock sync:', err));
+          return updatedProd;
         }
         return prod;
       });
     });
   };
 
-  // CLOUD SYNC HANDLERS
+  // CLOUD SYNC HANDLERS (Manual Backup & Full Restore for all 9 collections)
   const handleManualCloudSync = async () => {
     setIsSyncing(true);
     try {
@@ -505,9 +940,12 @@ export default function App() {
         {
           orders,
           catalog,
+          categories,
           customers,
           cashEntries,
           shopSettings,
+          staff: staffList,
+          heldOrders,
         },
         currentUser?.email || undefined
       );
@@ -523,9 +961,12 @@ export default function App() {
       const pulled = await pullAllFromCloud();
       if (pulled.orders && pulled.orders.length > 0) setOrders(pulled.orders);
       if (pulled.catalog && pulled.catalog.length > 0) setCatalog(pulled.catalog);
+      if (pulled.categories && pulled.categories.length > 0) setCategories(pulled.categories);
       if (pulled.customers && pulled.customers.length > 0) setCustomers(pulled.customers);
       if (pulled.cashEntries && pulled.cashEntries.length > 0) setCashEntries(pulled.cashEntries);
       if (pulled.shopSettings) setShopSettings(pulled.shopSettings);
+      if (pulled.staff && pulled.staff.length > 0) setStaffList(pulled.staff);
+      if (pulled.heldOrders) setHeldOrders(pulled.heldOrders);
       setLastSyncedAt(new Date());
     } finally {
       setIsSyncing(false);
@@ -535,13 +976,34 @@ export default function App() {
   // QUICK BILL HANDLERS
   const handleSaveQuickBill = (items: BillItem[]) => {
     setCurrentBillItems(items);
-    setIsSaveBillModalOpen(true);
+    setIsPaymentModalOpen(true);
   };
 
   const handlePrintQuickBill = (items: BillItem[]) => {
-    setCurrentBillItems(items);
-    setActiveReceiptOrder(null);
-    setIsReceiptModalOpen(true);
+    if (items.length === 0) return;
+    const qSubtotal = items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
+    const qTax = (qSubtotal * shopSettings.taxRate) / 100;
+    const draftOrder: Order = {
+      id: `quick-${Date.now()}`,
+      orderNumber,
+      terminalPrefix: shopSettings.terminalPrefix || 'A',
+      orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
+      createdAt: new Date().toISOString(),
+      items: [...items],
+      status: 'active',
+      subtotal: qSubtotal,
+      taxRate: shopSettings.taxRate,
+      taxAmount: qTax,
+      discount: 0,
+      total: qSubtotal + qTax,
+      paymentMethod: 'NONE',
+      staffName: activeStaff.name,
+    };
+    setDirectPrintOrder(draftOrder);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setDirectPrintOrder(null), 1000);
+    }, 50);
   };
 
   // CATEGORY & PRODUCT MANAGEMENT
@@ -552,16 +1014,22 @@ export default function App() {
       name,
     };
     setCategories((prev) => [...prev, newCat]);
+    liveSaveCategory(newCat).catch((err) => console.warn('Live save category:', err));
   };
 
   const handleUpdateCategory = (id: string, name: string) => {
     playSfx('tap');
     setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+    const targetCat = categories.find((c) => c.id === id);
+    if (targetCat) {
+      liveSaveCategory({ ...targetCat, name }).catch((err) => console.warn('Live update category:', err));
+    }
   };
 
   const handleDeleteCategory = (id: string) => {
     playSfx('remove');
     setCategories((prev) => prev.filter((c) => c.id !== id));
+    liveDeleteCategory(id).catch((err) => console.warn('Live delete category:', err));
   };
 
   const handleAddProduct = (item: Omit<CatalogItem, 'id'>) => {
@@ -571,16 +1039,47 @@ export default function App() {
       id: `item-${Date.now()}`,
     };
     setCatalog((prev) => [newProd, ...prev]);
+    liveSaveProduct(newProd).catch((err) => console.warn('Live save product:', err));
+  };
+
+  const handleQuickAddProduct = (productData: {
+    name: string;
+    barcode: string;
+    price: number;
+    category: string;
+    gstRate: number;
+    stock: number;
+    unit: string;
+  }) => {
+    playSfx('add');
+    const newProd: CatalogItem = {
+      id: `item-${Date.now()}`,
+      name: productData.name,
+      barcode: productData.barcode,
+      price: productData.price,
+      category: productData.category,
+      gstRate: productData.gstRate,
+      stock: productData.stock,
+      unit: productData.unit,
+      lowStockThreshold: 5,
+    };
+    setCatalog((prev) => [newProd, ...prev]);
+    liveSaveProduct(newProd).catch((err) => console.warn('Live save quick product:', err));
+    handleAddItem(newProd);
+    posSound.playBeep();
+    setQuickAddBarcode(null);
   };
 
   const handleUpdateProduct = (item: CatalogItem) => {
     playSfx('tap');
     setCatalog((prev) => prev.map((p) => (p.id === item.id ? item : p)));
+    liveSaveProduct(item).catch((err) => console.warn('Live update product:', err));
   };
 
   const handleDeleteProduct = (id: string) => {
     playSfx('remove');
     setCatalog((prev) => prev.filter((p) => p.id !== id));
+    liveDeleteProduct(id).catch((err) => console.warn('Live delete product:', err));
   };
 
   const handleImportCatalogFromXls = (
@@ -603,28 +1102,76 @@ export default function App() {
       return [...prev, ...added];
     });
 
-    const formattedItems: CatalogItem[] = newItems.map((item, idx) => ({
-      id: `xls-item-${Date.now()}-${idx}`,
-      name: item.name,
-      category: item.category,
-      price: item.price,
-    }));
+    setCatalog((prev) => {
+      const catalogMap = new Map<string, CatalogItem>();
+      // Map by barcode (if present) and by lowercase name
+      prev.forEach((item) => {
+        if (item.barcode) {
+          catalogMap.set(`bc:${item.barcode.trim().toLowerCase()}`, item);
+        }
+        catalogMap.set(`name:${item.name.trim().toLowerCase()}`, item);
+      });
 
-    setCatalog((prev) => [...formattedItems, ...prev]);
+      const updatedList = [...prev];
+      const appendedItems: CatalogItem[] = [];
+
+      newItems.forEach((item, idx) => {
+        const barcodeKey = item.barcode ? `bc:${item.barcode.trim().toLowerCase()}` : null;
+        const nameKey = `name:${item.name.trim().toLowerCase()}`;
+
+        const existingItem = (barcodeKey && catalogMap.get(barcodeKey)) || catalogMap.get(nameKey);
+
+        if (existingItem) {
+          const targetIdx = updatedList.findIndex((p) => p.id === existingItem.id);
+          if (targetIdx !== -1) {
+            updatedList[targetIdx] = {
+              ...updatedList[targetIdx],
+              name: item.name,
+              category: item.category || updatedList[targetIdx].category,
+              price: item.price > 0 ? item.price : updatedList[targetIdx].price,
+              costPrice: item.costPrice !== undefined ? item.costPrice : updatedList[targetIdx].costPrice,
+              stock: item.stock !== undefined ? item.stock : updatedList[targetIdx].stock,
+              lowStockThreshold: item.lowStockThreshold ?? updatedList[targetIdx].lowStockThreshold,
+              barcode: item.barcode || updatedList[targetIdx].barcode,
+              unit: item.unit || updatedList[targetIdx].unit,
+              gstRate: item.gstRate !== undefined ? item.gstRate : updatedList[targetIdx].gstRate,
+            };
+          }
+        } else {
+          appendedItems.push({
+            id: `csv-item-${Date.now()}-${idx}`,
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            costPrice: item.costPrice,
+            stock: item.stock ?? 20,
+            lowStockThreshold: item.lowStockThreshold ?? 5,
+            barcode: item.barcode,
+            unit: item.unit ?? 'pcs',
+            gstRate: item.gstRate ?? 5,
+          });
+        }
+      });
+
+      return [...appendedItems, ...updatedList];
+    });
   };
 
   // CUSTOMER MANAGEMENT
-  const handleAddNewCustomer = (name: string, phone: string) => {
+  const handleAddNewCustomer = (name: string, phone: string, creditLimit: number = 2000) => {
     playSfx('add');
     const newCust: Customer = {
       id: `cust-${Date.now()}`,
       name,
       phone,
+      creditLimit,
       creditBalance: 0,
       totalOrders: 0,
       createdAt: new Date().toISOString(),
     };
     setCustomers((prev) => [newCust, ...prev]);
+    liveSaveCustomer(newCust).catch((err) => console.warn('Live save customer:', err));
+    return newCust;
   };
 
   const handleAddFullCustomer = (customer: Omit<Customer, 'id' | 'createdAt'>) => {
@@ -635,30 +1182,35 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
     setCustomers((prev) => [newCust, ...prev]);
+    liveSaveCustomer(newCust).catch((err) => console.warn('Live save full customer:', err));
   };
 
   const handleSettleCredit = (customerId: string, amount: number, note: string) => {
     playSfx('success');
     const cust = customers.find((c) => c.id === customerId);
+    const newCreditBalance = Math.max(0, (cust?.creditBalance || 0) - amount);
     setCustomers((prev) =>
       prev.map((c) =>
         c.id === customerId
-          ? { ...c, creditBalance: Math.max(0, (c.creditBalance || 0) - amount) }
+          ? { ...c, creditBalance: newCreditBalance }
           : c
       )
     );
+    liveSettleCustomerCredit(customerId, newCreditBalance).catch((err) =>
+      console.warn('Live credit settlement:', err)
+    );
 
-    setCashEntries((prev) => [
-      {
-        id: `credit-repay-${Date.now()}`,
-        type: 'IN',
-        amount,
-        reason: `Khata Repayment (${cust ? cust.name : 'Customer'}) - ${note}`,
-        staffName: activeStaff.name,
-        createdAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
+    const repayCashEntry: CashEntry = {
+      id: `credit-repay-${Date.now()}`,
+      type: 'IN',
+      amount,
+      reason: `Khata Repayment - ${cust ? cust.name : 'Customer'}${note ? ` (${note})` : ''}`,
+      staffName: activeStaff.name,
+      createdAt: new Date().toISOString(),
+    };
+
+    setCashEntries((prev) => [repayCashEntry, ...prev]);
+    liveSaveCashEntry(repayCashEntry).catch((err) => console.warn('Live cash repay save:', err));
   };
 
   // CASH MANAGEMENT
@@ -670,6 +1222,7 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
     setCashEntries((prev) => [newEntry, ...prev]);
+    liveSaveCashEntry(newEntry).catch((err) => console.warn('Live cash entry save:', err));
   };
 
   // STAFF MANAGEMENT
@@ -685,6 +1238,7 @@ export default function App() {
       id: `staff-${Date.now()}`,
     };
     setStaffList((prev) => [...prev, newMember]);
+    liveSaveStaff(newMember).catch((err) => console.warn('Live staff save:', err));
   };
 
   const handleUpdatePin = (staffId: string, newPin: string) => {
@@ -692,61 +1246,83 @@ export default function App() {
     setStaffList((prev) =>
       prev.map((s) => (s.id === staffId ? { ...s, pin: newPin } : s))
     );
+    liveUpdateStaffPin(staffId, newPin).catch((err) => console.warn('Live staff PIN update:', err));
+  };
+
+  const handleUpdatePermissions = (newPermissions: StorePermissions) => {
+    const updatedSettings = {
+      ...shopSettings,
+      permissions: newPermissions,
+    };
+    setShopSettings(updatedSettings);
+    liveSaveSettings(updatedSettings).catch((err) => console.warn('Live settings save:', err));
   };
 
   // REPORTS & ORDERS ACTIONS
   const handleViewOrder = (order: Order) => {
     setActiveReceiptOrder(order);
+    setIsReceiptDuplicate(true);
     setIsReceiptModalOpen(true);
-  };
-
-  const handleEditOrder = (order: Order) => {
-    setCurrentBillItems(order.items);
-    setOrderNumber(order.orderNumber);
-    setActiveScreen('item-wise');
   };
 
   const handlePrintOrder = (order: Order) => {
     setActiveReceiptOrder(order);
+    setIsReceiptDuplicate(true);
     setIsReceiptModalOpen(true);
+  };
+
+  const executeDeleteSingleOrder = (orderId: string) => {
+    playSfx('remove');
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    liveDeleteOrder(orderId).catch((err) => console.warn('Live delete order:', err));
   };
 
   const handleDeleteOrder = (orderId: string) => {
     const currentRole = activeStaff?.role || 'CASHIER';
-    if (canDeleteOrder(currentRole)) {
-      playSfx('remove');
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    const permissions = shopSettings.permissions || DEFAULT_STORE_PERMISSIONS;
+    if (canDeleteOrder(currentRole, permissions)) {
+      executeDeleteSingleOrder(orderId);
     } else {
+      const isOwnerRequired = normalizeRole(currentRole) === 'MANAGER' && !permissions.manager.allowBillVoid;
       setPendingRestrictedAction({
-        title: 'Void Sale Authorization',
-        description: 'Deleting or voiding sales records requires Manager or Store Owner PIN authorization.',
-        requiredRoleLabel: 'MANAGER / OWNER',
+        title: isOwnerRequired ? 'Owner PIN Required for Invoice Void' : 'Void Sale Authorization',
+        description: isOwnerRequired
+          ? 'Store policy restricts managers from voiding finalized invoices. Store Owner PIN required to execute one-time void.'
+          : 'Deleting or voiding sales records requires Manager or Store Owner PIN authorization.',
+        requiredRoleLabel: isOwnerRequired ? 'OWNER ONLY' : 'MANAGER / OWNER',
+        requiredRole: isOwnerRequired ? 'OWNER' : 'MANAGER',
         onAuthorize: () => {
-          playSfx('remove');
-          setOrders((prev) => prev.filter((o) => o.id !== orderId));
+          executeDeleteSingleOrder(orderId);
         },
       });
       setIsManagerPinModalOpen(true);
     }
   };
 
+  const executeClearAllOrders = () => {
+    if (window.confirm('Are you sure you want to clear all report records?')) {
+      playSfx('remove');
+      setOrders([]);
+      liveDeleteAllOrders().catch((err) => console.warn('Live delete all orders:', err));
+    }
+  };
+
   const handleDeleteAllOrders = () => {
     const currentRole = activeStaff?.role || 'CASHIER';
-    if (canDeleteOrder(currentRole)) {
-      if (window.confirm('Are you sure you want to clear all report records?')) {
-        playSfx('remove');
-        setOrders([]);
-      }
+    const permissions = shopSettings.permissions || DEFAULT_STORE_PERMISSIONS;
+    if (canDeleteOrder(currentRole, permissions)) {
+      executeClearAllOrders();
     } else {
+      const isOwnerRequired = normalizeRole(currentRole) === 'MANAGER' && !permissions.manager.allowBillVoid;
       setPendingRestrictedAction({
-        title: 'Bulk Void Sales Authorization',
-        description: 'Purging sales history requires Manager or Store Owner authorization.',
-        requiredRoleLabel: 'MANAGER / OWNER',
+        title: isOwnerRequired ? 'Owner PIN Required for Bulk Void' : 'Bulk Void Sales Authorization',
+        description: isOwnerRequired
+          ? 'Store policy restricts managers from voiding finalized invoices. Store Owner PIN required to execute one-time bulk void.'
+          : 'Purging sales history requires Manager or Store Owner authorization.',
+        requiredRoleLabel: isOwnerRequired ? 'OWNER ONLY' : 'MANAGER / OWNER',
+        requiredRole: isOwnerRequired ? 'OWNER' : 'MANAGER',
         onAuthorize: () => {
-          if (window.confirm('Are you sure you want to clear all report records?')) {
-            playSfx('remove');
-            setOrders([]);
-          }
+          executeClearAllOrders();
         },
       });
       setIsManagerPinModalOpen(true);
@@ -756,7 +1332,28 @@ export default function App() {
   // Navigation router with RBAC access control
   const handleNavigate = (screen: ActiveScreen) => {
     if (screen === 'print-settings') {
+      const currentRole = activeStaff?.role || 'CASHIER';
+      if (!canAccessScreen(currentRole, 'print-settings')) {
+        setPendingRestrictedAction({
+          title: 'Store & Admin Settings Authorization',
+          description:
+            'Accessing hardware configuration, cloud backups, and advanced diagnostics is restricted to Store Owner & Manager.',
+          requiredRoleLabel: 'MANAGER / OWNER',
+          requiredRole: 'MANAGER',
+          onAuthorize: () => {
+            setSettingsInitialTab('hardware');
+            setSettingsInitialSubView('overview');
+            setIsPrintSettingsOpen(true);
+            setIsSidebarOpen(false);
+          },
+        });
+        setIsManagerPinModalOpen(true);
+        return;
+      }
+      setSettingsInitialTab('hardware');
+      setSettingsInitialSubView('overview');
       setIsPrintSettingsOpen(true);
+      setIsSidebarOpen(false);
       return;
     }
     if (screen === 'training-videos') {
@@ -765,6 +1362,23 @@ export default function App() {
     }
 
     const currentRole = activeStaff?.role || 'CASHIER';
+    const permissions = shopSettings.permissions || DEFAULT_STORE_PERMISSIONS;
+
+    if (screen === 'purchase-inward' && !canStaffInwardStock(currentRole, permissions)) {
+      setPendingRestrictedAction({
+        title: 'Stock Inward Authorization',
+        description: 'Receiving supplier crates requires Manager or Store Owner PIN authorization.',
+        requiredRoleLabel: 'MANAGER / OWNER',
+        requiredRole: 'MANAGER',
+        onAuthorize: () => {
+          setActiveScreen('purchase-inward');
+          setIsSidebarOpen(false);
+        },
+      });
+      setIsManagerPinModalOpen(true);
+      return;
+    }
+
     if (canAccessScreen(currentRole, screen)) {
       setActiveScreen(screen);
       setIsSidebarOpen(false);
@@ -774,6 +1388,7 @@ export default function App() {
         title: `Manager Authorization Required`,
         description: `The "${screen.replace(/-/g, ' ')}" screen is restricted to ${reqRole}. Please enter a Manager or Store Owner 4-digit PIN to access.`,
         requiredRoleLabel: reqRole,
+        requiredRole: 'MANAGER',
         onAuthorize: () => {
           setActiveScreen(screen);
           setIsSidebarOpen(false);
@@ -784,9 +1399,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#dcd9dc] flex justify-center items-center p-0 md:p-3 lg:p-4 selection:bg-[#18181b] selection:text-white overflow-hidden">
-      {/* Responsive POS Station Container */}
-      <div className="w-full max-w-7xl h-[100dvh] md:h-[94vh] bg-white md:rounded-3xl md:shadow-2xl md:border md:border-[#d4d4d8] flex flex-col overflow-hidden relative">
+    <div className="w-full h-screen h-[100dvh] bg-zinc-50 flex flex-col overflow-hidden selection:bg-blue-600 selection:text-white">
+      {/* Responsive POS Station Container - Edge-to-Edge Full Screen for Retail Workstations */}
+      <div className="w-full h-full bg-zinc-50 flex flex-col overflow-hidden relative">
         {/* Top App Bar Header */}
         <Header
           activeScreen={activeScreen}
@@ -797,7 +1412,6 @@ export default function App() {
           activeStaffRole={activeStaff.role}
           user={currentUser}
           isSyncing={isSyncing}
-          onOpenCloudModal={() => setIsCloudModalOpen(true)}
           onToggleSound={() =>
             setShopSettings((prev) => ({
               ...prev,
@@ -811,10 +1425,11 @@ export default function App() {
           onOpenCustomItem={() => setIsCustomProductModalOpen(true)}
           onOpenStaffSwitch={() => setIsStaffSwitchModalOpen(true)}
           onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
+          onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
         />
 
         {/* Active Screen Surface */}
-        <div className="flex-1 flex flex-col min-h-0 bg-[#fcf8fb]">
+        <div className="flex-1 flex flex-col min-h-0 bg-zinc-50">
           {activeScreen === 'item-wise' && (
             <ItemWiseBillTerminal
               currentBillItems={currentBillItems}
@@ -822,26 +1437,69 @@ export default function App() {
               categories={categories}
               currencySymbol={shopSettings.currencySymbol}
               orderNumber={orderNumber}
+              heldOrdersCount={heldOrders.length}
               taxRate={shopSettings.taxRate}
               onAddItem={handleAddItem}
               onUpdateQuantity={handleUpdateQuantity}
+              onUpdateItemRate={handleUpdateItemRate}
+              canOverridePrice={canStaffOverridePrice(activeStaff?.role, shopSettings.permissions)}
+              onRequestPriceOverrideAuth={(item, onApproved) => {
+                setPendingRestrictedAction({
+                  title: 'Price Override Authorization',
+                  description: `Modifying unit selling price for "${item.name}" requires Manager or Store Owner PIN.`,
+                  requiredRoleLabel: 'MANAGER / OWNER',
+                  requiredRole: 'MANAGER',
+                  onAuthorize: () => {
+                    onApproved();
+                  },
+                });
+                setIsManagerPinModalOpen(true);
+              }}
               onRemoveItem={handleRemoveItem}
               onClearBill={handleClearBill}
               onHoldBill={handleHoldBill}
+              onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
               onOpenAddCustomProduct={() => setIsCustomProductModalOpen(true)}
               onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
               onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
               onPrintBill={() => {
-                setActiveReceiptOrder(null);
-                setIsReceiptModalOpen(true);
+                if (currentBillItems.length === 0) return;
+                const draftOrder: Order = {
+                  id: `draft-${Date.now()}`,
+                  orderNumber,
+                  terminalPrefix: shopSettings.terminalPrefix || 'A',
+                  orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
+                  createdAt: new Date().toISOString(),
+                  items: [...currentBillItems],
+                  status: 'active',
+                  subtotal,
+                  taxRate: shopSettings.taxRate,
+                  taxAmount,
+                  discount: 0,
+                  total: grandTotal,
+                  paymentMethod: 'NONE',
+                  staffName: activeStaff.name,
+                };
+                setDirectPrintOrder(draftOrder);
+                setTimeout(() => {
+                  window.print();
+                  setTimeout(() => setDirectPrintOrder(null), 1000);
+                }, 50);
               }}
-              onSaveBill={() => setIsSaveBillModalOpen(true)}
+              onSaveBill={() => setIsPaymentModalOpen(true)}
             />
           )}
 
           {activeScreen === 'quick-bill' && (
             <QuickBillTerminal
               currencySymbol={shopSettings.currencySymbol}
+              taxRate={shopSettings.taxRate}
+              orderNumber={orderNumber}
+              billNo={orderNumber}
+              heldOrdersCount={heldOrders.length}
+              onHoldBill={(items) => handleHoldBill(items)}
+              onClearBill={handleClearBill}
+              onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
               onSaveQuickBill={handleSaveQuickBill}
               onPrintQuickBill={handlePrintQuickBill}
             />
@@ -851,11 +1509,12 @@ export default function App() {
             <ReportsScreen
               orders={orders}
               currencySymbol={shopSettings.currencySymbol}
+              shopSettings={shopSettings}
               onViewOrder={handleViewOrder}
-              onEditOrder={handleEditOrder}
               onPrintOrder={handlePrintOrder}
               onDeleteOrder={handleDeleteOrder}
               onDeleteAllOrders={handleDeleteAllOrders}
+              onOpenZReport={() => setIsZReportOpen(true)}
             />
           )}
 
@@ -864,6 +1523,8 @@ export default function App() {
               categories={categories}
               catalog={catalog}
               currencySymbol={shopSettings.currencySymbol}
+              staffRole={activeStaff?.role}
+              permissions={shopSettings.permissions}
               onAddCategory={handleAddCategory}
               onUpdateCategory={handleUpdateCategory}
               onDeleteCategory={handleDeleteCategory}
@@ -871,7 +1532,24 @@ export default function App() {
               onUpdateProduct={handleUpdateProduct}
               onDeleteProduct={handleDeleteProduct}
               onImportCatalogFromXls={handleImportCatalogFromXls}
-              onOpenPurchaseInward={() => setIsPurchaseInwardOpen(true)}
+              onOpenPurchaseInward={() => {
+                const currentRole = activeStaff?.role || 'CASHIER';
+                const permissions = shopSettings.permissions || DEFAULT_STORE_PERMISSIONS;
+                if (!canStaffInwardStock(currentRole, permissions)) {
+                  setPendingRestrictedAction({
+                    title: 'Stock Inward Authorization',
+                    description: 'Receiving supplier crates requires Manager or Store Owner PIN authorization.',
+                    requiredRoleLabel: 'MANAGER / OWNER',
+                    requiredRole: 'MANAGER',
+                    onAuthorize: () => {
+                      setIsPurchaseInwardOpen(true);
+                    },
+                  });
+                  setIsManagerPinModalOpen(true);
+                  return;
+                }
+                setIsPurchaseInwardOpen(true);
+              }}
               onOpenBarcodeGenerator={(productId) => {
                 setBarcodeSelectedProductId(productId);
                 setIsBarcodeGeneratorOpen(true);
@@ -895,6 +1573,7 @@ export default function App() {
               currencySymbol={shopSettings.currencySymbol}
               activeStaffName={activeStaff.name}
               onAddCashEntry={handleAddCashEntry}
+              onOpenZReport={() => setIsZReportOpen(true)}
             />
           )}
 
@@ -902,9 +1581,11 @@ export default function App() {
             <StaffManagementScreen
               staffList={staffList}
               activeStaffId={activeStaffId}
+              permissions={shopSettings.permissions || DEFAULT_STORE_PERMISSIONS}
               onSelectStaff={handleSwitchStaff}
               onAddStaff={handleAddStaff}
               onUpdatePin={handleUpdatePin}
+              onUpdatePermissions={handleUpdatePermissions}
             />
           )}
         </div>
@@ -918,6 +1599,9 @@ export default function App() {
         activeStaffName={activeStaff.name}
         activeStaffRole={activeStaff.role}
         user={currentUser}
+        heldOrdersCount={heldOrders.length}
+        isSyncing={isSyncing}
+        onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
         onSelectScreen={handleNavigate}
         onRequestManagerOverride={(screen) => handleNavigate(screen)}
         onOpenPermissionsModal={() => {
@@ -926,8 +1610,11 @@ export default function App() {
         }}
         onClose={() => setIsSidebarOpen(false)}
         onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
-        onOpenCloudModal={() => setIsCloudModalOpen(true)}
         onOpenStaffSwitch={() => setIsStaffSwitchModalOpen(true)}
+        onOpenZReport={() => {
+          setIsSidebarOpen(false);
+          setIsZReportOpen(true);
+        }}
       />
 
       {/* Barcode & QR Code Scanner / Price Checker Modal */}
@@ -944,8 +1631,11 @@ export default function App() {
           setActiveScreen('item-wise');
         }}
         onRegisterBarcode={(barcode) => {
-          // Open product manager and register
-          setActiveScreen('categories-products');
+          setIsScannerOpen(false);
+          setQuickAddBarcode(barcode);
+        }}
+        onAddCustomBillItem={(item) => {
+          handleAddCustomProduct(item);
         }}
       />
 
@@ -970,31 +1660,81 @@ export default function App() {
         taxRate={shopSettings.taxRate}
         customers={customers}
         currencySymbol={shopSettings.currencySymbol}
+        orderNumber={orderNumber}
+        shopSettings={shopSettings}
         onClose={() => setIsSaveBillModalOpen(false)}
         onAddNewCustomer={handleAddNewCustomer}
         onSaveAndComplete={handleSaveAndCompleteOrder}
       />
 
-      {/* Invoice Details / Receipt Modal */}
-      <ReceiptModal
-        isOpen={isReceiptModalOpen}
-        order={activeReceiptOrder}
+      {/* Phase 2: Indian Payment Engine (Cash, UPI Soundbox, Khata) */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
         orderNumber={orderNumber}
         items={currentBillItems}
         subtotal={subtotal}
         taxRate={shopSettings.taxRate}
-        taxAmount={taxAmount}
-        total={grandTotal}
+        currencySymbol={shopSettings.currencySymbol}
+        customers={customers}
+        storeVpa="anandsupermarket@okaxis"
+        storeName={shopSettings.storeName || 'Anand Supermarket'}
+        canStaffKhata={canStaffSellKhata(activeStaff?.role, shopSettings.permissions)}
+        onRequestKhataAuth={(onApproved) => {
+          setPendingRestrictedAction({
+            title: 'Customer Credit (Khata) Authorization',
+            description: 'Selling on customer credit requires Manager or Store Owner PIN authorization.',
+            requiredRoleLabel: 'MANAGER / OWNER',
+            requiredRole: 'MANAGER',
+            onAuthorize: () => {
+              onApproved();
+            },
+          });
+          setIsManagerPinModalOpen(true);
+        }}
+        onRequestCreditLimitOverride={(customerName, amount, limit, onApproved) => {
+          setPendingRestrictedAction({
+            title: 'Credit Limit Override Authorization',
+            description: `Authorizing sale of ${shopSettings.currencySymbol}${amount.toFixed(2)} to ${customerName} (exceeds ${shopSettings.currencySymbol}${limit.toFixed(2)} credit limit) requires Manager or Store Owner PIN.`,
+            requiredRoleLabel: 'MANAGER / OWNER',
+            requiredRole: 'MANAGER',
+            onAuthorize: () => {
+              onApproved();
+            },
+          });
+          setIsManagerPinModalOpen(true);
+        }}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onCompleteSale={handlePaymentModalComplete}
+        onResetAndNewBill={handleDoneNoPrint}
+        onPrintAndNextCustomer={handlePrintAndNextCustomer}
+        onDoneNoPrint={handleDoneNoPrint}
+        onPrintDirectReceipt={handlePrintAndNextCustomer}
+        onAddNewCustomer={handleAddNewCustomer}
+      />
+
+      {/* Invoice Details / Receipt Modal - Used ONLY for Duplicate Receipt preview from Reports */}
+      <ReceiptModal
+        isOpen={isReceiptModalOpen}
+        order={activeReceiptOrder}
+        orderNumber={activeReceiptOrder ? activeReceiptOrder.orderNumber : orderNumber}
+        items={activeReceiptOrder ? activeReceiptOrder.items : currentBillItems}
+        subtotal={activeReceiptOrder ? activeReceiptOrder.subtotal : subtotal}
+        taxRate={shopSettings.taxRate}
+        taxAmount={activeReceiptOrder ? activeReceiptOrder.taxAmount : taxAmount}
+        total={activeReceiptOrder ? activeReceiptOrder.total : grandTotal}
         shopSettings={shopSettings}
+        isDuplicate={isReceiptDuplicate}
         onClose={() => {
           setIsReceiptModalOpen(false);
           setActiveReceiptOrder(null);
+          setIsReceiptDuplicate(false);
         }}
-        onEditOrder={() => {
-          if (activeReceiptOrder) {
-            handleEditOrder(activeReceiptOrder);
-          }
-        }}
+      />
+
+      {/* Direct Thermal Receipt (Hidden on screen, prints in background without opening any preview modal) */}
+      <DirectThermalReceipt
+        order={directPrintOrder}
+        shopSettings={shopSettings}
       />
 
       {/* Custom Item Modal */}
@@ -1005,34 +1745,43 @@ export default function App() {
         onAddCustomItem={handleAddCustomProduct}
       />
 
-      {/* Print Settings Modal */}
+      {/* Store & Admin Settings Modal (Hardware, Store Profile, Cloud & Backup -> Advanced Diagnostics) */}
       <PrintSettingsModal
-        isOpen={isPrintSettingsOpen}
+        isOpen={isPrintSettingsOpen || isCloudModalOpen}
         settings={shopSettings}
-        onClose={() => setIsPrintSettingsOpen(false)}
-        onSaveSettings={setShopSettings}
+        onClose={() => {
+          setIsPrintSettingsOpen(false);
+          setIsCloudModalOpen(false);
+        }}
+        onSaveSettings={(newSettings) => {
+          setShopSettings(newSettings);
+          liveSaveSettings(newSettings).catch((err) => console.warn('Live settings save:', err));
+        }}
+        user={currentUser}
+        orders={orders}
+        catalog={catalog}
+        categories={categories}
+        customers={customers}
+        cashEntries={cashEntries}
+        staffList={staffList}
+        heldOrders={heldOrders}
+        isSyncing={isSyncing}
+        lastSyncedAt={lastSyncedAt}
+        onManualSync={handleManualCloudSync}
+        onPullFromCloud={handlePullFromCloud}
+        activeStaffRole={activeStaff?.role}
+        onRequestManagerPin={(action) => {
+          setPendingRestrictedAction(action);
+          setIsManagerPinModalOpen(true);
+        }}
+        initialTab={isCloudModalOpen ? 'cloud' : settingsInitialTab}
+        initialSubView={isCloudModalOpen ? 'diagnostics' : settingsInitialSubView}
       />
 
       {/* Training Videos Modal */}
       <TrainingVideosModal
         isOpen={isTrainingVideosOpen}
         onClose={() => setIsTrainingVideosOpen(false)}
-      />
-
-      {/* Cloud Sync & Google Auth Modal */}
-      <CloudSyncModal
-        isOpen={isCloudModalOpen}
-        onClose={() => setIsCloudModalOpen(false)}
-        user={currentUser}
-        orders={orders}
-        catalog={catalog}
-        customers={customers}
-        cashEntries={cashEntries}
-        shopSettings={shopSettings}
-        isSyncing={isSyncing}
-        lastSyncedAt={lastSyncedAt}
-        onManualSync={handleManualCloudSync}
-        onPullFromCloud={handlePullFromCloud}
       />
 
       {/* 1-Second 4-Digit Staff Shift Switch Modal */}
@@ -1075,11 +1824,25 @@ export default function App() {
         catalog={catalog}
         currencySymbol={shopSettings.currencySymbol}
         staffRole={activeStaff.role}
+        permissions={shopSettings.permissions}
+        onRequestCostUnlock={(onApproved) => {
+          setPendingRestrictedAction({
+            title: 'Cost Price Unlock Authorization',
+            description: 'Viewing supplier cost price and profit margins requires Store Owner PIN authorization.',
+            requiredRoleLabel: 'OWNER ONLY',
+            requiredRole: 'OWNER',
+            onAuthorize: () => {
+              onApproved();
+            },
+          });
+          setIsManagerPinModalOpen(true);
+        }}
         onRequestManagerOverride={() => {
           setPendingRestrictedAction({
             title: 'Manager Authorization for Stock Editing',
             description: 'Direct shelf count adjustments require Manager or Store Owner PIN authorization.',
             requiredRoleLabel: 'MANAGER / OWNER',
+            requiredRole: 'MANAGER',
             onAuthorize: () => {
               // Once authorized by manager PIN, grant temporary ability to edit stock in the open modal
             },
@@ -1087,19 +1850,36 @@ export default function App() {
           setIsManagerPinModalOpen(true);
         }}
         onUpdateStock={handleUpdateProductStock}
+        onRegisterBarcode={(barcode) => {
+          setIsPriceCheckOpen(false);
+          setQuickAddBarcode(barcode);
+        }}
         onAddToCart={(item) => {
           handleAddItem(item);
           setIsPriceCheckOpen(false);
         }}
       />
 
+      {/* Quick Add Product Modal with Automatic Open Food Facts Lookup */}
+      <QuickAddProductModal
+        isOpen={Boolean(quickAddBarcode)}
+        barcode={quickAddBarcode || ''}
+        currencySymbol={shopSettings.currencySymbol}
+        categories={categories}
+        onClose={() => setQuickAddBarcode(null)}
+        onSaveAndAddToBill={handleQuickAddProduct}
+      />
+
       {/* Manager PIN Authorization Modal */}
       <ManagerPinModal
         isOpen={isManagerPinModalOpen}
         staffList={staffList}
+        activeStaffName={activeStaff.name}
+        activeStaffRole={activeStaff.role}
         title={pendingRestrictedAction?.title || 'Manager Authorization'}
         description={pendingRestrictedAction?.description}
         requiredRoleLabel={pendingRestrictedAction?.requiredRoleLabel || 'MANAGER / OWNER'}
+        requiredRole={pendingRestrictedAction?.requiredRole || 'MANAGER'}
         onClose={() => {
           setIsManagerPinModalOpen(false);
           setPendingRestrictedAction(null);
@@ -1119,6 +1899,8 @@ export default function App() {
         isOpen={isRolePermissionsOpen}
         staffList={staffList}
         activeStaffId={activeStaffId}
+        permissions={shopSettings.permissions || DEFAULT_STORE_PERMISSIONS}
+        onUpdatePermissions={handleUpdatePermissions}
         onClose={() => setIsRolePermissionsOpen(false)}
         onSwitchStaff={(staffId) => {
           handleSwitchStaff(staffId);
@@ -1127,6 +1909,38 @@ export default function App() {
         onOpenStaffSwitch={() => {
           setIsRolePermissionsOpen(false);
           setIsStaffSwitchModalOpen(true);
+        }}
+      />
+
+      {/* Parked / Held Orders Modal */}
+      <HeldOrdersModal
+        isOpen={isHeldOrdersModalOpen}
+        heldOrders={heldOrders}
+        currentCartCount={currentBillItems.reduce((sum, i) => sum + i.quantity, 0)}
+        currentCartTotal={grandTotal}
+        currencySymbol={shopSettings.currencySymbol}
+        shopSettings={shopSettings}
+        onClose={() => setIsHeldOrdersModalOpen(false)}
+        onResumeOrder={handleResumeHeldOrder}
+        onDeleteOrder={handleDeleteHeldOrder}
+        onClearAllHeld={handleClearAllHeldOrders}
+      />
+
+      {/* Official Day-End Close & Z-Report Shift Audit Modal */}
+      <ZReportModal
+        isOpen={isZReportOpen}
+        orders={orders}
+        cashEntries={cashEntries}
+        shopSettings={shopSettings}
+        activeStaffName={activeStaff.name}
+        onClose={() => setIsZReportOpen(false)}
+        onSaveZReport={(report) => {
+          // Record shift close summary cash entry if desired
+          handleAddCashEntry({
+            type: 'OUT',
+            amount: report.cashSales,
+            reason: `Day-End Z-Report Shift Close Cash Deposit (${activeStaff.name})`,
+          });
         }}
       />
 
@@ -1139,7 +1953,7 @@ export default function App() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
-                Laser Gun Scanned ⚡
+                Laser Gun Scanned
               </span>
               <span className="text-[11px] font-mono font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">
                 Qty in Bill: {laserScanNotification.cartQty}
@@ -1154,6 +1968,59 @@ export default function App() {
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Floating Held / Resumed Order Interactive Toast */}
+      {heldToastNotification && (
+        <div className="fixed bottom-5 right-5 z-50 bg-zinc-950/95 text-white backdrop-blur-md px-4 py-3 rounded-2xl shadow-2xl border border-zinc-700/80 flex items-center gap-3.5 max-w-sm animate-in slide-in-from-bottom-3 duration-200">
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+              heldToastNotification.action === 'parked'
+                ? 'bg-amber-500 text-zinc-950'
+                : 'bg-emerald-500 text-white'
+            }`}
+          >
+            {heldToastNotification.action === 'parked' ? (
+              <PauseCircle className="w-5 h-5 stroke-[2.5]" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className={`text-[10px] font-black uppercase tracking-wider ${
+                  heldToastNotification.action === 'parked'
+                    ? 'text-amber-400'
+                    : 'text-emerald-400'
+                }`}
+              >
+                {heldToastNotification.action === 'parked'
+                  ? 'Ticket Parked on Hold'
+                  : 'Ticket Resumed to Cart'}
+              </span>
+              <span className="text-[11px] font-mono font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.2 rounded">
+                #{heldToastNotification.orderNumber}
+              </span>
+            </div>
+            <p className="text-xs font-bold text-white truncate mt-0.5">
+              {heldToastNotification.itemsCount} item{heldToastNotification.itemsCount !== 1 ? 's' : ''} •{' '}
+              {shopSettings.currencySymbol}
+              {heldToastNotification.total.toFixed(2)}
+            </p>
+          </div>
+          {heldToastNotification.action === 'parked' && (
+            <button
+              onClick={() => {
+                setHeldToastNotification(null);
+                setIsHeldOrdersModalOpen(true);
+              }}
+              className="px-2.5 py-1.5 bg-amber-400 hover:bg-amber-500 text-zinc-950 font-black text-xs rounded-xl transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
+            >
+              View
+            </button>
+          )}
         </div>
       )}
 

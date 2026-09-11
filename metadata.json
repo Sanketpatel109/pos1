@@ -1,6 +1,6 @@
 {
-  "name": "MonoPOS Industrial",
-  "description": "High-contrast utilitarian POS billing and retail transaction engine with integrated Barcode and QR code scanner for rapid product lookups, billing, and price checking.",
+  "name": "MonoPOS Retail",
+  "description": "Utilitarian retail POS billing and transaction engine with integrated Barcode and QR code scanner for rapid product lookups, billing, and price checking.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

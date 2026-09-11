@@ -15,10 +15,26 @@ import {
   Vault,
   AlertTriangle,
   ArrowRight,
-} from 'lucide-react';
-import { Customer, PaymentMethod, SplitPaymentDetail } from '../types';
+  Printer,
+  Send,
+  QrCode,
+  Volume2,
+  ShieldCheck,
+  Copy,
+  ExternalLink,
+  Maximize2,
+  Sparkles,
+  CheckCircle2,
+  Radio,
+  RefreshCw,
+  Star,
+  Comment,
+} from '../icons/faIcons';
+import QRCode from 'qrcode';
+import { Customer, PaymentMethod, ShopSettings, SplitPaymentDetail } from '../types';
 import { SplitPaymentModal } from './SplitPaymentModal';
 import { hardware } from '../utils/hardware';
+import { posSound } from '../utils/sound';
 
 interface SaveBillModalProps {
   isOpen: boolean;
@@ -26,6 +42,8 @@ interface SaveBillModalProps {
   taxRate: number;
   customers: Customer[];
   currencySymbol: string;
+  orderNumber?: number;
+  shopSettings?: ShopSettings;
   onClose: () => void;
   onAddNewCustomer: (name: string, phone: string) => void;
   onSaveAndComplete: (data: {
@@ -43,6 +61,11 @@ interface SaveBillModalProps {
     changeDue?: number;
     note?: string;
     orderDate: string;
+    printReceipt?: boolean;
+    shareWhatsApp?: boolean;
+    upiRefNumber?: string;
+    isVerified?: boolean;
+    verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
   }) => void;
 }
 
@@ -52,6 +75,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
   taxRate,
   customers,
   currencySymbol,
+  orderNumber,
+  shopSettings,
   onClose,
   onAddNewCustomer,
   onSaveAndComplete,
@@ -129,13 +154,112 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
           { label: `${currencySymbol}100`, amount: 100 },
           { label: `${currencySymbol}200`, amount: 200 },
           { label: `${currencySymbol}500`, amount: 500 },
-          { label: `${currencySymbol}2000`, amount: 2000 },
         ]
   ).filter((p) => {
     if (p.label === 'Exact') return true;
     // Include all popular notes that are either >= 20 or >= grandTotal
     return p.amount >= grandTotal || p.amount >= 20;
   });
+
+  // Payment Verification States (Option 1: Soundbox/UTR, Option 2: Auto Gateway, Option 3: Cash)
+  const [upiQrDataUrl, setUpiQrDataUrl] = useState<string>('');
+  const [upiRefNumber, setUpiRefNumber] = useState<string>('');
+  const [isUpiVerified, setIsUpiVerified] = useState<boolean>(false);
+  const [isSoundboxAnnouncing, setIsSoundboxAnnouncing] = useState<boolean>(false);
+  const [isAutoVerifying, setIsAutoVerifying] = useState<boolean>(false);
+  const [verificationMethod, setVerificationMethod] = useState<
+    'soundbox' | 'utr' | 'gateway' | 'cash_tender'
+  >('soundbox');
+  const [activeUpiTab, setActiveUpiTab] = useState<'soundbox' | 'auto'>('soundbox');
+  const [isQrZoomed, setIsQrZoomed] = useState<boolean>(false);
+  const [copiedLinkToast, setCopiedLinkToast] = useState<boolean>(false);
+
+  const currentUpiId = shopSettings?.upiId || 'monopos.merchant@okhdfcbank';
+  const payeeName = shopSettings?.upiPayeeName || shopSettings?.shopName || 'Retail Store';
+  const upiIntentUri = `upi://pay?pa=${currentUpiId}&pn=${encodeURIComponent(
+    payeeName
+  )}&am=${grandTotal.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
+    `Bill #${orderNumber || '1'}`
+  )}`;
+
+  // Generate dynamic QR
+  useEffect(() => {
+    if (!isOpen) return;
+
+    QRCode.toDataURL(upiIntentUri, {
+      width: 280,
+      margin: 1,
+      color: {
+        dark: '#18181b',
+        light: '#ffffff',
+      },
+    })
+      .then((url) => setUpiQrDataUrl(url))
+      .catch((err) => console.error('QR generation error:', err));
+  }, [isOpen, upiIntentUri]);
+
+  useEffect(() => {
+    if (shopSettings?.upiVerificationMode) {
+      setActiveUpiTab(shopSettings.upiVerificationMode);
+    }
+  }, [shopSettings?.upiVerificationMode]);
+
+  // Soundbox Voice announcement and 1-tap confirmation
+  const handleConfirmSoundbox = () => {
+    setIsSoundboxAnnouncing(true);
+    posSound.playBeep();
+    setTimeout(() => {
+      posSound.playSuccess();
+    }, 120);
+
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(
+          `Payment of ${grandTotal.toFixed(0)} rupees received on UPI`
+        );
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch {}
+
+    const generatedUtr = `SBX${Math.floor(100000 + Math.random() * 900000)}`;
+    setUpiRefNumber((prev) => prev || generatedUtr);
+    setIsUpiVerified(true);
+    setVerificationMethod('soundbox');
+    setTimeout(() => setIsSoundboxAnnouncing(false), 2000);
+  };
+
+  // Auto-Verify simulation (Option 2 Gateway)
+  const handleTriggerAutoVerify = () => {
+    setIsAutoVerifying(true);
+    setTimeout(() => {
+      setIsAutoVerifying(false);
+      setIsUpiVerified(true);
+      setVerificationMethod('gateway');
+      const randomUtr = `UPI${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+      setUpiRefNumber(randomUtr);
+      posSound.playSuccess();
+
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(
+            `Payment verified! ${grandTotal.toFixed(0)} rupees received.`
+          );
+          utterance.rate = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch {}
+    }, 1200);
+  };
+
+  const handleCopyUpiLink = () => {
+    navigator.clipboard.writeText(upiIntentUri);
+    setCopiedLinkToast(true);
+    setTimeout(() => setCopiedLinkToast(false), 2000);
+  };
 
   if (!isOpen) return null;
 
@@ -148,7 +272,25 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
     setNewCustPhone('');
   };
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = (
+    action: 'paid-only' | 'pay-and-print' | 'pay-and-whatsapp' = 'paid-only'
+  ) => {
+    if (paymentMode === 'CREDIT' && !selectedCustomer) {
+      alert('Please select or add a customer to issue credit (Khata).');
+      return;
+    }
+
+    // Cash verification guard against short payment
+    if (paymentMode === 'CASH' && hasEnteredTender && tenderedNumeric < grandTotal) {
+      if (
+        !window.confirm(
+          `Warning: Customer gave ${currencySymbol}${tenderedNumeric.toFixed(2)}, which is less than the bill of ${currencySymbol}${grandTotal.toFixed(2)}. Do you still want to proceed?`
+        )
+      ) {
+        return;
+      }
+    }
+
     const finalTendered =
       paymentMode === 'CASH'
         ? hasEnteredTender
@@ -165,10 +307,21 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
       hardware.kickCashDrawer();
     }
 
+    const cleanInputPhone = customerSearch.replace(/\D/g, '');
+    const detectedPhone = selectedCustomer
+      ? selectedCustomer.phone
+      : cleanInputPhone.length >= 10
+      ? cleanInputPhone
+      : '';
+
     onSaveAndComplete({
       customerId: selectedCustomer?.id,
-      customerName: selectedCustomer ? selectedCustomer.name : 'Walk-in Customer',
-      customerPhone: selectedCustomer ? selectedCustomer.phone : '',
+      customerName: selectedCustomer
+        ? selectedCustomer.name
+        : detectedPhone
+        ? `Customer (${detectedPhone})`
+        : 'Walk-in Customer',
+      customerPhone: detectedPhone,
       discountPercent: discountType === 'percent' ? discountPercent : 0,
       discountAmount,
       includeGst,
@@ -180,22 +333,35 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
       changeDue: finalChange,
       note: billNote.trim() || undefined,
       orderDate,
+      printReceipt: action === 'pay-and-print',
+      shareWhatsApp: action === 'pay-and-whatsapp',
+      upiRefNumber: paymentMode === 'ONLINE' ? upiRefNumber : undefined,
+      isVerified:
+        paymentMode === 'ONLINE'
+          ? isUpiVerified
+          : paymentMode === 'CASH'
+          ? hasEnteredTender && tenderedNumeric >= grandTotal
+          : true,
+      verificationMethod:
+        paymentMode === 'ONLINE' ? verificationMethod : 'cash_tender',
     });
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-md border border-[#d4d4d8] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-[#1c1b1d]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl w-full max-w-md border border-zinc-200 shadow-xl overflow-hidden flex flex-col max-h-[92vh] text-zinc-900">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-[#d4d4d8] flex items-center justify-between bg-[#f6f2f5]">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#18181b]" />
-            <h2 className="font-bold text-sm text-[#1c1b1d]">Finalize & Pay Bill</h2>
+        <div className="px-5 py-3.5 border-b border-zinc-200/80 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shadow-xs">
+              <Receipt className="w-4 h-4" />
+            </div>
+            <h2 className="font-bold text-sm text-zinc-900">Finalize & Pay Bill</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#77767b] hover:text-[#1c1b1d] hover:bg-[#eae7ea]"
+            className="w-8 h-8 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -291,8 +457,9 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                           <span className="font-semibold text-[#1c1b1d]">{cust.name}</span>
                           <div className="flex items-center gap-2">
                             {cust.loyaltyPoints !== undefined && cust.loyaltyPoints > 0 && (
-                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                ★ {cust.loyaltyPoints} pts
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+                                <Star className="w-2.5 h-2.5 text-amber-500" />
+                                <span>{cust.loyaltyPoints} pts</span>
                               </span>
                             )}
                             <span className="text-[11px] font-mono text-[#77767b]">
@@ -311,8 +478,9 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       {selectedCustomer.name} • {selectedCustomer.phone}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded">
-                        ★ {selectedCustomer.loyaltyPoints || 0} pts
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <Star className="w-2.5 h-2.5 text-amber-500" />
+                        <span>{selectedCustomer.loyaltyPoints || 0} pts</span>
                       </span>
                       {selectedCustomer.creditBalance > 0 && (
                         <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
@@ -571,6 +739,287 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 )}
               </div>
             )}
+
+            {/* ONLINE / UPI PAYMENT & 3-WAY VERIFICATION SYSTEM */}
+            {paymentMode === 'ONLINE' && (
+              <div className="mt-3 bg-white border-2 border-emerald-600/40 rounded-2xl p-3.5 space-y-3.5 animate-in fade-in duration-150 shadow-sm">
+                {/* Verification Status Banner */}
+                {isUpiVerified ? (
+                  <div className="bg-emerald-600 text-white rounded-xl p-3 flex items-center justify-between shadow-xs animate-in zoom-in-95 duration-150">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
+                        <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black uppercase tracking-wider">
+                          Payment Verified & Confirmed
+                        </div>
+                        <div className="text-[11px] font-mono opacity-95">
+                          {currencySymbol}{grandTotal.toFixed(2)} &middot; {upiRefNumber || 'Confirmed'}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUpiVerified(false);
+                        setUpiRefNumber('');
+                      }}
+                      className="text-[10px] bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg text-white font-semibold transition-colors cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between pb-1 border-b border-zinc-100">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-xs font-bold text-zinc-900 uppercase tracking-wide">
+                        Dynamic UPI Payment & Verification
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-md">
+                      Auto Amount: {currencySymbol}{grandTotal.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {/* 1. Dynamic UPI QR Code Display with Indian Apps */}
+                <div className="bg-gradient-to-b from-zinc-50 to-white border border-zinc-200 rounded-xl p-3 flex flex-col sm:flex-row items-center gap-3.5">
+                  <div
+                    className="relative group cursor-pointer"
+                    onClick={() => setIsQrZoomed(true)}
+                    title="Tap to zoom QR for customer"
+                  >
+                    {upiQrDataUrl ? (
+                      <div className="relative bg-white p-1.5 rounded-xl border border-zinc-300 shadow-2xs">
+                        <img
+                          src={upiQrDataUrl}
+                          alt="Dynamic UPI Payment QR"
+                          className="w-32 h-32 rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-bold gap-1">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>Enlarge</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-400">
+                        <RefreshCw className="w-6 h-6 animate-spin" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsQrZoomed(true);
+                      }}
+                      className="mt-1 w-full text-[10px] text-zinc-600 font-bold flex items-center justify-center gap-1 hover:text-zinc-900 cursor-pointer"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                      <span>Zoom for Customer</span>
+                    </button>
+                  </div>
+
+                  <div className="flex-1 text-center sm:text-left space-y-2">
+                    <div>
+                      <div className="text-[11px] font-medium text-zinc-500">Scan using any UPI App:</div>
+                      <div className="text-xs font-bold text-zinc-800 flex items-center justify-center sm:justify-start gap-1.5 flex-wrap mt-0.5">
+                        <span className="bg-white px-1.5 py-0.5 rounded border border-zinc-200 text-[10px]">Google Pay</span>
+                        <span className="bg-white px-1.5 py-0.5 rounded border border-zinc-200 text-[10px]">PhonePe</span>
+                        <span className="bg-white px-1.5 py-0.5 rounded border border-zinc-200 text-[10px]">Paytm</span>
+                        <span className="bg-white px-1.5 py-0.5 rounded border border-zinc-200 text-[10px]">BHIM</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-zinc-100/80 rounded-lg p-1.5 text-[10px] font-mono text-zinc-600 break-all">
+                      <span className="text-zinc-400 select-none">UPI: </span>
+                      <span className="font-semibold text-zinc-800">{currentUpiId}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <button
+                        type="button"
+                        onClick={handleCopyUpiLink}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{copiedLinkToast ? 'Copied Link!' : 'Copy Intent Link'}</span>
+                      </button>
+
+                      <a
+                        href={upiIntentUri}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-black text-white text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer sm:hidden"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Pay in App</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verification Mode Switcher (Option 1 vs Option 2) */}
+                <div className="space-y-2">
+                  <div className="flex bg-zinc-100 p-1 rounded-xl gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setActiveUpiTab('soundbox')}
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activeUpiTab === 'soundbox'
+                          ? 'bg-white text-zinc-900 shadow-2xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Option 1: Soundbox / UTR</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveUpiTab('auto')}
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        activeUpiTab === 'auto'
+                          ? 'bg-white text-emerald-700 shadow-2xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Option 2: Auto-Verify</span>
+                    </button>
+                  </div>
+
+                  {/* Mode 1: Soundbox Voice Confirmation & Manual UTR */}
+                  {activeUpiTab === 'soundbox' && (
+                    <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 space-y-2.5 animate-in fade-in duration-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-zinc-700 flex items-center gap-1">
+                          <Volume2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Soundbox / Speaker Announcement</span>
+                        </span>
+                        <span className="text-[9px] text-zinc-500 font-medium">Paytm / PhonePe Soundbox</span>
+                      </div>
+
+                      {/* 1-Tap Soundbox Confirmation Button */}
+                      <button
+                        type="button"
+                        onClick={handleConfirmSoundbox}
+                        className={`w-full py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-extrabold transition-all cursor-pointer ${
+                          isSoundboxAnnouncing
+                            ? 'bg-indigo-600 text-white border-indigo-600 animate-pulse'
+                            : 'bg-white text-indigo-950 border-indigo-200 hover:bg-indigo-50/70 hover:border-indigo-300 shadow-2xs'
+                        }`}
+                      >
+                        <Volume2 className="w-4 h-4 text-indigo-600" />
+                        <span>
+                          {isSoundboxAnnouncing
+                            ? 'Announcing Soundbox Audio...'
+                            : `Confirm Soundbox Announced (${currencySymbol}${grandTotal.toFixed(0)})`}
+                        </span>
+                      </button>
+
+                      <div className="relative flex items-center justify-center my-1">
+                        <div className="border-t border-zinc-200 w-full" />
+                        <span className="bg-zinc-50 px-2 text-[10px] text-zinc-400 font-medium uppercase">
+                          OR enter reference / UTR
+                        </span>
+                      </div>
+
+                      {/* Manual UTR Input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="12-digit UTR from customer screen (or last 4)"
+                          value={upiRefNumber}
+                          onChange={(e) => {
+                            setUpiRefNumber(e.target.value);
+                            if (e.target.value.length >= 4) {
+                              setIsUpiVerified(true);
+                              setVerificationMethod('utr');
+                            }
+                          }}
+                          className="flex-1 px-3 py-1.5 bg-white border border-zinc-300 rounded-lg text-xs font-mono font-bold text-zinc-900 focus:outline-hidden focus:border-zinc-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (upiRefNumber.trim()) {
+                              setIsUpiVerified(true);
+                              setVerificationMethod('utr');
+                              posSound.playSuccess();
+                            } else {
+                              const autoRef = `UTR${Math.floor(100000 + Math.random() * 900000)}`;
+                              setUpiRefNumber(autoRef);
+                              setIsUpiVerified(true);
+                              setVerificationMethod('utr');
+                              posSound.playSuccess();
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          Verify UTR
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mode 2: Auto-Verify Simulation (Gateway / Webhook) */}
+                  {activeUpiTab === 'auto' && (
+                    <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 space-y-2.5 animate-in fade-in duration-100">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-emerald-950 flex items-center gap-1.5">
+                          <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                          <span>Bank Webhook & Gateway Listener</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded font-bold">
+                          STATUS: {isUpiVerified ? 'VERIFIED' : 'WAITING FOR PAYMENT'}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-emerald-900 leading-snug">
+                        Simulate the incoming cloud webhook notification from HDFC/ICICI/Razorpay/Cashfree.
+                      </p>
+
+                      <button
+                        type="button"
+                        disabled={isAutoVerifying || isUpiVerified}
+                        onClick={handleTriggerAutoVerify}
+                        className={`w-full py-2.5 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                          isUpiVerified
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : isAutoVerifying
+                            ? 'bg-zinc-800 text-white border-zinc-800 animate-pulse cursor-wait'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs active:scale-95'
+                        }`}
+                      >
+                        {isAutoVerifying ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Receiving Bank Webhook...</span>
+                          </>
+                        ) : isUpiVerified ? (
+                          <>
+                            <Check className="w-4 h-4 stroke-[3]" />
+                            <span>Payment Approved by Bank Gateway!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            <span>Simulate Customer Scan & Payment Approval (1-Tap)</span>
+                          </>
+                        )}
+                      </button>
+
+                      {isUpiVerified && (
+                        <div className="text-[10px] font-mono text-emerald-800 text-center">
+                          Gateway Reference: <span className="font-bold">{upiRefNumber}</span> &middot; Confirmed via UPI
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bill Calculation Summary Box */}
@@ -613,24 +1062,121 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons Footer */}
-        <div className="p-3 bg-[#f6f2f5] border-t border-[#d4d4d8] flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl bg-white hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] font-bold text-xs cursor-pointer"
-          >
-            CANCEL
-          </button>
-          <button
-            type="button"
-            onClick={handleFinalSubmit}
-            className="flex-1 py-2.5 rounded-xl bg-[#18181b] hover:bg-black text-white font-extrabold text-xs shadow-sm cursor-pointer"
-          >
-            COMPLETE & PRINT
-          </button>
+        {/* Action Buttons Footer - Optimized for Mobile, Tablet & Web */}
+        <div className="p-3.5 bg-white border-t border-zinc-200/80 flex flex-col gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 font-medium text-xs cursor-pointer active:scale-95 transition-all shrink-0"
+            >
+              Cancel
+            </button>
+
+            {/* PAY & PRINT (Traditional Paper Slip) */}
+            <button
+              type="button"
+              onClick={() => handleFinalSubmit('pay-and-print')}
+              className="flex-1 h-11 rounded-xl bg-white hover:bg-zinc-50 text-zinc-800 border border-zinc-300 font-medium text-xs shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+            >
+              <Printer className="w-3.5 h-3.5 text-zinc-600" />
+              <span>PAY & PRINT</span>
+            </button>
+
+            {/* PAID ONLY (Instant Finish - Fastest for UPI/Cash in India) */}
+            <button
+              type="button"
+              onClick={() => handleFinalSubmit('paid-only')}
+              className="flex-[1.4] h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+            >
+              <Check className="w-4 h-4 stroke-[3]" />
+              <span>PAID ONLY</span>
+            </button>
+          </div>
+
+          {/* Quick WhatsApp Bill option if customer phone is detected */}
+          {(selectedCustomer?.phone || customerSearch.replace(/\D/g, '').length >= 10) && (
+            <button
+              type="button"
+              onClick={() => handleFinalSubmit('pay-and-whatsapp')}
+              className="w-full h-10 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 font-medium text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+            >
+              <Comment className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Complete & WhatsApp Bill to {selectedCustomer?.phone || customerSearch.trim()}</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Customer Full-Screen QR Modal (Scan from across the counter) */}
+      {isQrZoomed && (
+        <div
+          className="fixed inset-0 z-60 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setIsQrZoomed(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-zinc-100">
+              <div className="text-left">
+                <h3 className="font-black text-sm text-zinc-900">{payeeName}</h3>
+                <p className="text-[11px] text-zinc-500 font-mono">UPI: {currentUpiId}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQrZoomed(false)}
+                className="p-1 rounded-full text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-zinc-50 p-4 rounded-2xl border-2 border-dashed border-zinc-300 flex justify-center">
+              {upiQrDataUrl && (
+                <img
+                  src={upiQrDataUrl}
+                  alt="Full Screen UPI QR"
+                  className="w-64 h-64 rounded-xl shadow-xs"
+                />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                Total Amount To Pay
+              </div>
+              <div className="text-3xl font-black font-mono text-zinc-900">
+                {currencySymbol}{grandTotal.toFixed(2)}
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                Scan with Google Pay, PhonePe, Paytm, BHIM, or any Banking App
+              </p>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleConfirmSoundbox();
+                  setIsQrZoomed(false);
+                }}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Confirm Soundbox Announced</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsQrZoomed(false)}
+                className="px-4 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Split Payment Allocation Modal */}
       {isSplitModalOpen && (

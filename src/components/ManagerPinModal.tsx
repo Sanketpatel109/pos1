@@ -1,33 +1,50 @@
 import React, { useState } from 'react';
-import { ShieldAlert, KeyRound, X, Check, Lock } from 'lucide-react';
+import { ShieldAlert, KeyRound, X, Check, Lock, Delete } from '../icons/faIcons';
 import { StaffMember } from '../types';
-import { verifyManagerOrOwnerPin, normalizeRole } from '../utils/permissions';
+import { verifyManagerOrOwnerPin, verifyOwnerPin, normalizeRole } from '../utils/permissions';
 import { posSound } from '../utils/sound';
 
 interface ManagerPinModalProps {
   isOpen: boolean;
   onClose: () => void;
   staffList: StaffMember[];
+  activeStaffName?: string;
+  activeStaffRole?: string;
   actionTitle?: string;
   actionDescription?: string;
-  onAuthorized: (authorizingStaff: StaffMember) => void;
+  title?: string;
+  description?: string;
+  requiredRole?: 'MANAGER' | 'OWNER';
+  requiredRoleLabel?: string;
+  onAuthorized?: (authorizingStaff: StaffMember) => void;
+  onSuccess?: (authorizingStaff: StaffMember) => void;
 }
 
 export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
   isOpen,
   onClose,
   staffList,
-  actionTitle = 'Manager Authorization Required',
-  actionDescription = 'This area contains confidential business data or privileged controls.',
+  activeStaffName,
+  activeStaffRole,
+  actionTitle,
+  actionDescription,
+  title,
+  description,
+  requiredRole = 'MANAGER',
+  requiredRoleLabel,
   onAuthorized,
+  onSuccess,
 }) => {
+  const displayTitle = title || actionTitle || 'Manager Authorization Required';
+  const displayDesc = description || actionDescription || 'This area contains confidential business data or privileged controls.';
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
 
+  const isOwnerOnly = requiredRole === 'OWNER';
   const managers = staffList.filter(
-    (s) => s.active && (normalizeRole(s.role) === 'OWNER' || normalizeRole(s.role) === 'MANAGER')
+    (s) => s.active && (isOwnerOnly ? normalizeRole(s.role) === 'OWNER' : (normalizeRole(s.role) === 'OWNER' || normalizeRole(s.role) === 'MANAGER'))
   );
 
   const handleKeypadPress = (val: string) => {
@@ -54,16 +71,20 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
       return;
     }
 
-    const { verified, staff } = verifyManagerOrOwnerPin(pin, staffList);
+    const { verified, staff } = isOwnerOnly
+      ? verifyOwnerPin(pin, staffList)
+      : verifyManagerOrOwnerPin(pin, staffList);
+
     if (verified && staff) {
       posSound.playBeep();
-      onAuthorized(staff);
+      if (onSuccess) onSuccess(staff);
+      if (onAuthorized) onAuthorized(staff);
       setPin('');
       setError('');
       onClose();
     } else {
       posSound.playBuzzer();
-      setError('Invalid PIN. Manager or Owner PIN required.');
+      setError(isOwnerOnly ? 'Invalid PIN. Store Owner PIN required.' : 'Invalid PIN. Manager or Owner PIN required.');
       setPin('');
     }
   };
@@ -78,8 +99,10 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
               <Lock className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm leading-tight text-white">{actionTitle}</h3>
-              <p className="text-[11px] text-zinc-400">Security Override</p>
+              <h3 className="font-bold text-sm leading-tight text-white">{displayTitle}</h3>
+              <p className="text-[11px] text-zinc-400">
+                {requiredRoleLabel ? `Security Override • ${requiredRoleLabel}` : 'Security Override'}
+              </p>
             </div>
           </div>
           <button
@@ -92,12 +115,26 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
 
         {/* Content Body */}
         <div className="p-5 flex flex-col items-center text-center">
-          <p className="text-xs text-zinc-600 mb-4 max-w-xs">{actionDescription}</p>
+          {/* Decoupled Elevation vs Session Notice */}
+          <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-2.5 mb-3 text-left">
+            <div className="flex items-center gap-1.5 text-amber-900 font-bold text-[11px]">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>Temporary Action Approval Only</span>
+            </div>
+            <p className="text-[10px] text-amber-800 mt-0.5 leading-snug">
+              Authorizes this single operation only. The terminal session remains active under{' '}
+              <strong className="font-extrabold text-amber-950 underline decoration-amber-400">
+                {activeStaffName || 'Staff'} {activeStaffRole ? `(${activeStaffRole})` : ''}
+              </strong>.
+            </p>
+          </div>
+
+          <p className="text-xs text-zinc-600 mb-3 max-w-xs">{displayDesc}</p>
 
           {/* Authorizers badges */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
-            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider">
-              Authorizers:
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
+              Eligible Approvers:
             </span>
             {managers.map((m) => (
               <span
@@ -159,9 +196,10 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
             <button
               type="button"
               onClick={handleBackspace}
-              className="h-11 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-600 transition-all active:scale-95 shadow-2xs cursor-pointer"
+              aria-label="Backspace"
+              className="h-11 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-600 transition-all active:scale-95 shadow-2xs cursor-pointer flex items-center justify-center"
             >
-              ⌫
+              <Delete className="w-4 h-4" />
             </button>
           </div>
 

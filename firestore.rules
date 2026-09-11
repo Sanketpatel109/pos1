@@ -1,39 +1,59 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Test connection check
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
     // User profile
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Store settings
+    // Store configuration settings
     match /settings/{storeId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Catalog items
+    // Catalog items & live inventory
     match /catalog/{itemId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Orders / Invoices
+    // Product categories
+    match /categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    // Orders & Sales Invoices
     match /orders/{orderId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Customers
+    // Bills
+    match /bills/{billId} {
+      allow read, write: if true;
+    }
+
+    // Customers & Khata credit ledger
     match /customers/{customerId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Cash register entries
+    // Cash register entries (drawer IN/OUT)
     match /cashEntries/{entryId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
+    }
+
+    // Staff members & PINs
+    match /staff/{staffId} {
+      allow read, write: if true;
+    }
+
+    // Parked / Held orders
+    match /heldOrders/{orderId} {
+      allow read, write: if true;
     }
   }
 }

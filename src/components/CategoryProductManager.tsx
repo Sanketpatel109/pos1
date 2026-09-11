@@ -16,13 +16,17 @@ import {
   AlertTriangle,
   Truck,
   Printer,
-} from 'lucide-react';
-import { Category, CatalogItem } from '../types';
+} from '../icons/faIcons';
+import { Category, CatalogItem, StaffRole, StorePermissions } from '../types';
+import { canViewCostPrice } from '../utils/permissions';
+import { AddProductModal } from './AddProductModal';
 
 interface CategoryProductManagerProps {
   categories: Category[];
   catalog: CatalogItem[];
   currencySymbol: string;
+  staffRole?: StaffRole;
+  permissions?: StorePermissions;
   onAddCategory: (name: string) => void;
   onUpdateCategory: (id: string, name: string) => void;
   onDeleteCategory: (id: string) => void;
@@ -41,6 +45,8 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   categories,
   catalog,
   currencySymbol,
+  staffRole = 'CASHIER',
+  permissions,
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
@@ -53,6 +59,8 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'categories' | 'products'>('categories');
   const [productFilter, setProductFilter] = useState<'ALL' | 'LOW_STOCK'>('ALL');
+  const isStaffRole = staffRole?.toUpperCase() === 'STAFF' || staffRole?.toUpperCase() === 'CASHIER';
+  const canSeeCost = !isStaffRole && canViewCostPrice(staffRole, permissions);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modals state
@@ -60,18 +68,9 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryNameInput, setCategoryNameInput] = useState('');
 
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<CatalogItem | null>(null);
-  const [prodName, setProdName] = useState('');
-  const [prodCategory, setProdCategory] = useState('');
-  const [prodPrice, setProdPrice] = useState('');
-  const [prodBarcode, setProdBarcode] = useState('');
-  const [prodSku, setProdSku] = useState('');
-  const [prodImageUrl, setProdImageUrl] = useState('');
-  const [prodStock, setProdStock] = useState('20');
-  const [prodThreshold, setProdThreshold] = useState('5');
-  const [prodUnit, setProdUnit] = useState('pcs');
-  const [prodCostPrice, setProdCostPrice] = useState('');
 
   // Low stock count calculation
   const lowStockCount = catalog.filter(
@@ -111,89 +110,72 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   // PRODUCT ACTIONS
   const handleOpenAddProduct = () => {
     setEditingProduct(null);
-    setProdName('');
-    setProdCategory(categories.find((c) => c.name !== 'ALL' && c.name !== 'All Items')?.name || 'Fast Food');
-    setProdPrice('');
-    setProdBarcode('');
-    setProdSku('');
-    setProdImageUrl('');
-    setProdStock('25');
-    setProdThreshold('5');
-    setProdUnit('pcs');
-    setProdCostPrice('');
     setIsProductModalOpen(true);
   };
 
   const handleOpenEditProduct = (item: CatalogItem) => {
     setEditingProduct(item);
-    setProdName(item.name);
-    setProdCategory(item.category);
-    setProdPrice(String(item.price));
-    setProdBarcode(item.barcode || '');
-    setProdSku(item.sku || '');
-    setProdImageUrl(item.image || '');
-    setProdStock(String(item.stock ?? 20));
-    setProdThreshold(String(item.lowStockThreshold ?? 5));
-    setProdUnit(item.unit || 'pcs');
-    setProdCostPrice(item.costPrice ? String(item.costPrice) : '');
     setIsProductModalOpen(true);
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    const priceNum = parseFloat(prodPrice);
-    if (!prodName.trim() || isNaN(priceNum)) return;
-
-    const stockNum = parseInt(prodStock) || 0;
-    const threshNum = parseInt(prodThreshold) || 5;
-    const costNum = parseFloat(prodCostPrice) || undefined;
-
-    if (editingProduct) {
+  const handleSaveProductModal = (productData: {
+    id?: string;
+    name: string;
+    category: string;
+    price: number;
+    gstRate: number;
+    barcode?: string;
+    sku?: string;
+    image?: string;
+    stock: number;
+    lowStockThreshold: number;
+    unit: string;
+    costPrice?: number;
+  }) => {
+    if (editingProduct && productData.id) {
       onUpdateProduct({
         ...editingProduct,
-        name: prodName.trim(),
-        category: prodCategory,
-        price: priceNum,
-        barcode: prodBarcode.trim() || undefined,
-        sku: prodSku.trim() || undefined,
-        image: prodImageUrl.trim() || undefined,
-        stock: stockNum,
-        lowStockThreshold: threshNum,
-        unit: prodUnit.trim() || 'pcs',
-        costPrice: costNum,
+        ...productData,
       });
     } else {
       onAddProduct({
-        name: prodName.trim(),
-        category: prodCategory,
-        price: priceNum,
-        barcode: prodBarcode.trim() || undefined,
-        sku: prodSku.trim() || undefined,
-        image: prodImageUrl.trim() || undefined,
-        stock: stockNum,
-        lowStockThreshold: threshNum,
-        unit: prodUnit.trim() || 'pcs',
-        costPrice: costNum,
+        name: productData.name,
+        category: productData.category,
+        price: productData.price,
+        gstRate: productData.gstRate,
+        barcode: productData.barcode,
+        sku: productData.sku,
+        image: productData.image,
+        stock: productData.stock,
+        lowStockThreshold: productData.lowStockThreshold,
+        unit: productData.unit,
+        costPrice: productData.costPrice,
       });
     }
     setIsProductModalOpen(false);
   };
 
-  // CSV Template download
+  // CSV Template download with standard Indian retail columns
   const handleDownloadSampleCsv = () => {
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      ['Category,Product Name,Price', 'Pizza,Cheesy 7 Pizza,220', 'Fast Food,Veg Burger,60', 'Drinks,Cold Coffee,45'].join('\n');
+    const headers = 'name,barcode,category,selling_price,cost_price,gst_rate,stock_quantity,unit';
+    const sampleRows = [
+      'Amul Butter 500g,8901262010114,Dairy,275,250,5,30,pcs',
+      'Tata Salt 1kg,8901030383123,Grocery,28,24,0,50,pcs',
+      'Fortune Sunlite Oil 1L,8906007281017,Oil & Ghee,155,140,5,20,pack',
+      'Maggi Noodles 70g,8901058852311,Instant Food,14,12,12,100,pcs',
+      'Aashirvaad Atta 5kg,8901725181222,Flour & Grains,265,240,0,15,pack',
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...sampleRows].join('\n');
     const encoded = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encoded);
-    link.setAttribute('download', 'MonoPOS_Catalog_Template.csv');
+    link.setAttribute('download', 'MonoPOS_Inventory_Template.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // CSV Upload Parser
+  // CSV Upload Parser supporting header detection and flexible column mapping
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -203,31 +185,104 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
       const text = evt.target?.result as string;
       if (!text) return;
 
-      const lines = text.split('\n');
+      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        alert('CSV file appears empty or missing rows.');
+        return;
+      }
+
+      // Helper to parse CSV line respecting quotes
+      const parseCsvLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const headerCols = parseCsvLine(lines[0]).map((h) => h.toLowerCase().replace(/[\s_-]+/g, ''));
+
+      // Find column indices
+      const nameIdx = headerCols.findIndex((h) => h === 'name' || h === 'productname' || h === 'item');
+      const barcodeIdx = headerCols.findIndex((h) => h === 'barcode' || h === 'code' || h === 'upc' || h === 'ean');
+      const categoryIdx = headerCols.findIndex((h) => h === 'category' || h === 'cat');
+      const priceIdx = headerCols.findIndex((h) => h === 'sellingprice' || h === 'price' || h === 'mrp' || h === 'rate');
+      const costPriceIdx = headerCols.findIndex((h) => h === 'costprice' || h === 'cost' || h === 'purchaseprice');
+      const gstIdx = headerCols.findIndex((h) => h === 'gstrate' || h === 'gst' || h === 'tax' || h === 'taxrate');
+      const stockIdx = headerCols.findIndex((h) => h === 'stockquantity' || h === 'stock' || h === 'qty' || h === 'quantity');
+      const unitIdx = headerCols.findIndex((h) => h === 'unit' || h === 'uom');
+
       const newCats: string[] = [];
       const newItems: Omit<CatalogItem, 'id'>[] = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const [cat, name, price] = line.split(',');
-        if (cat && name && price) {
-          if (!newCats.includes(cat.trim())) newCats.push(cat.trim());
+        const cols = parseCsvLine(lines[i]);
+        if (cols.length === 0 || cols.every((c) => !c)) continue;
+
+        let name = '';
+        let category = 'General';
+        let price = 0;
+        let barcode: string | undefined = undefined;
+        let costPrice: number | undefined = undefined;
+        let gstRate: number | undefined = 5;
+        let stock: number | undefined = 20;
+        let unit = 'pcs';
+
+        // Check if header-based or legacy fallback (Category, Product Name, Price)
+        if (nameIdx !== -1) {
+          name = cols[nameIdx] || '';
+          if (categoryIdx !== -1 && cols[categoryIdx]) category = cols[categoryIdx];
+          if (priceIdx !== -1 && cols[priceIdx]) price = parseFloat(cols[priceIdx]) || 0;
+          if (barcodeIdx !== -1 && cols[barcodeIdx]) barcode = cols[barcodeIdx];
+          if (costPriceIdx !== -1 && cols[costPriceIdx]) costPrice = parseFloat(cols[costPriceIdx]) || undefined;
+          if (gstIdx !== -1 && cols[gstIdx]) gstRate = parseFloat(cols[gstIdx]) || 0;
+          if (stockIdx !== -1 && cols[stockIdx]) stock = parseFloat(cols[stockIdx]) || 0;
+          if (unitIdx !== -1 && cols[unitIdx]) unit = cols[unitIdx];
+        } else {
+          // Legacy 3-column fallback: Category, Product Name, Price
+          category = cols[0] || 'General';
+          name = cols[1] || '';
+          price = parseFloat(cols[2]) || 0;
+        }
+
+        if (name.trim()) {
+          if (!newCats.includes(category.trim())) newCats.push(category.trim());
           newItems.push({
             name: name.trim(),
-            category: cat.trim(),
-            price: parseFloat(price.trim()) || 0,
+            category: category.trim(),
+            price: price >= 0 ? price : 0,
+            barcode: barcode?.trim() || undefined,
+            costPrice: costPrice,
+            gstRate: gstRate,
+            stock: stock,
+            lowStockThreshold: 5,
+            unit: unit.trim() || 'pcs',
           });
         }
       }
 
       if (newItems.length > 0) {
         onImportCatalogFromXls(newCats, newItems);
-        alert(`Successfully imported ${newItems.length} products from CSV!`);
+        alert(`Successfully imported/updated ${newItems.length} items from CSV!`);
         setIsXlsModalOpen(false);
+      } else {
+        alert('No valid products found in the uploaded file. Please check column format.');
       }
     };
     reader.readAsText(file);
+    // Reset file input
+    e.target.value = '';
   };
 
   return (
@@ -407,26 +462,63 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                   </button>
                 )}
 
-                {onOpenBarcodeGenerator && (
+                {/* Tools Dropdown Menu */}
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => onOpenBarcodeGenerator()}
-                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
-                    title="Print barcode stickers sheet"
+                    onClick={() => setIsToolsOpen(!isToolsOpen)}
+                    className="px-3 py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                    title="Tools Menu"
                   >
-                    <Barcode className="w-3.5 h-3.5" />
-                    <span>Print Labels</span>
+                    <span>Tools ▾</span>
                   </button>
-                )}
 
-                <button
-                  type="button"
-                  onClick={() => setIsXlsModalOpen(true)}
-                  className="px-3 py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Import CSV</span>
-                </button>
+                  {isToolsOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-20"
+                        onClick={() => setIsToolsOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-[#d4d4d8] rounded-xl shadow-lg p-1.5 z-30 flex flex-col gap-1">
+                        {onOpenBarcodeGenerator && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsToolsOpen(false);
+                              onOpenBarcodeGenerator();
+                            }}
+                            className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                          >
+                            <Barcode className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Print Labels</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsToolsOpen(false);
+                            handleDownloadSampleCsv();
+                          }}
+                          className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Download Template</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsToolsOpen(false);
+                            setIsXlsModalOpen(true);
+                          }}
+                          className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Import CSV</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <button
                   type="button"
@@ -563,7 +655,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                               {currencySymbol}
                               {item.price.toFixed(2)}
                             </span>
-                            {item.costPrice && (
+                            {item.costPrice && canSeeCost && (
                               <span className="text-[10px] text-zinc-400 block font-mono">
                                 Cost: {currencySymbol}{item.costPrice.toFixed(0)}
                               </span>
@@ -644,174 +736,16 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         </div>
       )}
 
-      {/* Product Edit Modal */}
-      {isProductModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3">
-            <h3 className="font-bold text-sm text-[#1c1b1d]">
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
-            </h3>
-            <form onSubmit={handleSaveProduct} className="space-y-2.5">
-              <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                  Product Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Paneer Tikka Burger"
-                  value={prodName}
-                  onChange={(e) => setProdName(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                  Category
-                </label>
-                <select
-                  value={prodCategory}
-                  onChange={(e) => setProdCategory(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
-                >
-                  {categories
-                    .filter((c) => c.name !== 'ALL' && c.name !== 'All Items')
-                    .map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                  Unit Price ({currencySymbol})
-                </label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={prodPrice}
-                  onChange={(e) => setProdPrice(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                    Barcode / EAN
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 890103001"
-                    value={prodBarcode}
-                    onChange={(e) => setProdBarcode(e.target.value)}
-                    className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                    SKU Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. PIZZA-CH7"
-                    value={prodSku}
-                    onChange={(e) => setProdSku(e.target.value)}
-                    className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#f6f2f5] p-2.5 rounded-xl border border-[#d4d4d8]">
-                <div>
-                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                    Stock on Hand
-                  </label>
-                  <input
-                    type="number"
-                    value={prodStock}
-                    onChange={(e) => setProdStock(e.target.value)}
-                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#1c1b1d] focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                    Reorder Alert (&lt;)
-                  </label>
-                  <input
-                    type="number"
-                    value={prodThreshold}
-                    onChange={(e) => setProdThreshold(e.target.value)}
-                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#1c1b1d] focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                    Inventory Unit
-                  </label>
-                  <select
-                    value={prodUnit}
-                    onChange={(e) => setProdUnit(e.target.value)}
-                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2 py-1 text-xs font-bold text-[#1c1b1d] focus:outline-hidden"
-                  >
-                    <option value="pcs">pcs</option>
-                    <option value="kg">kg</option>
-                    <option value="g">g</option>
-                    <option value="ltr">ltr</option>
-                    <option value="ml">ml</option>
-                    <option value="box">box</option>
-                    <option value="pack">pack</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                    Cost Price ({currencySymbol})
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Optional"
-                    value={prodCostPrice}
-                    onChange={(e) => setProdCostPrice(e.target.value)}
-                    className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2 py-1 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                  Image URL (Optional)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={prodImageUrl}
-                  onChange={(e) => setProdImageUrl(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsProductModalOpen(false)}
-                  className="flex-1 py-2 bg-[#f6f2f5] text-[#1c1b1d] rounded-xl text-xs font-bold border border-[#d4d4d8]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 bg-[#18181b] text-white rounded-xl text-xs font-bold hover:bg-black"
-                >
-                  Save Product
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Product Add/Edit Modal with modern Photo Upload / Camera dropzone */}
+      <AddProductModal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        editingProduct={editingProduct}
+        categories={categories}
+        currencySymbol={currencySymbol}
+        canSeeCost={canSeeCost}
+        onSaveProduct={handleSaveProductModal}
+      />
 
       {/* CSV Bulk Import Modal */}
       {isXlsModalOpen && (
@@ -827,11 +761,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
               </button>
             </div>
 
-            <p className="text-xs text-[#47464b]">
-              Upload a .csv file formatted with 3 columns:
-              <br />
-              <code className="bg-[#f0edf0] px-1.5 py-0.5 rounded text-[11px] font-mono mt-1 block">
-                Category, Product Name, Price
+            <p className="text-xs text-[#47464b] space-y-1">
+              <span>Upload a .csv file with inventory details. Existing barcodes will update stock and pricing; new items will be added:</span>
+              <code className="bg-[#f0edf0] p-1.5 rounded text-[10px] font-mono block leading-relaxed break-all">
+                name, barcode, category, selling_price, cost_price, gst_rate, stock_quantity, unit
               </code>
             </p>
 

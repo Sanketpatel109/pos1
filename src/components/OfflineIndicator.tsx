@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { WifiOff, CheckCircle2 } from 'lucide-react';
+import { WifiOff, CheckCircle2 } from '../icons/faIcons';
 
 export const OfflineIndicator: React.FC = () => {
   const [isOnline, setIsOnline] = useState(

@@ -17,8 +17,8 @@ import {
   TrendingUp,
   Lock,
   ShieldCheck,
-} from 'lucide-react';
-import { CatalogItem, StaffRole } from '../types';
+} from '../icons/faIcons';
+import { CatalogItem, StaffRole, StorePermissions } from '../types';
 import { hardware } from '../utils/hardware';
 import { posSound } from '../utils/sound';
 import { canViewCostPrice, canAccessScreen } from '../utils/permissions';
@@ -28,11 +28,13 @@ interface PriceCheckModalProps {
   catalog: CatalogItem[];
   currencySymbol: string;
   staffRole?: StaffRole;
+  permissions?: StorePermissions;
   onClose: () => void;
   onAddToCart: (item: CatalogItem) => void;
   onUpdateStock: (productId: string, newStock: number) => void;
   onRegisterBarcode?: (barcode: string) => void;
   onRequestManagerOverride?: () => void;
+  onRequestCostUnlock?: (onApproved: () => void) => void;
 }
 
 export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
@@ -40,11 +42,13 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
   catalog,
   currencySymbol,
   staffRole = 'CASHIER',
+  permissions,
   onClose,
   onAddToCart,
   onUpdateStock,
   onRegisterBarcode,
   onRequestManagerOverride,
+  onRequestCostUnlock,
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<CatalogItem | null>(null);
   const [lastScannedCode, setLastScannedCode] = useState<string>('');
@@ -52,6 +56,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
   const [manualInput, setManualInput] = useState<string>('');
   const [isEditingStock, setIsEditingStock] = useState<boolean>(false);
   const [tempStockValue, setTempStockValue] = useState<string>('');
+  const [isCostUnlocked, setIsCostUnlocked] = useState<boolean>(false);
 
   // Default to first product if none selected
   useEffect(() => {
@@ -117,7 +122,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
     }
   };
 
-  const canViewCosts = canViewCostPrice(staffRole);
+  const canViewCosts = isCostUnlocked || canViewCostPrice(staffRole, permissions);
   const canEditInventory = canAccessScreen(staffRole, 'categories-products');
 
   const marginPercent =
@@ -340,10 +345,22 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                           : 'N/A'}
                       </div>
                     ) : (
-                      <div className="text-xs font-bold text-zinc-400 flex items-center gap-1 py-1">
-                        <Lock className="w-3.5 h-3.5 text-zinc-400" />
-                        Confidential
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onRequestCostUnlock) {
+                            onRequestCostUnlock(() => setIsCostUnlocked(true));
+                          }
+                        }}
+                        className="text-xs font-bold text-zinc-400 hover:text-zinc-700 flex items-center gap-1 py-1 cursor-pointer group"
+                        title="Tap to unlock with Manager or Owner PIN"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600" />
+                        <span>Confidential</span>
+                        <span className="text-[10px] text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity underline">
+                          unlock
+                        </span>
+                      </button>
                     )}
                   </div>
                   <span className="text-[10px] text-zinc-500 font-medium">

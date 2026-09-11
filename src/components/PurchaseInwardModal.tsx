@@ -11,7 +11,7 @@ import {
   AlertCircle,
   FileText,
   Clock,
-} from 'lucide-react';
+} from '../icons/faIcons';
 import { CatalogItem, InwardStockEntry, InwardStockItem } from '../types';
 
 interface PurchaseInwardModalProps {
@@ -145,36 +145,36 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/40 backdrop-blur-xs animate-in fade-in duration-150">
       <div
         className="w-full max-w-3xl bg-white rounded-3xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-zinc-900 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-white border-b border-zinc-100 text-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-xs">
               <PackagePlus className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white leading-tight">
+              <h2 className="text-base font-bold text-zinc-900 leading-tight">
                 Purchase Order & Inward Stock Receiving
               </h2>
-              <p className="text-xs text-zinc-400 font-medium">
+              <p className="text-xs text-zinc-500 font-normal">
                 Log supplier shipments & automatically replenish inventory
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex bg-zinc-800 p-0.5 rounded-xl text-xs font-bold">
+            <div className="flex bg-zinc-100 p-0.5 rounded-xl text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setActiveTab('new-inward')}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   activeTab === 'new-inward'
-                    ? 'bg-white text-zinc-950 shadow-2xs'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 Inward Stock
@@ -182,10 +182,10 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('history')}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   activeTab === 'history'
-                    ? 'bg-white text-zinc-950 shadow-2xs'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-white text-zinc-900 shadow-2xs font-semibold'
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 Inward History ({inwardHistory.length})
@@ -194,7 +194,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -245,13 +245,13 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
               {/* Items List */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-zinc-700 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
                     Received Inventory Items
                   </span>
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="px-2.5 py-1 bg-zinc-900 text-white text-xs font-bold rounded-lg flex items-center gap-1 hover:bg-black cursor-pointer shadow-2xs"
+                    className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-[0.98]"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Product
                   </button>
@@ -273,7 +273,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                           <select
                             value={item.productId}
                             onChange={(e) => handleProductSelect(idx, e.target.value)}
-                            className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-zinc-800"
+                            className="w-full h-10 bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 text-xs font-medium text-zinc-800 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
                           >
                             {catalog.map((catItem) => (
                               <option key={catItem.id} value={catItem.id}>
@@ -293,7 +293,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                               onChange={(e) =>
                                 handleUpdateItem(idx, 'quantity', parseInt(e.target.value) || 0)
                               }
-                              className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2 py-1 text-xs font-bold text-center text-zinc-900"
+                              className="w-full h-10 bg-zinc-50 border border-zinc-200 rounded-xl px-2 text-xs font-medium text-center text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 tabular-nums tracking-tight"
                             />
                           </div>
 
@@ -308,13 +308,13 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                               onChange={(e) =>
                                 handleUpdateItem(idx, 'unitCost', parseFloat(e.target.value) || 0)
                               }
-                              className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2 py-1 text-xs font-bold text-center text-zinc-900"
+                              className="w-full h-10 bg-zinc-50 border border-zinc-200 rounded-xl px-2 text-xs font-medium text-center text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 tabular-nums tracking-tight"
                             />
                           </div>
 
                           <div className="w-24 text-right">
                             <span className="text-[10px] text-zinc-400 block mb-0.5">New Stock</span>
-                            <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block tabular-nums tracking-tight">
                               {newStock} {catalogItem?.unit || 'pcs'}
                             </span>
                           </div>
@@ -323,7 +323,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
                             disabled={itemsToReceive.length === 1}
-                            className="p-1.5 text-zinc-400 hover:text-red-500 rounded-lg disabled:opacity-30 cursor-pointer"
+                            className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg disabled:opacity-30 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -335,12 +335,12 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
               </div>
 
               {/* Total & Submit */}
-              <div className="p-4 bg-zinc-900 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="p-4 bg-white border border-zinc-200/80 rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div>
-                  <span className="text-xs text-zinc-400 block font-medium">
+                  <span className="text-xs text-zinc-500 block font-medium">
                     Total Purchase Inward Value
                   </span>
-                  <span className="text-xl font-black text-white">
+                  <span className="text-xl font-bold text-zinc-900 tabular-nums tracking-tight">
                     {currencySymbol}{totalInwardCost.toFixed(2)}
                   </span>
                   <span className="text-[10px] text-zinc-400 block mt-0.5">
@@ -352,13 +352,13 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                    className="flex-1 sm:flex-none h-11 px-4 rounded-xl text-xs font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-zinc-950 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all cursor-pointer"
+                    className="flex-1 sm:flex-none h-11 px-5 rounded-xl text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Confirm Stock Replenishment</span>

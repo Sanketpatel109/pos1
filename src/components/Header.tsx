@@ -1,273 +1,215 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Menu,
-  Search,
+  PauseCircle,
+  Maximize2,
+  Minimize2,
   Plus,
-  Volume2,
-  VolumeX,
-  ShieldCheck,
-  ShoppingBag,
-  Zap,
-  BarChart3,
-  Package,
-  Users,
-  Wallet,
-  UserCheck,
-  Scan,
+  Camera,
   Cloud,
-} from 'lucide-react';
+} from '../icons/faIcons';
 import { ActiveScreen, StaffRole } from '../types';
 import { User } from '../firebase';
-import { PWAInstallButton } from './PWAInstallButton';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
 
-interface HeaderProps {
-  activeScreen: ActiveScreen;
-  orderNumber: number;
+export interface HeaderProps {
+  activeScreen?: ActiveScreen;
+  orderNumber?: number;
   heldOrdersCount?: number;
   soundEnabled?: boolean;
   activeStaffName?: string;
   activeStaffRole?: StaffRole;
   user?: User | null;
   isSyncing?: boolean;
-  onOpenCloudModal?: () => void;
   onToggleSound?: () => void;
   onOpenMenu: () => void;
-  onNavigate: (screen: ActiveScreen) => void;
+  onNavigate?: (screen: ActiveScreen) => void;
   onOpenSearch?: () => void;
   onOpenCustomItem?: () => void;
   onOpenScanner?: (mode?: 'add-to-bill' | 'price-check' | 'search') => void;
   onOpenStaffSwitch?: () => void;
   onOpenPriceCheck?: () => void;
+  onOpenHeldOrders?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  activeScreen,
-  orderNumber,
   heldOrdersCount = 0,
-  soundEnabled = true,
-  activeStaffName = 'Alex Cashier',
-  activeStaffRole = 'CASHIER',
-  user = null,
+  activeStaffName = 'Anand',
+  activeStaffRole = 'OWNER',
   isSyncing = false,
-  onOpenCloudModal,
-  onToggleSound,
   onOpenMenu,
-  onNavigate,
-  onOpenSearch,
+  onOpenStaffSwitch,
+  onOpenHeldOrders,
   onOpenCustomItem,
   onOpenScanner,
-  onOpenStaffSwitch,
-  onOpenPriceCheck,
 }) => {
-  const currentRole = normalizeRole(activeStaffRole);
-  const roleMeta = ROLE_DEFINITIONS[currentRole];
-  const getScreenTitle = () => {
-    switch (activeScreen) {
-      case 'item-wise':
-        return 'Item-Wise Terminal';
-      case 'quick-bill':
-        return 'Quick Bill Terminal';
-      case 'reports':
-        return 'Reports & Invoices';
-      case 'categories-products':
-        return 'Catalog Manager';
-      case 'customers':
-        return 'Customer Directory';
-      case 'credit-ledger':
-        return 'Khata Credit Ledger';
-      case 'cash-management':
-        return 'Cash Drawer';
-      case 'staff-management':
-        return 'Staff Terminals';
-      default:
-        return 'MonoPOS Industrial';
-    }
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Sync fullscreen state with document and F11 keyboard shortcut
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    try {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    } catch {}
   };
 
-  const navItems: { id: ActiveScreen; label: string; icon: React.ReactNode }[] = [
-    { id: 'item-wise', label: 'Item-Wise', icon: <ShoppingBag className="w-3.5 h-3.5" /> },
-    { id: 'quick-bill', label: 'Quick Bill', icon: <Zap className="w-3.5 h-3.5" /> },
-    { id: 'reports', label: 'Reports', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-    { id: 'categories-products', label: 'Catalog', icon: <Package className="w-3.5 h-3.5" /> },
-    { id: 'customers', label: 'Customers', icon: <Users className="w-3.5 h-3.5" /> },
-    { id: 'cash-management', label: 'Cash Drawer', icon: <Wallet className="w-3.5 h-3.5" /> },
-    { id: 'staff-management', label: 'Staff', icon: <UserCheck className="w-3.5 h-3.5" /> },
-  ];
+  const currentRole = normalizeRole(activeStaffRole);
+  const roleMeta = ROLE_DEFINITIONS[currentRole];
+  const operatorDisplayName = activeStaffName || 'Anand';
 
   return (
-    <header className="flex justify-between items-center px-3 sm:px-4 h-15 w-full bg-white border-b border-[#d4d4d8] sticky top-0 z-40 shrink-0">
-      {/* Left: Hamburger Menu & Screen Title */}
-      <div className="flex items-center gap-2.5">
+    <header className="flex items-center justify-between gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 h-14 w-full bg-white border-b border-zinc-200/80 sticky top-0 z-40 shrink-0 select-none">
+      {/* 
+        ========================================================================
+        LEFT ZONE: [≡ Menu] (36x36px) and store/operator name ("Anand")
+        Avatar circle: 32x32px (w-8 h-8, text-xs)
+        ========================================================================
+      */}
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
+        {/* Navigation Menu Trigger [≡] */}
         <button
           id="btn-sidebar-menu"
+          type="button"
           onClick={onOpenMenu}
           aria-label="Open Navigation Menu"
-          className="text-[#1c1b1d] hover:bg-[#f0edf0] p-2 rounded-xl transition-colors active:scale-95 cursor-pointer flex items-center justify-center border border-transparent hover:border-[#d4d4d8]"
+          className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
         >
-          <Menu className="w-5 h-5 text-[#1c1b1d]" />
+          <Menu className="w-[18px] h-[18px]" strokeWidth={2} />
         </button>
 
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#18181b] text-white rounded-lg flex items-center justify-center font-black text-xs tracking-tighter">
-            M
+        {/* Store Monogram & Name */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-xs">
+            A
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-sm sm:text-base font-extrabold text-[#1c1b1d] tracking-tight leading-none">
-              {getScreenTitle()}
-            </h1>
-            <span className="text-[10px] text-[#77767b] font-mono leading-tight mt-0.5 hidden sm:block">
-              MonoPOS v2.4 • Shift #1
+          <div className="flex items-center gap-1.5 min-w-0 truncate">
+            <span className="text-xs sm:text-sm font-bold text-zinc-900 tracking-tight truncate">
+              Anand
+              <span className="hidden sm:inline"> Supermarket</span>
             </span>
+            <span className="text-zinc-300 text-xs font-semibold hidden md:inline">·</span>
+
+            {/* Operator Tag on Desktop / Tablet */}
+            <button
+              type="button"
+              id="btn-header-operator"
+              onClick={onOpenStaffSwitch}
+              title={`Switch operator: ${operatorDisplayName} (${roleMeta.label})`}
+              className="hidden md:flex items-center gap-1 hover:bg-zinc-50 py-0.5 px-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+            >
+              <span className="text-xs font-medium text-zinc-600">{operatorDisplayName}</span>
+              <span className="bg-zinc-100 text-zinc-600 border border-zinc-200 font-mono text-[9px] uppercase font-medium px-1.5 py-0.2 rounded">
+                {roleMeta.badgeLabel || 'OWNER'}
+              </span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Center: Tablet Quick Screen Navigation Bar */}
-      <div className="hidden lg:flex items-center gap-1 bg-[#f6f2f5] p-1 rounded-xl border border-[#d4d4d8]">
-        {navItems.map((item) => {
-          const isActive =
-            activeScreen === item.id ||
-            (item.id === 'customers' && activeScreen === 'credit-ledger');
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                isActive
-                  ? 'bg-[#18181b] text-white shadow-xs'
-                  : 'text-[#47464b] hover:text-[#1c1b1d] hover:bg-[#eae7ea]'
-              }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Right: Cashier Badge & Actions */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Operator info pill - Quick Staff Switch (1-Second 4-Digit PIN) */}
-        <button
-          id="btn-header-operator-pill"
-          onClick={onOpenStaffSwitch ? onOpenStaffSwitch : () => onNavigate('staff-management')}
-          title={`Active Operator: ${activeStaffName} (${roleMeta.label}) - Click to Switch Shift`}
-          className="flex items-center gap-1 sm:gap-1.5 bg-[#f0edf0] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-xl px-2 sm:px-2.5 py-1 text-xs cursor-pointer transition-all active:scale-95 shadow-2xs"
-        >
-          <span
-            className={`w-2 h-2 rounded-full shrink-0 ${
-              currentRole === 'OWNER'
-                ? 'bg-amber-500'
-                : currentRole === 'MANAGER'
-                ? 'bg-indigo-500'
-                : currentRole === 'CASHIER'
-                ? 'bg-emerald-500 animate-pulse'
-                : 'bg-zinc-500'
-            }`}
-          />
-          <span className="hidden sm:inline text-[#77767b] font-medium">Operator:</span>
-          <span className="text-[#1c1b1d] font-bold max-w-[80px] sm:max-w-[120px] truncate">
-            {activeStaffName}
-          </span>
-          <span
-            className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded border ${roleMeta.badgeBg} ${roleMeta.badgeText} ${roleMeta.badgeBorder} hidden xs:inline-block`}
-          >
-            {roleMeta.badgeLabel}
-          </span>
-        </button>
-
-        {/* Laser Gun / Price Check Pill */}
-        {onOpenPriceCheck && (
+      {/* 
+        ========================================================================
+        RIGHT ZONE: [+] (Custom Item), [] (Scan), [ 1] (Held Bills), [] (Kiosk)
+        Consistent 36x36px rounded-xl (w-9 h-9, 18px icons, bg-zinc-50 border-zinc-200 text-zinc-700)
+        Compact button spacing: gap-1
+        ========================================================================
+      */}
+      <div className="flex items-center gap-1 shrink-0">
+        {/* [+] Custom Item Button */}
+        {onOpenCustomItem && (
           <button
-            id="btn-header-price-check"
-            onClick={onOpenPriceCheck}
-            title="Laser Scanner Gun Price Check & Info (F2)"
-            className="flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 bg-white hover:bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs text-zinc-800"
-          >
-            <Scan className="w-3.5 h-3.5 text-zinc-700" />
-            <span className="hidden md:inline">Price Check</span>
-            <kbd className="hidden lg:inline text-[9px] font-mono bg-zinc-100 text-zinc-600 px-1 py-0.2 rounded border border-zinc-200">
-              F2
-            </kbd>
-          </button>
-        )}
-
-        {/* Cloud Sync & Google Auth Pill */}
-        {onOpenCloudModal && (
-          <button
-            id="btn-header-cloud-sync"
-            onClick={onOpenCloudModal}
-            title={user ? `Cloud Connected: ${user.email}` : 'Connect Google Account for Cloud Sync'}
-            className="flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 bg-white hover:bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs"
-          >
-            {user ? (
-              <>
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || 'Google'}
-                    className="w-4 h-4 rounded-full border border-zinc-300"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                )}
-                <span className="text-zinc-800 font-bold hidden sm:inline">
-                  {isSyncing ? 'Syncing...' : 'Cloud Synced'}
-                </span>
-                <Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-indigo-600' : 'text-emerald-600'}`} />
-              </>
-            ) : (
-              <>
-                <Cloud className="w-3.5 h-3.5 text-zinc-500" />
-                <span className="text-zinc-700 hidden sm:inline">Sign In (Cloud)</span>
-              </>
-            )}
-          </button>
-        )}
-
-        {/* PWA In-App Install Prompt */}
-        <PWAInstallButton variant="header" />
-
-        {onToggleSound && (
-          <button
-            onClick={onToggleSound}
-            title={soundEnabled ? 'Mute Audio Feedback' : 'Enable Audio Feedback'}
-            className="p-2 rounded-xl text-[#77767b] hover:text-[#1c1b1d] hover:bg-[#f0edf0] transition-colors active:scale-95 cursor-pointer border border-[#d4d4d8]/60"
-          >
-            {soundEnabled ? (
-              <Volume2 className="w-4 h-4 text-[#18181b]" />
-            ) : (
-              <VolumeX className="w-4 h-4 text-zinc-400" />
-            )}
-          </button>
-        )}
-
-        {onOpenScanner && (
-          <button
-            id="btn-header-scanner"
-            onClick={() => onOpenScanner('add-to-bill')}
-            title="Scan Barcode / QR Code (Add Product / Check Price)"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-[#f0edf0] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
-          >
-            <Scan className="w-4 h-4 text-[#18181b]" />
-            <span className="hidden sm:inline">Scan</span>
-          </button>
-        )}
-
-        {onOpenCustomItem && activeScreen === 'item-wise' && (
-          <button
+            type="button"
             id="btn-header-custom-item"
             onClick={onOpenCustomItem}
-            className="bg-[#18181b] text-white px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold text-xs hover:bg-black transition-all active:scale-95 cursor-pointer whitespace-nowrap shadow-2xs flex items-center gap-1.5"
+            aria-label="Add Custom Item"
+            title="Add Custom Item"
+            className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span>Custom Item</span>
+            <Plus className="w-[18px] h-[18px]" strokeWidth={2} />
           </button>
         )}
+
+        {/* [] Camera/Scan Button */}
+        {onOpenScanner && (
+          <button
+            type="button"
+            id="btn-header-scanner"
+            onClick={() => onOpenScanner('add-to-bill')}
+            aria-label="Scan Barcode / QR Code"
+            title="Scan Barcode / QR Code"
+            className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
+          >
+            <Camera className="w-[18px] h-[18px]" strokeWidth={2} />
+          </button>
+        )}
+
+        {/* [ 1] Held Bills Button */}
+        {onOpenHeldOrders && (
+          <button
+            type="button"
+            id="btn-header-held-bills"
+            onClick={onOpenHeldOrders}
+            aria-label={`Held Bills (${heldOrdersCount})`}
+            title={
+              heldOrdersCount > 0
+                ? `${heldOrdersCount} parked bill(s). Tap to recall.`
+                : 'Held Bills (0)'
+            }
+            className={`h-9 min-w-[36px] px-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs ${
+              heldOrdersCount > 0 ? 'ring-2 ring-blue-600/30' : ''
+            }`}
+          >
+            <PauseCircle className="w-4 h-4 text-zinc-700 shrink-0" strokeWidth={2} />
+            <span className="bg-blue-600 text-white text-[11px] font-semibold rounded-full w-4 h-4 flex items-center justify-center shrink-0 leading-none tabular-nums tracking-tight">
+              {heldOrdersCount}
+            </span>
+          </button>
+        )}
+
+        {/* [] Kiosk Fullscreen Toggle */}
+        <button
+          type="button"
+          id="btn-header-kiosk-fullscreen"
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? 'Exit Fullscreen Kiosk Mode' : 'Enter Fullscreen Kiosk Mode'}
+          title={
+            isFullscreen
+              ? 'Exit Fullscreen Kiosk Mode (F11 / Esc)'
+              : 'Enter Edge-to-Edge Fullscreen Kiosk Mode (F11)'
+          }
+          className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
+        >
+          {isFullscreen ? (
+            <Minimize2 className="w-[18px] h-[18px]" strokeWidth={2} />
+          ) : (
+            <Maximize2 className="w-[18px] h-[18px]" strokeWidth={2} />
+          )}
+        </button>
       </div>
     </header>
   );
 };
-
