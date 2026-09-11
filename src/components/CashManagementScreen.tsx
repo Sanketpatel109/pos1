@@ -8,16 +8,18 @@ import {
   Minus,
   CheckCircle,
   X,
-  Banknote,
   Calculator,
   ShieldCheck,
   Coffee,
   Truck,
   Milk,
   UserCheck,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { CashEntry } from '../types';
 import { CashDenominationCounter } from './CashDenominationCounter';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 interface CashManagementScreenProps {
   cashEntries: CashEntry[];
@@ -56,13 +58,11 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
     return sum - entry.amount;
   }, 0);
 
-  const totalIn = cashEntries
-    .filter((e) => e.type === 'IN' || e.type === 'OPENING')
-    .reduce((sum, e) => sum + e.amount, 0);
+  const inEntries = cashEntries.filter((e) => e.type === 'IN' || e.type === 'OPENING');
+  const totalIn = inEntries.reduce((sum, e) => sum + e.amount, 0);
 
-  const totalOut = cashEntries
-    .filter((e) => e.type === 'OUT')
-    .reduce((sum, e) => sum + e.amount, 0);
+  const outEntries = cashEntries.filter((e) => e.type === 'OUT');
+  const totalOut = outEntries.reduce((sum, e) => sum + e.amount, 0);
 
   const filteredEntries = cashEntries.filter(
     (e) => filterType === 'ALL' || e.type === filterType
@@ -101,78 +101,135 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-[#fcf8fb] overflow-hidden">
-      {/* Top Drawer Balance Strip with 2 Prominent Actions */}
-      <div className="bg-[#f6f2f5] border-b border-[#d4d4d8] p-3.5 sm:p-4 space-y-3 shrink-0">
+    <div className="flex-1 flex flex-col min-h-0 bg-muted/30 text-foreground overflow-hidden">
+      {/* Top Drawer Balance Strip with Metric Cards & Quick Actions */}
+      <div className="bg-card border-b border-border p-3 sm:p-4 space-y-3 shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#77767b] block">
-              Current Galla Cash
-            </span>
-            <span className="text-2xl sm:text-3xl font-black font-mono text-[#1c1b1d]">
-              {currencySymbol}
-              {drawerBalance.toFixed(2)}
-            </span>
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
+              Cash Drawer (Galla Management)
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Track physical till balance, record petty cash expenses, and reconcile shifts
+            </p>
           </div>
 
-          {/* Consolidate to TWO prominent actions */}
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant={showDenominationCalculator ? 'default' : 'outline'}
               onClick={() => setShowDenominationCalculator(!showDenominationCalculator)}
-              className={`px-3.5 py-2 border rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs ${
-                showDenominationCalculator
-                  ? 'bg-[#18181b] text-white border-[#18181b]'
-                  : 'bg-white hover:bg-[#eae7ea] text-[#1c1b1d] border-[#d4d4d8]'
-              }`}
+              className="h-9 px-3.5 text-xs font-medium gap-1.5 cursor-pointer"
               title="Physical Note Counter (10, 20, 50, 100, 200, 500)"
             >
-              <Calculator className="w-4 h-4 text-emerald-600" />
+              <Calculator className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Count Galla Notes</span>
-            </button>
+            </Button>
 
             {onOpenZReport && (
-              <button
+              <Button
                 type="button"
+                variant="default"
                 onClick={onOpenZReport}
-                className="px-4 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-2xs active:scale-95 transition-all cursor-pointer"
+                className="h-9 px-4 text-xs font-medium gap-1.5 cursor-pointer"
                 title="Official End-of-Day Shift Close & Cash Audit (Dukaan Hisaab)"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <ShieldCheck className="w-4 h-4" />
                 <span>Day-End Close (Hisaab / Z-Report)</span>
-              </button>
+              </Button>
             )}
+          </div>
+        </div>
+
+        {/* 3 Balanced Summary Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          {/* 1. Current Galla Cash */}
+          <div className="bg-background rounded-lg border border-border p-3.5 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Current Galla Cash
+              </span>
+              <div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums tracking-tight font-medium">
+                {currencySymbol}
+                {drawerBalance.toFixed(2)}
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                In drawer (physical till)
+              </span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Wallet className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* 2. Total Cash In (Jama) */}
+          <div className="bg-background rounded-lg border border-border p-3.5 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Total Cash In (Jama)
+              </span>
+              <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight font-medium">
+                +{currencySymbol}
+                {totalIn.toFixed(2)}
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {inEntries.length} receipts & float additions
+              </span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <ArrowDownLeft className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* 3. Total Cash Out (Kharcha) */}
+          <div className="bg-background rounded-lg border border-border p-3.5 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Total Cash Out (Kharcha)
+              </span>
+              <div className="text-xl sm:text-2xl font-bold text-destructive tabular-nums tracking-tight font-medium">
+                -{currencySymbol}
+                {totalOut.toFixed(2)}
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {outEntries.length} petty cash expenses
+              </span>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+              <ArrowUpRight className="w-5 h-5" />
+            </div>
           </div>
         </div>
 
         {/* Non-Blocking Morning Rush Opening Float Banner */}
         {!hasOpeningFloatToday && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-start sm:items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-800 shrink-0">
+              <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5 flex-wrap">
+                <div className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 flex-wrap">
                   <span>Morning Shift Opening Float</span>
-                  <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded font-semibold uppercase">
+                  <Badge variant="outline" className="text-[10px] bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200 py-0 uppercase">
                     Non-Blocking
-                  </span>
+                  </Badge>
                 </div>
-                <p className="text-[11px] text-amber-700 leading-snug">
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
                   Serve morning rush customers without delay. Auto-carry over previous drawer balance ({currencySymbol}{defaultCarryoverAmount.toFixed(2)}) or reconcile float later.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-              <button
+              <Button
                 type="button"
+                size="xs"
                 onClick={handleQuickOpenCarryover}
-                className="py-1.5 px-3 bg-amber-900 hover:bg-black text-white text-xs font-black rounded-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1 shadow-2xs"
+                className="h-7 px-3 bg-amber-900 hover:bg-black text-white text-xs font-medium cursor-pointer gap-1"
               >
                 <CheckCircle className="w-3.5 h-3.5 text-amber-300" />
                 <span>Quick Carryover ({currencySymbol}{defaultCarryoverAmount.toFixed(2)})</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -187,117 +244,116 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                 setAmount(total.toString());
                 setReason('Physical cash drawer count');
                 setEntryType('IN');
-                setIsModalOpen(true);
+                setShowDenominationCalculator(false);
               }}
             />
           </div>
         )}
-
-        {/* Breakdown Badges (Indian Retail Terminology) */}
-        <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-          <div className="bg-white p-3 rounded-2xl border border-[#d4d4d8] flex justify-between items-center shadow-2xs">
-            <span className="text-[#77767b] font-bold">Total Cash In (Jama):</span>
-            <span className="font-black text-emerald-700">
-              +{currencySymbol}{totalIn.toFixed(2)}
-            </span>
-          </div>
-          <div className="bg-white p-3 rounded-2xl border border-[#d4d4d8] flex justify-between items-center shadow-2xs">
-            <span className="text-[#77767b] font-bold">Total Cash Out (Kharcha):</span>
-            <span className="font-black text-[#ba1a1a]">
-              -{currencySymbol}{totalOut.toFixed(2)}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Main Dual-Column Content */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-0">
-        {/* Left Column (Tablet View): Direct Entry Form Pane */}
-        <div className="hidden md:flex md:w-1/3 lg:w-3/10 bg-white border-r border-[#d4d4d8] flex-col p-4 space-y-4">
-          <h3 className="font-extrabold text-xs text-[#1c1b1d] uppercase tracking-wider">
-            Petty Cash Entry (Kharcha / Jama)
-          </h3>
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 p-3 sm:p-4 gap-3 sm:gap-4 overflow-hidden">
+        {/* Left Column: Direct Entry Form Pane */}
+        <div className="w-full md:w-80 lg:w-96 bg-card rounded-lg border border-border shadow-xs flex flex-col shrink-0 overflow-hidden">
+          <div className="p-3.5 border-b border-border">
+            <h3 className="font-bold text-xs text-foreground uppercase tracking-wider">
+              Petty Cash Entry (Kharcha / Jama)
+            </h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Record drawer transactions instantly
+            </p>
+          </div>
 
-          <form onSubmit={handleSaveEntry} className="space-y-3">
-            {/* 2 Tabs: Kharcha & Jama (OPENING tab removed) */}
-            <div className="grid grid-cols-2 gap-1 bg-[#f6f2f5] p-1 rounded-xl border border-[#d4d4d8]">
-              <button
+          <form onSubmit={handleSaveEntry} className="p-4 space-y-4 overflow-y-auto no-scrollbar">
+            {/* 2 Tabs: Kharcha & Jama */}
+            <div className="grid grid-cols-2 gap-1 bg-muted p-1 rounded-lg border border-border">
+              <Button
                 type="button"
+                size="xs"
+                variant={entryType === 'OUT' ? 'default' : 'ghost'}
                 onClick={() => setEntryType('OUT')}
-                className={`py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`h-8 text-xs font-medium cursor-pointer gap-1.5 ${
                   entryType === 'OUT'
-                    ? 'bg-[#18181b] text-white shadow-2xs'
-                    : 'text-[#ba1a1a] hover:bg-red-50'
+                    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Minus className="w-3.5 h-3.5" />
                 <span>Cash OUT (Kharcha)</span>
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                size="xs"
+                variant={entryType === 'IN' ? 'default' : 'ghost'}
                 onClick={() => setEntryType('IN')}
-                className={`py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`h-8 text-xs font-medium cursor-pointer gap-1.5 ${
                   entryType === 'IN'
-                    ? 'bg-[#18181b] text-white shadow-2xs'
-                    : 'text-emerald-700 hover:bg-emerald-50'
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Cash IN (Jama)</span>
-              </button>
+              </Button>
             </div>
 
-            {/* 4 One-Tap Expense Shortcut Chips under Cash OUT */}
+            {/* Quick Expense Shortcut Chips under Cash OUT */}
             {entryType === 'OUT' && (
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[#77767b] block">
-                  Quick Expense Shortcuts:
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                  Quick Expense Shortcuts
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {EXPENSE_SHORTCUTS.map((sc) => {
                     const Icon = sc.icon;
                     const isSelected = reason === sc.label;
                     return (
-                      <button
+                      <Button
                         key={sc.label}
                         type="button"
+                        variant={isSelected ? 'default' : 'outline'}
                         onClick={() => setReason(sc.label)}
-                        className={`p-2 rounded-xl text-[11px] font-bold text-left flex items-center gap-1.5 border transition-all cursor-pointer ${
+                        className={`h-8 px-2.5 text-[11px] font-medium justify-start gap-1.5 truncate cursor-pointer transition-colors ${
                           isSelected
-                            ? 'bg-[#18181b] text-white border-[#18181b]'
-                            : 'bg-[#fcf8fb] hover:bg-[#eae7ea] text-[#1c1b1d] border-[#d4d4d8]'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background hover:bg-muted'
                         }`}
                       >
-                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <Icon className="w-3.5 h-3.5 shrink-0 opacity-70" />
                         <span className="truncate">{sc.label}</span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
               </div>
             )}
 
-            <div>
-              <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                 Amount ({currencySymbol}) *
               </label>
-              <input
-                type="number"
-                step="any"
-                required
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-2 text-xs font-mono text-[#1c1b1d] focus:outline-hidden focus:border-[#18181b]"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-bold">
+                  {currencySymbol}
+                </span>
+                <Input
+                  type="number"
+                  step="any"
+                  required
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full pl-8 h-9 text-sm font-bold bg-background tabular-nums"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                 Expense Reason / Remarks *
               </label>
-              <input
+              <Input
                 type="text"
                 required
                 placeholder={
@@ -307,58 +363,84 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                 }
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-2 text-xs text-[#1c1b1d] focus:outline-hidden focus:border-[#18181b]"
+                className="w-full h-9 text-xs bg-background"
               />
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="w-full py-2.5 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold shadow-2xs cursor-pointer active:scale-95 transition-all"
+              variant="default"
+              className={`w-full h-9 text-xs font-semibold cursor-pointer gap-1.5 ${
+                entryType === 'OUT'
+                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
             >
-              Record {entryType === 'OUT' ? 'Cash OUT (Kharcha)' : 'Cash IN (Jama)'}
-            </button>
+              {entryType === 'OUT' ? (
+                <>
+                  <Minus className="w-3.5 h-3.5" />
+                  <span>Record Cash OUT (Kharcha)</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Record Cash IN (Jama)</span>
+                </>
+              )}
+            </Button>
           </form>
         </div>
 
         {/* Right Column: Activity Timeline */}
-        <div className="flex-1 flex flex-col min-h-0 bg-[#fcf8fb]">
+        <div className="flex-1 flex flex-col min-h-0 bg-card rounded-lg border border-border shadow-xs overflow-hidden">
           {/* Filter Bar & Mobile Action Button */}
-          <div className="p-3 bg-white border-b border-[#d4d4d8] flex justify-between items-center shrink-0">
-            <h3 className="text-xs font-extrabold text-[#1c1b1d] uppercase tracking-wider">
-              Cash Activity Log ({filteredEntries.length})
-            </h3>
+          <div className="p-3.5 border-b border-border flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Cash Activity Log
+              </h3>
+              <Badge variant="secondary" className="text-[10px] py-0 ">
+                {filteredEntries.length}
+              </Badge>
+            </div>
 
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 {(['ALL', 'IN', 'OUT', 'OPENING'] as const).map((mode) => (
-                  <button
+                  <Button
                     key={mode}
+                    size="xs"
+                    variant={filterType === mode ? 'default' : 'outline'}
                     onClick={() => setFilterType(mode)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      filterType === mode
-                        ? 'bg-[#18181b] text-white shadow-2xs'
-                        : 'bg-[#f6f2f5] text-[#47464b] hover:bg-[#eae7ea]'
-                    }`}
+                    className="h-7 px-2.5 text-xs font-medium cursor-pointer"
                   >
-                    {mode === 'IN' ? 'Jama' : mode === 'OUT' ? 'Kharcha' : mode === 'OPENING' ? 'Float' : 'All'}
-                  </button>
+                    {mode === 'IN'
+                      ? 'Jama'
+                      : mode === 'OUT'
+                      ? 'Kharcha'
+                      : mode === 'OPENING'
+                      ? 'Float'
+                      : 'All'}
+                  </Button>
                 ))}
               </div>
 
-              <button
+              <Button
+                size="xs"
+                variant="default"
                 onClick={() => setIsModalOpen(true)}
-                className="md:hidden px-2.5 py-1 bg-[#18181b] text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                className="md:hidden h-7 px-2.5 text-xs font-medium gap-1"
               >
                 <Plus className="w-3 h-3" />
                 <span>Log</span>
-              </button>
+              </Button>
             </div>
           </div>
 
-          {/* Audit Log Entries */}
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-2 no-scrollbar">
+          {/* Audit Log Entries List */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
             {filteredEntries.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-[#77767b] text-xs">
+              <div className="h-44 flex flex-col items-center justify-center text-muted-foreground text-xs">
                 No cash transactions recorded for this filter
               </div>
             ) : (
@@ -378,39 +460,70 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                 return (
                   <div
                     key={entry.id}
-                    className="bg-white border border-[#d4d4d8] rounded-2xl p-3.5 flex items-center justify-between shadow-2xs hover:border-[#18181b] transition-all"
+                    className="p-3 flex flex-row items-center justify-between rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors gap-3"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase font-mono ${
-                            entry.type === 'OPENING'
-                              ? 'bg-[#18181b] text-white'
-                              : entry.type === 'IN'
-                              ? 'bg-[#eae7ea] text-emerald-800'
-                              : 'bg-[#ffdad6] text-[#ba1a1a]'
-                          }`}
-                        >
-                          {entry.type === 'IN' ? 'JAMA' : entry.type === 'OUT' ? 'KHARCHA' : 'FLOAT'}
-                        </span>
-                        <h4 className="font-extrabold text-xs sm:text-sm text-[#1c1b1d] truncate">
-                          {entry.reason}
-                        </h4>
+                    {/* Left: Type Icon + Description & Metadata */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                          entry.type === 'OPENING'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                            : entry.type === 'IN'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
+                            : 'bg-destructive/10 text-destructive'
+                        }`}
+                      >
+                        {entry.type === 'OPENING' ? (
+                          <Clock className="w-4 h-4" />
+                        ) : entry.type === 'IN' ? (
+                          <ArrowDownLeft className="w-4 h-4" />
+                        ) : (
+                          <ArrowUpRight className="w-4 h-4" />
+                        )}
                       </div>
-                      <p className="text-[11px] text-[#77767b] mt-1">
-                        By <strong className="text-[#1c1b1d]">{entry.staffName}</strong> • {dateStr} at {timeStr}
-                      </p>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              entry.type === 'OPENING'
+                                ? 'default'
+                                : entry.type === 'IN'
+                                ? 'secondary'
+                                : 'destructive'
+                            }
+                            className={`text-[9px] px-1.5 py-0 uppercase font-bold shrink-0 ${
+                              entry.type === 'IN'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200'
+                                : ''
+                            }`}
+                          >
+                            {entry.type === 'IN' ? 'JAMA' : entry.type === 'OUT' ? 'KHARCHA' : 'FLOAT'}
+                          </Badge>
+                          <h4 className="font-medium text-xs sm:text-sm text-foreground truncate">
+                            {entry.reason}
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                          By <strong className="text-foreground font-medium">{entry.staffName}</strong> • {dateStr} at {timeStr}
+                        </p>
+                      </div>
                     </div>
 
-                    <span
-                      className={`font-mono font-black text-sm sm:text-base shrink-0 ${
-                        isPositive ? 'text-emerald-700' : 'text-[#ba1a1a]'
-                      }`}
-                    >
-                      {isPositive ? '+' : '-'}
-                      {currencySymbol}
-                      {entry.amount.toFixed(2)}
-                    </span>
+                    {/* Right: Amount */}
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`font-bold text-sm sm:text-base tabular-nums tracking-tight font-medium ${
+                          isPositive
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-destructive'
+                        }`}
+                      >
+                        {isPositive ? '+' : '-'}
+                        {currencySymbol}
+                        {entry.amount.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 );
               })
@@ -422,111 +535,129 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
       {/* Add Cash Entry Modal (Mobile View) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3 text-[#1c1b1d]">
-            <div className="flex justify-between items-center border-b border-[#f0edf0] pb-2">
+          <div className="w-full max-w-sm rounded-lg border border-border shadow-2xl p-4 space-y-3 text-foreground bg-card">
+            <div className="flex justify-between items-center border-b border-border pb-2">
               <h3 className="font-bold text-sm">
                 Record {entryType === 'OUT' ? 'Cash OUT (Kharcha)' : 'Cash IN (Jama)'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#77767b] hover:text-[#1c1b1d]"
+                className="text-muted-foreground hover:text-foreground cursor-pointer p-1"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveEntry} className="space-y-3">
-              <div className="grid grid-cols-2 gap-1.5 bg-[#f6f2f5] p-1 rounded-xl border border-[#d4d4d8]">
-                <button
+              <div className="grid grid-cols-2 gap-1.5 bg-muted p-1 rounded-lg border border-border">
+                <Button
                   type="button"
+                  size="xs"
+                  variant={entryType === 'OUT' ? 'default' : 'ghost'}
                   onClick={() => setEntryType('OUT')}
-                  className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`h-7 text-xs font-medium ${
                     entryType === 'OUT'
-                      ? 'bg-[#18181b] text-white shadow-2xs'
-                      : 'text-[#ba1a1a]'
+                      ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                      : 'text-muted-foreground'
                   }`}
                 >
                   Cash OUT (Kharcha)
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  size="xs"
+                  variant={entryType === 'IN' ? 'default' : 'ghost'}
                   onClick={() => setEntryType('IN')}
-                  className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  className={`h-7 text-xs font-medium ${
                     entryType === 'IN'
-                      ? 'bg-[#18181b] text-white shadow-2xs'
-                      : 'text-emerald-700'
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      : 'text-muted-foreground'
                   }`}
                 >
                   Cash IN (Jama)
-                </button>
+                </Button>
               </div>
 
               {entryType === 'OUT' && (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-[#77767b] block">Shortcuts:</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                    Shortcuts:
+                  </span>
                   <div className="grid grid-cols-2 gap-1">
                     {EXPENSE_SHORTCUTS.map((sc) => (
-                      <button
+                      <Button
                         key={sc.label}
                         type="button"
+                        size="xs"
+                        variant={reason === sc.label ? 'default' : 'outline'}
                         onClick={() => setReason(sc.label)}
-                        className={`p-1.5 text-[10px] font-bold rounded-lg border text-left truncate ${
-                          reason === sc.label
-                            ? 'bg-[#18181b] text-white border-[#18181b]'
-                            : 'bg-[#fcf8fb] text-[#1c1b1d] border-[#d4d4d8]'
-                        }`}
+                        className="h-7 px-2 text-[10px] font-medium truncate justify-start"
                       >
                         {sc.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                   Amount ({currencySymbol}) *
                 </label>
-                <input
-                  type="number"
-                  step="any"
-                  required
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
-                  autoFocus
-                />
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">
+                    {currencySymbol}
+                  </span>
+                  <Input
+                    type="number"
+                    step="any"
+                    required
+                    placeholder="0.00"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full pl-7 h-8 text-xs bg-background"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                  Reason / Description *
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                  Expense Reason / Remarks *
                 </label>
-                <input
+                <Input
                   type="text"
                   required
-                  placeholder="e.g. Chai / Nashta or Milk"
+                  placeholder={
+                    entryType === 'OUT'
+                      ? 'e.g. Chai / Nashta or Daily Milk'
+                      : 'e.g. Extra Drawer Cash Deposit'
+                  }
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full h-8 text-xs bg-background"
                 />
               </div>
 
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2 bg-[#f6f2f5] text-[#1c1b1d] rounded-xl text-xs font-bold border border-[#d4d4d8]"
+                  className="flex-1 h-8 text-xs font-medium cursor-pointer"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="flex-1 py-2 bg-[#18181b] text-white rounded-xl text-xs font-bold hover:bg-black"
+                  variant="default"
+                  className={`flex-1 h-8 text-xs font-medium cursor-pointer ${
+                    entryType === 'OUT'
+                      ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
                 >
                   Save Entry
-                </button>
+                </Button>
               </div>
             </form>
           </div>

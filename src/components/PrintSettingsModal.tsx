@@ -28,7 +28,7 @@ import {
   PauseCircle,
   CheckCircle2,
   AlertCircle,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import {
   ShopSettings,
   StaffRole,
@@ -549,7 +549,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     {isScanningBluetooth ? 'Scanning...' : 'Pair / Scan'}
                   </button>
                 </div>
-                <p className="text-[11px] font-mono text-zinc-700 bg-white p-2 rounded-lg border border-zinc-200">
+                <p className="text-[11px] text-zinc-700 bg-white p-2 rounded-lg border border-zinc-200">
                   {formData.connectedBluetoothDevice || 'No Bluetooth printer paired'}
                 </p>
               </div>
@@ -573,7 +573,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                           terminalPrefix: e.target.value.toUpperCase().trim(),
                         })
                       }
-                      className="w-full bg-white border border-zinc-300 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-zinc-900 focus:outline-hidden uppercase"
+                      className="w-full bg-white border border-zinc-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-zinc-900 focus:outline-hidden uppercase"
                     />
                     <span className="text-[9px] text-zinc-500 mt-0.5 block">
                       Bills format as #{formData.terminalPrefix || 'A'}-001
@@ -625,7 +625,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     placeholder="e.g. storename@upi"
                     value={formData.upiId || ''}
                     onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-mono text-zinc-900 focus:outline-hidden"
+                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs text-zinc-900 focus:outline-hidden"
                   />
                 </div>
 
@@ -731,7 +731,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     placeholder="e.g. 24AAACC1206D1ZH"
                     value={formData.gstin || ''}
                     onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono text-zinc-900 focus:outline-hidden"
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -748,7 +748,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     onChange={(e) =>
                       setFormData({ ...formData, taxRate: parseFloat(e.target.value) || 0 })
                     }
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono text-zinc-900 focus:outline-hidden"
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden"
                   />
                 </div>
 
@@ -760,7 +760,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     type="text"
                     value={formData.currencySymbol}
                     onChange={(e) => setFormData({ ...formData, currencySymbol: e.target.value })}
-                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-mono text-zinc-900 focus:outline-hidden"
+                    className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -806,7 +806,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                 </p>
                 <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1 border-t border-zinc-200/60">
                   <span>Last Sync Status:</span>
-                  <span className="font-mono text-zinc-700 font-medium">
+                  <span className="text-zinc-700 font-medium">
                     {lastSyncedAt ? lastSyncedAt.toLocaleTimeString() : 'Active in real-time'}
                   </span>
                 </div>
@@ -843,7 +843,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                       Local JSON Backup & Restore
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-zinc-600 bg-white border border-zinc-200 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] text-zinc-600 bg-white border border-zinc-200 px-2 py-0.5 rounded-md">
                     Encrypted JSON
                   </span>
                 </div>
@@ -1062,10 +1062,10 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                       <div className="p-3.5 rounded-2xl border border-zinc-200/80 bg-zinc-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase">
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase">
                               Firestore Database ID
                             </span>
-                            <span className="font-mono text-[11px] bg-white border border-zinc-200 px-2 py-0.5 rounded-lg text-zinc-800 font-bold truncate max-w-[280px]">
+                            <span className="text-[11px] bg-white border border-zinc-200 px-2 py-0.5 rounded-lg text-zinc-800 font-bold truncate max-w-[280px]">
                               ai-studio-monoposindustria-c0fc5ba0-8b14-4035-8ee1-558369132d53
                             </span>
                           </div>
@@ -1115,12 +1115,12 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                                     <span className="font-bold text-zinc-900 text-xs truncate">
                                       {tbl.name}
                                     </span>
-                                    <span className="font-mono text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 shrink-0">
+                                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-100 shrink-0">
                                       {tbl.count} docs
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="font-mono text-[9.5px] text-zinc-400">
+                                    <span className="text-[9.5px] text-zinc-400">
                                       /{tbl.collection}
                                     </span>
                                     <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-0.5">
@@ -1321,7 +1321,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                         <span className="font-bold text-zinc-900 block text-[11px] uppercase tracking-wider">
                           Cloud Security & Project Configuration
                         </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[10.5px]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[10.5px]">
                           <div className="bg-white p-2 rounded-xl border border-zinc-200">
                             <span className="text-zinc-400 block text-[9.5px]">PROJECT ID</span>
                             <span className="text-zinc-800 font-bold break-all">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Upload, Trash2, RefreshCw, X, Loader2, Check } from '../icons/faIcons';
+import { Camera, Upload, Trash2, RefreshCw, X, Loader2, Check } from 'lucide-react';
 import { CatalogItem, Category } from '../types';
 import { GST_SLABS } from '../constants/taxRates';
 
@@ -297,7 +297,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               required
               min="0"
               step="any"
-              className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-mono font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+              className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
             />
           </div>
 
@@ -329,7 +329,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                   onChange={(e) => setCustomGstRate(e.target.value)}
                   required
                   autoFocus
-                  className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-mono font-medium text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+                  className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
                 />
                 <span className="text-xs font-bold text-zinc-500 shrink-0">%</span>
               </div>
@@ -346,7 +346,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 placeholder="e.g. 890103001"
                 value={prodBarcode}
                 onChange={(e) => setProdBarcode(e.target.value)}
-                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-mono font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
               />
             </div>
             <div>
@@ -358,7 +358,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 placeholder="e.g. PIZZA-CH7"
                 value={prodSku}
                 onChange={(e) => setProdSku(e.target.value)}
-                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-mono font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
               />
             </div>
           </div>
@@ -372,7 +372,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 type="number"
                 value={prodStock}
                 onChange={(e) => setProdStock(e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-medium text-zinc-900 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-900 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
               />
             </div>
             <div>
@@ -383,7 +383,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 type="number"
                 value={prodThreshold}
                 onChange={(e) => setProdThreshold(e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-medium text-zinc-900 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-900 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
               />
             </div>
             <div>
@@ -414,7 +414,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                   placeholder="Optional"
                   value={prodCostPrice}
                   onChange={(e) => setProdCostPrice(e.target.value)}
-                  className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-medium text-zinc-900 placeholder:text-zinc-400 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
                 />
               </div>
             ) : (

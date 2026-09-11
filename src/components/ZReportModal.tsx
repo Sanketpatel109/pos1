@@ -15,7 +15,7 @@ import {
   Calculator,
   ChevronDown,
   ChevronUp,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { Order, CashEntry, ShopSettings, ZReportData } from '../types';
 import { CashDenominationCounter, DenominationBreakdown } from './CashDenominationCounter';
 
@@ -213,7 +213,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
 
               <div className="flex justify-between items-center pt-2 text-sm font-bold bg-zinc-50 p-3 rounded-xl border border-zinc-200/80">
                 <span className="text-zinc-900">(=) Expected Cash in Galla:</span>
-                <span className="text-zinc-950 font-mono font-bold tabular-nums tracking-tight">
+                <span className="text-zinc-950 font-bold tabular-nums tracking-tight">
                   {shopSettings.currencySymbol}{expectedDrawerCash.toFixed(2)}
                 </span>
               </div>
@@ -266,7 +266,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
                   step="0.01"
                   value={actualCountedCash}
                   onChange={(e) => setActualCountedCash(parseFloat(e.target.value) || 0)}
-                  className="w-full pl-8 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl font-mono font-bold text-lg text-zinc-900 focus:outline-hidden focus:border-primary tabular-nums tracking-tight"
+                  className="w-full pl-8 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl font-bold text-lg text-zinc-900 focus:outline-hidden focus:border-primary tabular-nums tracking-tight"
                 />
               </div>
 
@@ -303,7 +303,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
                     : `Cash Excess: ${shopSettings.currencySymbol}${variance.toFixed(2)} surplus`}
                 </span>
               </div>
-              <span className="font-mono text-sm font-bold tabular-nums tracking-tight">
+              <span className="text-sm font-bold tabular-nums tracking-tight">
                 {variance >= 0 ? `+${variance.toFixed(2)}` : variance.toFixed(2)}
               </span>
             </div>

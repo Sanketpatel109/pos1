@@ -11,7 +11,7 @@ import {
   Share2,
   ShieldCheck,
   ShoppingBag,
-} from '../../icons/faIcons';
+} from 'lucide-react';
 import { BillItem, Customer } from '../../types';
 import { db, doc, setDoc } from '../../firebase';
 import { posSound } from '../../utils/sound';
@@ -664,7 +664,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               <p className="text-[11px] text-zinc-400 text-center mt-0.5 font-medium">
-                Fast counter queue • Press <kbd className="font-mono text-zinc-700 bg-zinc-100 px-1 py-0.5 rounded text-[10px] border border-zinc-200 font-medium">Enter</kbd> to Print & Next or <kbd className="font-mono text-zinc-700 bg-zinc-100 px-1 py-0.5 rounded text-[10px] border border-zinc-200">Esc</kbd> for Done
+                Fast counter queue • Press <kbd className="text-zinc-700 bg-zinc-100 px-1 py-0.5 rounded text-[10px] border border-zinc-200 font-medium">Enter</kbd> to Print & Next or <kbd className="text-zinc-700 bg-zinc-100 px-1 py-0.5 rounded text-[10px] border border-zinc-200">Esc</kbd> for Done
               </p>
             </div>
           </div>
@@ -692,18 +692,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             {/* 3-Tab Mode Switcher */}
-            <div className="p-3 bg-white border-b border-zinc-100">
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200">
+            <div className="p-3 bg-card border-b border-border">
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-muted rounded-xl border border-border">
                 <button
                   type="button"
                   onClick={() => setActiveTab('CASH')}
                   className={`h-10 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     activeTab === 'CASH'
-                      ? 'bg-white text-blue-600 font-semibold shadow-xs border border-zinc-200/80'
-                      : 'text-zinc-600 hover:text-zinc-900'
+                      ? 'bg-card text-primary font-semibold shadow-xs border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Banknote className="w-4 h-4 text-blue-600" />
+                  <Banknote className="w-4 h-4 text-primary" />
                   <span>Cash</span>
                 </button>
 
@@ -712,11 +712,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   onClick={() => setActiveTab('UPI')}
                   className={`h-10 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     activeTab === 'UPI'
-                      ? 'bg-white text-blue-600 font-semibold shadow-xs border border-zinc-200/80'
-                      : 'text-zinc-600 hover:text-zinc-900'
+                      ? 'bg-card text-primary font-semibold shadow-xs border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <QrCode className="w-4 h-4 text-blue-600" />
+                  <QrCode className="w-4 h-4 text-primary" />
                   <span>UPI / QR</span>
                 </button>
 
@@ -725,11 +725,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   onClick={() => setActiveTab('KHATA')}
                   className={`h-10 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     activeTab === 'KHATA'
-                      ? 'bg-white text-blue-600 font-semibold shadow-xs border border-zinc-200/80'
-                      : 'text-zinc-600 hover:text-zinc-900'
+                      ? 'bg-card text-primary font-semibold shadow-xs border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  <BookOpen className="w-4 h-4 text-primary" />
                   <span>Khata (Udhar)</span>
                 </button>
               </div>

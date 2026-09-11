@@ -17,7 +17,7 @@ import {
   TrendingUp,
   Lock,
   ShieldCheck,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { CatalogItem, StaffRole, StorePermissions } from '../types';
 import { hardware } from '../utils/hardware';
 import { posSound } from '../utils/sound';
@@ -172,7 +172,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                 placeholder="Scan barcode with laser gun or type barcode / SKU / name..."
                 value={manualInput}
                 onChange={(e) => setManualInput(e.target.value)}
-                className="w-full bg-white border border-zinc-300 rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                className="w-full bg-white border border-zinc-300 rounded-xl pl-9 pr-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900"
               />
             </div>
             <button
@@ -196,7 +196,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                 onClick={() => {
                   hardware.simulateLaserScan(item.barcode || item.name);
                 }}
-                className="px-2 py-1 bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 rounded-lg text-[10px] font-mono whitespace-nowrap cursor-pointer transition-colors shadow-2xs"
+                className="px-2 py-1 bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 rounded-lg text-[10px] whitespace-nowrap cursor-pointer transition-colors shadow-2xs"
               >
                 {item.name} ({item.barcode || 'Scan'})
               </button>
@@ -260,12 +260,12 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                         {selectedProduct.category}
                       </span>
                       {selectedProduct.sku && (
-                        <span className="text-[10px] font-mono text-zinc-500">
+                        <span className="text-[10px] text-zinc-500">
                           SKU: {selectedProduct.sku}
                         </span>
                       )}
                       {selectedProduct.barcode && (
-                        <span className="text-[10px] font-mono text-zinc-500">
+                        <span className="text-[10px] text-zinc-500">
                           EAN: {selectedProduct.barcode}
                         </span>
                       )}
@@ -274,7 +274,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <div className="text-2xl font-black font-mono text-zinc-900">
+                  <div className="text-2xl font-black text-zinc-900">
                     {currencySymbol}
                     {selectedProduct.price.toFixed(2)}
                   </div>
@@ -290,7 +290,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                     Stock on Hand
                   </span>
                   <div className="my-1">
-                    <div className="text-xl font-black font-mono text-zinc-900">
+                    <div className="text-xl font-black text-zinc-900">
                       {selectedProduct.stock ?? '∞'}{' '}
                       <span className="text-xs font-normal text-zinc-500">
                         {selectedProduct.unit || 'pcs'}
@@ -322,7 +322,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                     Reorder Alert
                   </span>
                   <div className="my-1">
-                    <div className="text-xl font-black font-mono text-zinc-900">
+                    <div className="text-xl font-black text-zinc-900">
                       &lt; {selectedProduct.lowStockThreshold ?? 5}{' '}
                       <span className="text-xs font-normal text-zinc-500">
                         {selectedProduct.unit || 'pcs'}
@@ -339,7 +339,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                   </span>
                   <div className="my-1">
                     {canViewCosts ? (
-                      <div className="text-xl font-black font-mono text-zinc-900">
+                      <div className="text-xl font-black text-zinc-900">
                         {selectedProduct.costPrice
                           ? `${currencySymbol}${selectedProduct.costPrice.toFixed(2)}`
                           : 'N/A'}
@@ -355,50 +355,45 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                         className="text-xs font-bold text-zinc-400 hover:text-zinc-700 flex items-center gap-1 py-1 cursor-pointer group"
                         title="Tap to unlock with Manager or Owner PIN"
                       >
-                        <Lock className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600" />
+                        <Lock className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground" />
                         <span>Confidential</span>
-                        <span className="text-[10px] text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity underline">
+                        <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity underline">
                           unlock
                         </span>
                       </button>
                     )}
                   </div>
-                  <span className="text-[10px] text-zinc-500 font-medium">
+                  <span className="text-xs text-muted-foreground font-medium">
                     {canViewCosts ? 'Supplier Cost' : 'Manager / Owner Only'}
                   </span>
                 </div>
 
                 {/* Profit Margin */}
-                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 flex flex-col justify-between">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                <div className="bg-muted/50 border border-border rounded-xl p-3 flex flex-col justify-between">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Profit Margin
                   </span>
-                  <div className="my-1">
-                    {canViewCosts ? (
-                      <div className="text-xl font-black font-mono text-emerald-700">
-                        {marginPercent ? `+${marginPercent}%` : 'Standard'}
-                      </div>
-                    ) : (
-                      <div className="text-xs font-bold text-zinc-400 flex items-center gap-1 py-1">
-                        <Lock className="w-3.5 h-3.5 text-zinc-400" />
-                        Protected
-                      </div>
-                    )}
+                  <div className="flex items-baseline gap-1 my-1">
+                    <span className="text-xl font-bold text-foreground tabular-nums">
+                      {canViewCosts ? `${profitMarginPercent.toFixed(1)}%` : '•••'}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-zinc-500 font-medium">
-                    {canViewCosts ? 'Gross Retail Margin' : 'Manager / Owner Only'}
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {canViewCosts
+                      ? `${currencySymbol}${profitPerUnit.toFixed(2)} / unit`
+                      : 'Protected metric'}
                   </span>
                 </div>
               </div>
 
               {/* Quick Stock Count Adjustment Box */}
-              <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-muted/40 border border-border rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
-                    <Package className="w-3.5 h-3.5 text-blue-700" />
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-primary" />
                     Direct Inventory Count Adjustment
                   </h4>
-                  <p className="text-[11px] text-blue-800 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {canEditInventory
                       ? 'Need to correct shelf count after physical stock audit?'
                       : 'Requires Manager or Store Owner authorization to adjust live stock counts.'}
@@ -414,9 +409,9 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                           onRequestManagerOverride();
                         }
                       }}
-                      className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all active:scale-95"
+                      className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all active:scale-95"
                     >
-                      <Lock className="w-3 h-3 text-amber-300" />
+                      <Lock className="w-3 h-3 text-primary-foreground" />
                       <span>Manager Auth to Edit</span>
                     </button>
                   </div>
@@ -427,19 +422,19 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                       min="0"
                       value={tempStockValue}
                       onChange={(e) => setTempStockValue(e.target.value)}
-                      className="w-24 bg-white border border-blue-300 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-zinc-900 focus:outline-none"
+                      className="w-24 bg-card border border-border rounded-lg px-2.5 py-1 text-xs font-bold text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
                     />
                     <button
                       type="button"
                       onClick={handleSaveAdjustedStock}
-                      className="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold cursor-pointer"
+                      className="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold cursor-pointer"
                     >
                       Save
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditingStock(false)}
-                      className="px-2 py-1 text-zinc-600 hover:text-zinc-900 text-xs font-medium cursor-pointer"
+                      className="px-2 py-1 text-muted-foreground hover:text-foreground text-xs font-medium cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -456,7 +451,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                           posSound.playTap();
                         }
                       }}
-                      className="w-8 h-8 rounded-lg bg-white border border-blue-200 text-blue-900 font-bold flex items-center justify-center hover:bg-blue-100 cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-card border border-border text-foreground font-bold flex items-center justify-center hover:bg-muted cursor-pointer"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
@@ -466,7 +461,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                         setTempStockValue(String(selectedProduct.stock ?? 0));
                         setIsEditingStock(true);
                       }}
-                      className="px-3 py-1.5 bg-white border border-blue-300 text-blue-900 font-mono font-bold text-xs rounded-lg hover:bg-blue-100 cursor-pointer"
+                      className="px-3 py-1.5 bg-card border border-border text-foreground font-bold text-xs rounded-lg hover:bg-muted cursor-pointer"
                     >
                       Set: {selectedProduct.stock ?? 0}
                     </button>
@@ -478,7 +473,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                         setSelectedProduct({ ...selectedProduct, stock: current + 1 });
                         posSound.playTap();
                       }}
-                      className="w-8 h-8 rounded-lg bg-white border border-blue-200 text-blue-900 font-bold flex items-center justify-center hover:bg-blue-100 cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-card border border-border text-foreground font-bold flex items-center justify-center hover:bg-muted cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -500,7 +495,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
         {/* Footer Actions */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-200 bg-zinc-50">
           <span className="text-[11px] text-zinc-500 font-medium">
-            Tip: Press <kbd className="font-mono bg-zinc-200 text-zinc-800 px-1.5 py-0.5 rounded text-[10px]">F2</kbd> anytime to open Price Check
+            Tip: Press <kbd className="bg-zinc-200 text-zinc-800 px-1.5 py-0.5 rounded text-[10px]">F2</kbd> anytime to open Price Check
           </span>
           <div className="flex items-center gap-2">
             <button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, PauseCircle, CheckCircle, BarChart3, Settings, Play, Trash2, Printer, Volume2, VolumeX } from '../icons/faIcons';
+import { X, PauseCircle, CheckCircle, BarChart3, Settings, Play, Trash2, Printer, Volume2, VolumeX } from 'lucide-react';
 import { Order, ShopSettings } from '../types';
 
 interface OrdersDrawerProps {
@@ -63,7 +63,7 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
         <div className="px-3.5 py-2.5 border-b border-zinc-200 flex items-center justify-between bg-zinc-50">
           <div>
             <h2 className="text-sm font-bold text-zinc-900">POS Operations</h2>
-            <p className="text-[11px] text-zinc-500 font-mono">Terminal #01 &bull; {shopSettings.shopName}</p>
+            <p className="text-[11px] text-zinc-500 ">Terminal #01 &bull; {shopSettings.shopName}</p>
           </div>
           <button
             onClick={onClose}
@@ -146,14 +146,14 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="bg-zinc-900 text-white font-mono font-bold text-[10px] px-1.5 py-0.5 rounded">
+                        <span className="bg-zinc-900 text-white font-bold text-[10px] px-1.5 py-0.5 rounded">
                           Order #{String(order.orderNumber).padStart(3, '0')}
                         </span>
-                        <span className="text-[11px] text-zinc-500 font-mono">
+                        <span className="text-[11px] text-zinc-500 ">
                           {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <span className="font-mono font-bold text-xs text-zinc-900">
+                      <span className="font-bold text-xs text-zinc-900">
                         {currencySymbol}{order.total.toFixed(2)}
                       </span>
                     </div>
@@ -208,14 +208,14 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="bg-zinc-900 text-white font-mono font-bold text-[10px] px-1.5 py-0.5 rounded">
+                        <span className="bg-zinc-900 text-white font-bold text-[10px] px-1.5 py-0.5 rounded">
                           #{String(order.orderNumber).padStart(3, '0')}
                         </span>
                         <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
                           {order.paymentMethod || 'PAID'}
                         </span>
                       </div>
-                      <span className="font-mono font-bold text-xs text-zinc-900">
+                      <span className="font-bold text-xs text-zinc-900">
                         {currencySymbol}{order.total.toFixed(2)}
                       </span>
                     </div>
@@ -249,13 +249,13 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-zinc-900 text-white p-2.5 rounded-lg">
                   <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-semibold">Today&apos;s Revenue</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5">
+                  <p className="text-xl font-extrabold mt-0.5">
                     {currencySymbol}{totalSales.toFixed(2)}
                   </p>
                 </div>
                 <div className="bg-zinc-100 border border-zinc-200 p-2.5 rounded-lg">
                   <p className="text-[10px] uppercase tracking-wider text-zinc-600 font-semibold">Total Orders</p>
-                  <p className="text-xl font-extrabold font-mono text-zinc-900 mt-0.5">
+                  <p className="text-xl font-extrabold text-zinc-900 mt-0.5">
                     {completedOrders.length}
                   </p>
                 </div>
@@ -265,19 +265,19 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                 <h4 className="font-bold text-zinc-900 uppercase tracking-wider">Payment Breakdown</h4>
                 <div className="flex justify-between text-zinc-700">
                   <span>Cash:</span>
-                  <span className="font-mono font-bold">{currencySymbol}{cashSales.toFixed(2)}</span>
+                  <span className="font-bold">{currencySymbol}{cashSales.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-zinc-700">
                   <span>UPI / QR:</span>
-                  <span className="font-mono font-bold">{currencySymbol}{upiSales.toFixed(2)}</span>
+                  <span className="font-bold">{currencySymbol}{upiSales.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-zinc-700">
                   <span>Card / POS:</span>
-                  <span className="font-mono font-bold">{currencySymbol}{cardSales.toFixed(2)}</span>
+                  <span className="font-bold">{currencySymbol}{cardSales.toFixed(2)}</span>
                 </div>
                 <div className="pt-1.5 border-t border-zinc-200 flex justify-between font-bold text-zinc-900">
                   <span>Total Items Sold:</span>
-                  <span className="font-mono">{totalItemsSold}</span>
+                  <span className="">{totalItemsSold}</span>
                 </div>
               </div>
             </div>
@@ -328,7 +328,7 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                   type="text"
                   value={settingsForm.gstin}
                   onChange={(e) => setSettingsForm({ ...settingsForm, gstin: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-zinc-300 rounded text-zinc-900 bg-white font-mono text-xs"
+                  className="w-full px-2.5 py-1.5 border border-zinc-300 rounded text-zinc-900 bg-white text-xs"
                 />
               </div>
 
@@ -338,7 +338,7 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                   <select
                     value={settingsForm.taxRate}
                     onChange={(e) => setSettingsForm({ ...settingsForm, taxRate: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2.5 py-1.5 border border-zinc-300 rounded text-zinc-900 bg-white font-mono text-xs"
+                    className="w-full px-2.5 py-1.5 border border-zinc-300 rounded text-zinc-900 bg-white text-xs"
                   >
                     <option value="0">0% (Zero Tax)</option>
                     <option value="5">5% (GST 5%)</option>

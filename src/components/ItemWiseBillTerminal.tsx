@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Scale,
   X,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { CatalogItem, Category, BillItem } from '../types';
 import { hardware } from '../utils/hardware';
 import { ProductCatalog } from './ProductCatalog';
@@ -136,7 +136,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   }, [currentBillItems]);
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-zinc-50 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-background overflow-hidden select-none">
       {/* 
         ========================================================================
         MOBILE LAYOUT (order-1 md:order-2):
@@ -148,7 +148,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
         - Direct Primary Action Button: "Pay ₹{total.toFixed(2)} →"
         ========================================================================
       */}
-      <div className="order-1 md:order-2 w-full md:w-[40%] lg:w-[36%] xl:w-[34%] flex flex-col bg-white border-b md:border-b-0 border-zinc-200/80 shrink-0 md:h-full md:max-h-full shadow-xs z-10">
+      <div className="order-1 md:order-2 w-full md:w-[40%] lg:w-[36%] xl:w-[34%] flex flex-col bg-card border-b md:border-b-0 border-border shrink-0 md:h-full md:max-h-full shadow-xs z-10">
         <CurrentBill
           orderNumber={orderNumber}
           items={currentBillItems}
@@ -178,7 +178,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
         - 3-column touch-friendly product catalog grid on mobile (grid-cols-3)
         ========================================================================
       */}
-      <div className="order-2 md:order-1 w-full md:w-[60%] lg:w-[64%] xl:w-[66%] flex flex-col min-h-0 bg-zinc-50 md:border-r border-zinc-200/80 flex-1 overflow-hidden">
+      <div className="order-2 md:order-1 w-full md:w-[60%] lg:w-[64%] xl:w-[66%] flex flex-col min-h-0 bg-background md:border-r border-border flex-1 overflow-hidden">
         <ProductCatalog
           catalog={catalog}
           categories={categories}
@@ -194,22 +194,22 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
 
       {/* Simulated Scale Modal */}
       {isScaleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl border border-zinc-200 shadow-xl p-5 w-full max-w-sm flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-zinc-200/80 pb-2.5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-card rounded-lg border border-border shadow-xl p-5 w-full max-w-sm flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-border pb-2.5">
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-primary" />
-                <h3 className="text-sm font-semibold text-zinc-900">Weighing Scale Simulation</h3>
+                <h3 className="text-sm font-semibold text-foreground">Weighing Scale Simulation</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsScaleModalOpen(false)}
-                className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-zinc-600">
+            <p className="text-xs text-muted-foreground">
               Physical scale is not plugged in. Select or simulate weight to test weighed products:
             </p>
             <div className="grid grid-cols-4 gap-2">
@@ -221,7 +221,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
                     handleSimulateWeight(w);
                     setIsScaleModalOpen(false);
                   }}
-                  className="py-2.5 bg-zinc-100 hover:bg-zinc-200 rounded-xl text-xs font-medium text-zinc-800 border border-zinc-200 transition-all tabular-nums tracking-tight cursor-pointer"
+                  className="py-2.5 bg-secondary hover:bg-secondary/80 rounded-md text-xs font-medium text-secondary-foreground border border-border transition-all tabular-nums tracking-tight font-medium cursor-pointer"
                 >
                   {w} kg
                 </button>
@@ -233,7 +233,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
                 handleSimulateWeight(0);
                 setIsScaleModalOpen(false);
               }}
-              className="w-full py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-xs font-medium hover:bg-rose-50 transition-all cursor-pointer"
+              className="w-full py-2.5 bg-card border border-destructive/30 text-destructive rounded-md text-xs font-medium hover:bg-destructive/10 transition-all cursor-pointer"
             >
               Reset Scale to 0.000 kg
             </button>

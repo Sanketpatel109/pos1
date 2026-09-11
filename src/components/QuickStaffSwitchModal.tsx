@@ -1,8 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Check, Delete, ShieldCheck, UserCheck, KeyRound, AlertCircle } from '../icons/faIcons';
+import { Check, Delete, ShieldCheck, UserCheck, KeyRound, AlertCircle } from 'lucide-react';
 import { StaffMember } from '../types';
 import { posSound } from '../utils/sound';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface QuickStaffSwitchModalProps {
   isOpen: boolean;
@@ -72,13 +81,9 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
-
-      if (/^[0-9]$/.test(e.key)) {
+      if (e.key >= '0' && e.key <= '9') {
         e.preventDefault();
+        if (isVerifying) return;
         setPin((prev) => {
           if (prev.length >= 4) return prev;
           const next = prev + e.key;
@@ -94,19 +99,20 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
         posSound.play('remove');
         setPin((prev) => prev.slice(0, -1));
         setErrorMsg(null);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedStaff, verifyAndSwitch, onClose]);
-
-  if (!isOpen) return null;
+  }, [isOpen, selectedStaff, verifyAndSwitch, onClose, isVerifying]);
 
   const handleKeypadPress = (digit: string) => {
     if (pin.length >= 4 || isVerifying) return;
-    const nextPin = pin + digit;
     posSound.play('tap');
+    const nextPin = pin + digit;
     setPin(nextPin);
     setErrorMsg(null);
 
@@ -135,76 +141,57 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className="w-full max-w-md bg-white rounded-3xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-4 sm:p-5 bg-white border-b border-zinc-100 text-zinc-900 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-xs">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-zinc-900 leading-tight">Switch Cashier Shift</h2>
-              <p className="text-xs text-zinc-500 font-normal">1-Second Counter Switch with 4-Digit PIN</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <UserCheck className="size-4 text-foreground" />
+            <span>Switch Cashier Shift</span>
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Select incoming operator and enter 4-digit terminal security PIN.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="p-4 sm:p-5 space-y-4">
+        <div className="space-y-4">
           {/* Step 1: Select Operator */}
           <div>
-            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block mb-2">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
               Select Incoming Cashier / Operator
-            </label>
+            </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {staffList.map((staff) => {
                 const isCurrentActive = staff.id === activeStaffId;
                 const isSelected = staff.id === selectedStaff.id;
+                const normRole = normalizeRole(staff.role);
+                const meta = ROLE_DEFINITIONS[normRole];
 
                 return (
                   <button
                     key={staff.id}
                     type="button"
                     onClick={() => handleSelectStaff(staff)}
-                    className={`p-2.5 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                    className={`p-2.5 rounded-md border text-left flex flex-col justify-between transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs scale-[1.02]'
-                        : 'bg-zinc-50 border-zinc-200 text-zinc-800 hover:bg-zinc-100'
+                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                        : 'bg-muted/40 border-border text-foreground hover:bg-muted'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full mb-1">
-                      {(() => {
-                        const normRole = normalizeRole(staff.role);
-                        const meta = ROLE_DEFINITIONS[normRole];
-                        return (
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono uppercase ${
-                              isSelected
-                                ? 'bg-white/20 text-white'
-                                : `${meta.badgeBg} ${meta.badgeText} border ${meta.badgeBorder}`
-                            }`}
-                          >
-                            {meta.badgeLabel}
-                          </span>
-                        );
-                      })()}
+                      <Badge
+                        variant={isSelected ? "outline" : "secondary"}
+                        className={`text-[9px] px-1.5 py-0 uppercase ${isSelected ? 'text-primary-foreground border-primary-foreground/30' : ''}`}
+                      >
+                        {meta.badgeLabel}
+                      </Badge>
                       {isCurrentActive && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Currently Logged In" />
+                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="Currently Logged In" />
                       )}
                     </div>
-                    <span className="text-xs font-black truncate">{staff.name}</span>
+                    <span className="text-xs font-semibold truncate">{staff.name}</span>
                     <span
-                      className={`text-[10px] font-mono mt-0.5 ${
-                        isSelected ? 'text-blue-100' : 'text-zinc-500'
+                      className={`text-[10px] mt-0.5 ${
+                        isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'
                       }`}
                     >
                       {isCurrentActive ? 'Active Now' : 'Tap to Switch'}
@@ -216,23 +203,23 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
           </div>
 
           {/* Step 2: 4-Digit PIN Input & Indicators */}
-          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-center space-y-3">
-            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-700">
-              <KeyRound className="w-3.5 h-3.5 text-zinc-500" />
+          <div className="bg-muted/30 border border-border rounded-md p-3 text-center space-y-2.5">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-foreground">
+              <KeyRound className="size-3.5 text-muted-foreground" />
               <span>Enter 4-Digit PIN for {selectedStaff.name}</span>
             </div>
 
             {/* 4 PIN Dots */}
-            <div className="flex justify-center items-center gap-4 py-1">
+            <div className="flex justify-center items-center gap-3 py-1">
               {[0, 1, 2, 3].map((index) => {
                 const isFilled = pin.length > index;
                 return (
                   <div
                     key={index}
-                    className={`w-4 h-4 rounded-full transition-all duration-150 ${
+                    className={`size-3 rounded-full transition-all duration-150 ${
                       isFilled
-                        ? 'bg-zinc-900 scale-125 ring-4 ring-zinc-300'
-                        : 'bg-zinc-200 border-2 border-zinc-300'
+                        ? 'bg-foreground scale-125 ring-2 ring-primary/40'
+                        : 'bg-transparent border border-input'
                     }`}
                   />
                 );
@@ -241,65 +228,64 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
 
             {/* Error or Success Message */}
             {errorMsg && (
-              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-600 animate-shake">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-destructive">
+                <AlertCircle className="size-3.5 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
             {successMsg && (
-              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700">
-                <Check className="w-4 h-4 shrink-0" />
+              <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
+                <Check className="size-3.5 shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
-
-            {/* Security note */}
-            <p className="text-[11px] text-zinc-400 font-medium">
-              Authorized operators enter 4-digit terminal security PIN
-            </p>
           </div>
 
           {/* On-Screen Touch Numpad */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-              <button
+              <Button
                 key={digit}
                 type="button"
+                variant="outline"
                 onClick={() => handleKeypadPress(digit)}
-                className="py-3 bg-white hover:bg-zinc-100 border border-zinc-200 rounded-xl text-lg font-black text-zinc-900 shadow-2xs active:scale-95 transition-all cursor-pointer font-mono"
+                className="h-10 text-base font-semibold"
               >
                 {digit}
-              </button>
+              </Button>
             ))}
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleClear}
-              className="py-3 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl text-xs font-bold text-zinc-600 active:scale-95 transition-all cursor-pointer"
+              className="h-10 text-xs font-medium text-muted-foreground"
             >
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => handleKeypadPress('0')}
-              className="py-3 bg-white hover:bg-zinc-100 border border-zinc-200 rounded-xl text-lg font-black text-zinc-900 shadow-2xs active:scale-95 transition-all cursor-pointer font-mono"
+              className="h-10 text-base font-semibold"
             >
               0
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleBackspace}
-              className="py-3 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl flex items-center justify-center text-zinc-700 active:scale-95 transition-all cursor-pointer"
+              className="h-10 text-xs font-medium text-muted-foreground"
               title="Backspace"
             >
-              <Delete className="w-5 h-5" />
-            </button>
+              <Delete className="size-4" />
+            </Button>
           </div>
 
           {/* Footer with Staff Admin Link */}
-          <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
+          <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1 text-[11px]">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Owner master password kept safe</span>
+              <ShieldCheck className="size-3.5 text-emerald-600" />
+              <span>PIN protected terminal shift</span>
             </div>
             {onNavigateToStaffManagement && (
               <button
@@ -308,14 +294,16 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
                   onClose();
                   onNavigateToStaffManagement();
                 }}
-                className="text-[11px] font-bold text-zinc-800 hover:text-black hover:underline cursor-pointer"
+                className="text-[11px] font-medium text-foreground hover:underline cursor-pointer"
               >
                 Manage Staff / Reset PIN
               </button>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
+
+export default QuickStaffSwitchModal;

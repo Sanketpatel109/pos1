@@ -28,8 +28,8 @@ import {
   Radio,
   RefreshCw,
   Star,
-  Comment,
-} from '../icons/faIcons';
+  MessageSquare as Comment,
+} from 'lucide-react';
 import QRCode from 'qrcode';
 import { Customer, PaymentMethod, ShopSettings, SplitPaymentDetail } from '../types';
 import { SplitPaymentModal } from './SplitPaymentModal';
@@ -372,14 +372,14 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
           {/* Customer Selection */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-xs font-bold text-[#1c1b1d] flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-[#18181b]" />
+              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-foreground" />
                 <span>Customer (Optional)</span>
               </label>
               {!isAddingNewCustomer && (
                 <button
                   onClick={() => setIsAddingNewCustomer(true)}
-                  className="text-xs font-bold text-[#18181b] hover:underline flex items-center gap-0.5 cursor-pointer"
+                  className="text-xs font-bold text-foreground hover:underline flex items-center gap-0.5 cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
                   <span>New Customer</span>
@@ -390,14 +390,14 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
             {isAddingNewCustomer ? (
               <form
                 onSubmit={handleCreateCustomer}
-                className="bg-[#f6f2f5] p-3 rounded-xl border border-[#d4d4d8] space-y-2"
+                className="bg-muted/50 p-3 rounded-xl border border-border space-y-2"
               >
-                <div className="flex justify-between items-center text-xs font-bold text-[#1c1b1d]">
+                <div className="flex justify-between items-center text-xs font-bold text-foreground">
                   <span>Add New Customer</span>
                   <button
                     type="button"
                     onClick={() => setIsAddingNewCustomer(false)}
-                    className="text-[#77767b] hover:text-[#1c1b1d]"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     Cancel
                   </button>
@@ -407,7 +407,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                   placeholder="Full Name"
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2.5 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full bg-white border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-hidden"
                   autoFocus
                 />
                 <input
@@ -415,11 +415,11 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                   placeholder="10-digit Mobile Number"
                   value={newCustPhone}
                   onChange={(e) => setNewCustPhone(e.target.value)}
-                  className="w-full bg-white border border-[#d4d4d8] rounded-lg px-2.5 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full bg-white border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-hidden"
                 />
                 <button
                   type="submit"
-                  className="w-full py-1.5 bg-[#18181b] text-white rounded-lg text-xs font-bold hover:bg-black transition-all cursor-pointer"
+                  className="w-full py-1.5 bg-foreground text-background text-white rounded-lg text-xs font-bold hover:bg-black transition-all cursor-pointer"
                 >
                   Save Customer
                 </button>
@@ -434,13 +434,13 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                     setCustomerSearch(e.target.value);
                     if (selectedCustomerId) setSelectedCustomerId('');
                   }}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-2 text-xs text-[#1c1b1d] focus:outline-hidden focus:border-[#18181b]"
+                  className="w-full bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-hidden focus:border-foreground"
                 />
 
                 {customerSearch && (
-                  <div className="max-h-28 overflow-y-auto bg-white border border-[#d4d4d8] rounded-xl divide-y divide-[#d4d4d8] shadow-sm">
+                  <div className="max-h-28 overflow-y-auto bg-white border border-border rounded-xl divide-y divide-[#d4d4d8] shadow-sm">
                     {filteredCustomers.length === 0 ? (
-                      <div className="p-2 text-center text-xs text-[#77767b]">
+                      <div className="p-2 text-center text-xs text-muted-foreground">
                         No matching customer found
                       </div>
                     ) : (
@@ -452,9 +452,9 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                             setSelectedCustomerId(cust.id);
                             setCustomerSearch(`${cust.name} (${cust.phone})`);
                           }}
-                          className="w-full p-2 text-left text-xs hover:bg-[#f6f2f5] flex justify-between items-center"
+                          className="w-full p-2 text-left text-xs hover:bg-muted/50 flex justify-between items-center"
                         >
-                          <span className="font-semibold text-[#1c1b1d]">{cust.name}</span>
+                          <span className="font-semibold text-foreground">{cust.name}</span>
                           <div className="flex items-center gap-2">
                             {cust.loyaltyPoints !== undefined && cust.loyaltyPoints > 0 && (
                               <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1">
@@ -462,7 +462,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                                 <span>{cust.loyaltyPoints} pts</span>
                               </span>
                             )}
-                            <span className="text-[11px] font-mono text-[#77767b]">
+                            <span className="text-[11px] text-muted-foreground">
                               {cust.phone}
                             </span>
                           </div>
@@ -496,8 +496,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
           {/* Discount Section */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#1c1b1d] flex items-center gap-1.5">
-              <Percent className="w-3.5 h-3.5 text-[#18181b]" />
+            <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <Percent className="w-3.5 h-3.5 text-foreground" />
               <span>Discount</span>
             </label>
             <div className="grid grid-cols-4 gap-1.5">
@@ -511,8 +511,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                   }}
                   className={`py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                     discountType === 'percent' && discountPercent === pct
-                      ? 'bg-[#18181b] text-white border-[#18181b]'
-                      : 'bg-white text-[#47464b] border-[#d4d4d8] hover:bg-[#f6f2f5]'
+                      ? 'bg-foreground text-background text-white border-foreground'
+                      : 'bg-white text-muted-foreground border-border hover:bg-muted/50'
                   }`}
                 >
                   {pct === 0 ? 'No Disc.' : `${pct}%`}
@@ -524,8 +524,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 onClick={() => setDiscountType('flat')}
                 className={`py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   discountType === 'flat'
-                    ? 'bg-[#18181b] text-white border-[#18181b]'
-                    : 'bg-white text-[#47464b] border-[#d4d4d8] hover:bg-[#f6f2f5]'
+                    ? 'bg-foreground text-background text-white border-foreground'
+                    : 'bg-white text-muted-foreground border-border hover:bg-muted/50'
                 }`}
               >
                 Flat {currencySymbol}
@@ -534,12 +534,12 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
             {discountType === 'flat' && (
               <div className="flex items-center gap-2 pt-1">
-                <span className="text-xs text-[#77767b]">Flat Amount:</span>
+                <span className="text-xs text-muted-foreground">Flat Amount:</span>
                 <input
                   type="number"
                   value={flatDiscount}
                   onChange={(e) => setFlatDiscount(e.target.value)}
-                  className="flex-1 bg-white border border-[#d4d4d8] rounded-lg px-2 py-1 text-xs text-[#1c1b1d] focus:outline-hidden font-mono"
+                  className="flex-1 bg-white border border-border rounded-lg px-2 py-1 text-xs text-foreground focus:outline-hidden "
                   placeholder="0.00"
                 />
               </div>
@@ -547,21 +547,21 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
           </div>
 
           {/* Tax Checkbox */}
-          <div className="flex items-center justify-between p-2.5 bg-[#f6f2f5] rounded-xl border border-[#d4d4d8]">
-            <span className="text-xs font-semibold text-[#1c1b1d]">
+          <div className="flex items-center justify-between p-2.5 bg-muted/50 rounded-xl border border-border">
+            <span className="text-xs font-semibold text-foreground">
               Include Tax ({taxRate}%)
             </span>
             <input
               type="checkbox"
               checked={includeGst}
               onChange={(e) => setIncludeGst(e.target.checked)}
-              className="w-4 h-4 rounded text-[#18181b] focus:ring-0 cursor-pointer accent-[#18181b]"
+              className="w-4 h-4 rounded text-foreground focus:ring-0 cursor-pointer accent-[#18181b]"
             />
           </div>
 
           {/* Payment Method Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#1c1b1d] block">
+            <label className="text-xs font-bold text-foreground block">
               Payment Method :
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -570,8 +570,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 onClick={() => setPaymentMode('CASH')}
                 className={`py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
                   paymentMode === 'CASH'
-                    ? 'bg-[#18181b] text-white border-[#18181b] shadow-xs'
-                    : 'bg-white text-[#1c1b1d] border-[#d4d4d8] hover:bg-[#f6f2f5]'
+                    ? 'bg-foreground text-background text-white border-foreground shadow-xs'
+                    : 'bg-white text-foreground border-border hover:bg-muted/50'
                 }`}
               >
                 <Banknote className="w-4 h-4" />
@@ -583,8 +583,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 onClick={() => setPaymentMode('ONLINE')}
                 className={`py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
                   paymentMode === 'ONLINE'
-                    ? 'bg-[#18181b] text-white border-[#18181b] shadow-xs'
-                    : 'bg-white text-[#1c1b1d] border-[#d4d4d8] hover:bg-[#f6f2f5]'
+                    ? 'bg-foreground text-background text-white border-foreground shadow-xs'
+                    : 'bg-white text-foreground border-border hover:bg-muted/50'
                 }`}
               >
                 <Smartphone className="w-4 h-4" />
@@ -596,8 +596,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 onClick={() => setPaymentMode('CREDIT')}
                 className={`py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
                   paymentMode === 'CREDIT'
-                    ? 'bg-[#18181b] text-white border-[#18181b] shadow-xs'
-                    : 'bg-white text-[#1c1b1d] border-[#d4d4d8] hover:bg-[#f6f2f5]'
+                    ? 'bg-foreground text-background text-white border-foreground shadow-xs'
+                    : 'bg-white text-foreground border-border hover:bg-muted/50'
                 }`}
               >
                 <CreditCard className="w-4 h-4" />
@@ -612,8 +612,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 }}
                 className={`py-2.5 px-3 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer ${
                   paymentMode === 'SPLIT'
-                    ? 'bg-[#18181b] text-white border-[#18181b] shadow-xs'
-                    : 'bg-white text-[#1c1b1d] border-[#d4d4d8] hover:bg-[#f6f2f5]'
+                    ? 'bg-foreground text-background text-white border-foreground shadow-xs'
+                    : 'bg-white text-foreground border-border hover:bg-muted/50'
                 }`}
               >
                 <Split className="w-4 h-4" />
@@ -623,28 +623,28 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
             {/* CASH TENDERED & CHANGE CALCULATOR */}
             {paymentMode === 'CASH' && (
-              <div className="mt-3 bg-[#f6f2f5] border-2 border-emerald-600/30 rounded-2xl p-3.5 space-y-3 animate-in fade-in duration-150 shadow-sm">
+              <div className="mt-3 bg-muted/50 border-2 border-emerald-600/30 rounded-2xl p-3.5 space-y-3 animate-in fade-in duration-150 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-extrabold text-[#1c1b1d] flex items-center gap-1.5 uppercase tracking-wide">
+                  <label className="text-xs font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
                     <Banknote className="w-4 h-4 text-emerald-700" />
                     <span>Cash Tendered (Customer Gave)</span>
                   </label>
                   <button
                     type="button"
                     onClick={() => hardware.kickCashDrawer()}
-                    className="text-[10px] font-bold text-[#47464b] hover:text-[#1c1b1d] bg-white px-2.5 py-1 rounded-lg border border-[#d4d4d8] flex items-center gap-1 hover:bg-[#eae7ea] transition-all cursor-pointer shadow-2xs active:scale-95"
+                    className="text-[10px] font-bold text-muted-foreground hover:text-foreground bg-white px-2.5 py-1 rounded-lg border border-border flex items-center gap-1 hover:bg-muted transition-all cursor-pointer shadow-2xs active:scale-95"
                     title="Trigger physical USB/RJ11 Cash Drawer kick"
                   >
-                    <Vault className="w-3 h-3 text-[#18181b]" />
+                    <Vault className="w-3 h-3 text-foreground" />
                     <span>Pop Drawer</span>
                   </button>
                 </div>
 
                 {/* Quick Currency Note Denomination Chips */}
                 <div>
-                  <div className="text-[10px] text-[#77767b] font-medium mb-1.5 flex items-center justify-between">
+                  <div className="text-[10px] text-muted-foreground font-medium mb-1.5 flex items-center justify-between">
                     <span>Quick Currency Notes:</span>
-                    <span className="text-[10px] text-zinc-500 font-mono">Tap note handed by customer</span>
+                    <span className="text-[10px] text-zinc-500 ">Tap note handed by customer</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {quickNotePresets.map((preset) => (
@@ -652,10 +652,10 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                         key={preset.label}
                         type="button"
                         onClick={() => setTenderedAmount(preset.amount.toString())}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-extrabold transition-all cursor-pointer border ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
                           parseFloat(tenderedAmount) === preset.amount
                             ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm scale-105 ring-2 ring-emerald-500/30'
-                            : 'bg-white text-[#1c1b1d] border-[#d4d4d8] hover:bg-zinc-100 hover:border-zinc-400'
+                            : 'bg-white text-foreground border-border hover:bg-zinc-100 hover:border-zinc-400'
                         }`}
                       >
                         {preset.label}
@@ -666,7 +666,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
                 {/* Custom Tendered Input Field */}
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2 text-[#77767b] font-mono text-base font-bold">
+                  <span className="absolute left-3.5 top-2 text-muted-foreground text-base font-bold">
                     {currencySymbol}
                   </span>
                   <input
@@ -675,13 +675,13 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                     placeholder={grandTotal.toFixed(2)}
                     value={tenderedAmount}
                     onChange={(e) => setTenderedAmount(e.target.value)}
-                    className="w-full pl-8 pr-16 py-2 bg-white border-2 border-[#d4d4d8] rounded-xl text-lg font-mono font-black text-[#1c1b1d] focus:outline-hidden focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 shadow-inner"
+                    className="w-full pl-8 pr-16 py-2 bg-white border-2 border-border rounded-xl text-lg font-black text-foreground focus:outline-hidden focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 shadow-inner"
                   />
                   {tenderedAmount && (
                     <button
                       type="button"
                       onClick={() => setTenderedAmount('')}
-                      className="absolute right-2 top-2 px-2.5 py-1 text-[10px] font-bold bg-[#eae7ea] hover:bg-[#d4d4d8] text-[#47464b] rounded-lg transition-colors cursor-pointer"
+                      className="absolute right-2 top-2 px-2.5 py-1 text-[10px] font-bold bg-muted hover:bg-border text-muted-foreground rounded-lg transition-colors cursor-pointer"
                     >
                       Reset
                     </button>
@@ -704,7 +704,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
                         Change To Return
                       </span>
-                      <span className="text-2xl font-black font-mono text-emerald-700 tracking-tight">
+                      <span className="text-2xl font-black text-emerald-700 tracking-tight">
                         {currencySymbol}{changeDue.toFixed(2)}
                       </span>
                     </div>
@@ -724,15 +724,15 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">
                         Still Owed
                       </span>
-                      <span className="text-2xl font-black font-mono text-amber-700 tracking-tight">
+                      <span className="text-2xl font-black text-amber-700 tracking-tight">
                         {currencySymbol}{shortAmount.toFixed(2)}
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-white border border-[#d4d4d8] rounded-xl p-2.5 flex items-center justify-between text-zinc-700 text-xs">
+                  <div className="bg-white border border-border rounded-xl p-2.5 flex items-center justify-between text-zinc-700 text-xs">
                     <span className="font-semibold text-zinc-600">Exact Cash Expected:</span>
-                    <span className="font-bold font-mono text-zinc-900">
+                    <span className="font-bold text-zinc-900">
                       {currencySymbol}{grandTotal.toFixed(2)} (No change due)
                     </span>
                   </div>
@@ -754,7 +754,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                         <div className="text-xs font-black uppercase tracking-wider">
                           Payment Verified & Confirmed
                         </div>
-                        <div className="text-[11px] font-mono opacity-95">
+                        <div className="text-[11px] opacity-95">
                           {currencySymbol}{grandTotal.toFixed(2)} &middot; {upiRefNumber || 'Confirmed'}
                         </div>
                       </div>
@@ -832,7 +832,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-zinc-100/80 rounded-lg p-1.5 text-[10px] font-mono text-zinc-600 break-all">
+                    <div className="bg-zinc-100/80 rounded-lg p-1.5 text-[10px] text-zinc-600 break-all">
                       <span className="text-zinc-400 select-none">UPI: </span>
                       <span className="font-semibold text-zinc-800">{currentUpiId}</span>
                     </div>
@@ -938,7 +938,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                               setVerificationMethod('utr');
                             }
                           }}
-                          className="flex-1 px-3 py-1.5 bg-white border border-zinc-300 rounded-lg text-xs font-mono font-bold text-zinc-900 focus:outline-hidden focus:border-zinc-900"
+                          className="flex-1 px-3 py-1.5 bg-white border border-zinc-300 rounded-lg text-xs font-bold text-zinc-900 focus:outline-hidden focus:border-zinc-900"
                         />
                         <button
                           type="button"
@@ -971,7 +971,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                           <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
                           <span>Bank Webhook & Gateway Listener</span>
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded font-bold">
+                        <span className="text-[10px] text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded font-bold">
                           STATUS: {isUpiVerified ? 'VERIFIED' : 'WAITING FOR PAYMENT'}
                         </span>
                       </div>
@@ -1011,7 +1011,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       </button>
 
                       {isUpiVerified && (
-                        <div className="text-[10px] font-mono text-emerald-800 text-center">
+                        <div className="text-[10px] text-emerald-800 text-center">
                           Gateway Reference: <span className="font-bold">{upiRefNumber}</span> &middot; Confirmed via UPI
                         </div>
                       )}
@@ -1023,10 +1023,10 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
           </div>
 
           {/* Bill Calculation Summary Box */}
-          <div className="bg-[#f0edf0] p-3 rounded-xl border border-[#d4d4d8] space-y-1.5 text-xs">
-            <div className="flex justify-between text-[#47464b]">
+          <div className="bg-secondary p-3 rounded-xl border border-border space-y-1.5 text-xs">
+            <div className="flex justify-between text-muted-foreground">
               <span>Subtotal:</span>
-              <span className="font-mono">
+              <span className="">
                 {currencySymbol}
                 {subtotal.toFixed(2)}
               </span>
@@ -1035,7 +1035,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
             {discountAmount > 0 && (
               <div className="flex justify-between text-[#ba1a1a]">
                 <span>Discount:</span>
-                <span className="font-mono">
+                <span className="">
                   -{currencySymbol}
                   {discountAmount.toFixed(2)}
                 </span>
@@ -1043,18 +1043,18 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
             )}
 
             {includeGst && (
-              <div className="flex justify-between text-[#47464b]">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Tax ({taxRate}%):</span>
-                <span className="font-mono">
+                <span className="">
                   +{currencySymbol}
                   {taxAmount.toFixed(2)}
                 </span>
               </div>
             )}
 
-            <div className="flex justify-between items-end border-t border-[#d4d4d8] pt-1.5 text-sm font-bold text-[#1c1b1d]">
+            <div className="flex justify-between items-end border-t border-border pt-1.5 text-sm font-bold text-foreground">
               <span>Final Total Due:</span>
-              <span className="text-xl font-extrabold font-mono">
+              <span className="text-xl font-extrabold ">
                 {currencySymbol}
                 {grandTotal.toFixed(2)}
               </span>
@@ -1121,7 +1121,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
             <div className="flex justify-between items-center pb-2 border-b border-zinc-100">
               <div className="text-left">
                 <h3 className="font-black text-sm text-zinc-900">{payeeName}</h3>
-                <p className="text-[11px] text-zinc-500 font-mono">UPI: {currentUpiId}</p>
+                <p className="text-[11px] text-zinc-500 ">UPI: {currentUpiId}</p>
               </div>
               <button
                 type="button"
@@ -1146,7 +1146,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
               <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
                 Total Amount To Pay
               </div>
-              <div className="text-3xl font-black font-mono text-zinc-900">
+              <div className="text-3xl font-black text-zinc-900">
                 {currencySymbol}{grandTotal.toFixed(2)}
               </div>
               <p className="text-[11px] text-zinc-500">

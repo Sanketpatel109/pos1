@@ -7,7 +7,7 @@ import {
   Copy,
   Receipt,
   QrCode,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { Order, ShopSettings, BillItem } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 
@@ -112,54 +112,54 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-[#1c1b1d]">
+      <div className="bg-white rounded-2xl w-full max-w-sm border border-border shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-foreground">
         {/* Top Control Header */}
-        <div className="px-4 py-3 border-b border-[#d4d4d8] flex items-center justify-between bg-[#f6f2f5]">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/50">
           <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-[#18181b]" />
-            <h2 className="font-bold text-sm text-[#1c1b1d]">Invoice #{activeOrderNum}</h2>
+            <Receipt className="w-4 h-4 text-foreground" />
+            <h2 className="font-bold text-sm text-foreground">Invoice #{activeOrderNum}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#77767b] hover:text-[#1c1b1d] hover:bg-[#eae7ea]"
+            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Receipt Container (Thermal Paper Simulation) */}
-        <div className="flex-1 overflow-y-auto p-4 bg-[#f0edf0] flex justify-center no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 bg-secondary flex justify-center no-scrollbar">
           <div
             ref={receiptRef}
-            className="w-full bg-white p-4 shadow-sm border border-[#d4d4d8] rounded-xl text-[#1c1b1d] font-mono text-xs space-y-3 print:m-0 print:border-none print:shadow-none"
+            className="w-full bg-white p-4 shadow-sm border border-border rounded-xl text-foreground text-xs space-y-3 print:m-0 print:border-none print:shadow-none"
           >
             {/* Store Header */}
-            <div className="text-center space-y-1 border-b border-dashed border-[#77767b] pb-3">
-              <div className="w-10 h-10 bg-[#18181b] text-white rounded-full mx-auto flex items-center justify-center font-bold text-sm">
+            <div className="text-center space-y-1 border-b border-dashed border-border pb-3">
+              <div className="w-10 h-10 bg-foreground text-background text-white rounded-full mx-auto flex items-center justify-center font-bold text-sm">
                 M
               </div>
-              <h3 className="font-extrabold text-sm uppercase tracking-wider text-[#1c1b1d]">
+              <h3 className="font-extrabold text-sm uppercase tracking-wider text-foreground">
                 {shopSettings.shopName}
               </h3>
               {shopSettings.tagline && (
-                <p className="text-[10px] text-[#77767b]">{shopSettings.tagline}</p>
+                <p className="text-[10px] text-muted-foreground">{shopSettings.tagline}</p>
               )}
-              <p className="text-[10px] text-[#47464b]">{shopSettings.address}</p>
-              <p className="text-[10px] text-[#47464b]">Tel: {shopSettings.phone}</p>
+              <p className="text-[10px] text-muted-foreground">{shopSettings.address}</p>
+              <p className="text-[10px] text-muted-foreground">Tel: {shopSettings.phone}</p>
               {shopSettings.gstin && (
-                <p className="text-[10px] text-[#47464b] font-bold">
+                <p className="text-[10px] text-muted-foreground font-bold">
                   GSTIN: {shopSettings.gstin}
                 </p>
               )}
               {(isDuplicate || order?.isDuplicate) && (
-                <div className="mt-1.5 py-1 px-2 text-center bg-zinc-100 border-y border-dashed border-zinc-400 font-bold text-[11px] tracking-widest text-zinc-900 uppercase font-mono">
+                <div className="mt-1.5 py-1 px-2 text-center bg-zinc-100 border-y border-dashed border-zinc-400 font-bold text-[11px] tracking-widest text-zinc-900 uppercase ">
                   *** DUPLICATE COPY ***
                 </div>
               )}
             </div>
 
             {/* Invoice Meta */}
-            <div className="text-[11px] space-y-0.5 border-b border-dashed border-[#77767b] pb-2">
+            <div className="text-[11px] space-y-0.5 border-b border-dashed border-border pb-2">
               {Boolean(shopSettings.enableDailyToken) && (
                 <div className="my-1.5 py-1.5 px-2 bg-slate-900 text-white rounded-lg flex items-center justify-between text-center">
                   <div>
@@ -172,36 +172,36 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                       </span>
                     )}
                   </div>
-                  <span className="text-xl font-black tracking-tight font-mono text-emerald-400">
+                  <span className="text-xl font-black tracking-tight text-emerald-400">
                     #{String(order?.tokenNumber || (typeof activeOrderNum === 'number' ? ((activeOrderNum - 1) % 99999) + 1 : 1)).padStart(2, '0')}
                   </span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#77767b]">Invoice No:</span>
+                <span className="text-muted-foreground">Invoice No:</span>
                 <span className="font-bold">#{order?.orderNumberFormatted || `${shopSettings.terminalPrefix || 'A'}-${activeOrderNum}`}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#77767b]">Date & Time:</span>
+                <span className="text-muted-foreground">Date & Time:</span>
                 <span>
                   {formattedDate} {formattedTime}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#77767b]">Customer:</span>
+                <span className="text-muted-foreground">Customer:</span>
                 <span className="font-semibold truncate max-w-[150px]">
                   {activeCustomerName}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#77767b]">Payment Mode:</span>
+                <span className="text-muted-foreground">Payment Mode:</span>
                 <span className="font-bold uppercase">{activePaymentMethod}</span>
               </div>
             </div>
 
             {/* Itemized Table */}
-            <div className="space-y-1.5 border-b border-dashed border-[#77767b] pb-3">
-              <div className="grid grid-cols-12 text-[10px] font-bold text-[#77767b] border-b border-[#d4d4d8] pb-1 uppercase">
+            <div className="space-y-1.5 border-b border-dashed border-border pb-3">
+              <div className="grid grid-cols-12 text-[10px] font-bold text-muted-foreground border-b border-border pb-1 uppercase">
                 <span className="col-span-6">Item</span>
                 <span className="col-span-2 text-center">Qty</span>
                 <span className="col-span-2 text-right">Rate</span>
@@ -221,8 +221,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </div>
 
             {/* Calculations & Total */}
-            <div className="space-y-1 text-[11px] border-b border-dashed border-[#77767b] pb-2">
-              <div className="flex justify-between text-[#47464b]">
+            <div className="space-y-1 text-[11px] border-b border-dashed border-border pb-2">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal:</span>
                 <span>
                   {shopSettings.currencySymbol}
@@ -246,7 +246,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 taxSnapshotTotals.taxRateBreakdown
                   .filter((b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0))
                   .map((b) => (
-                    <div key={b.rate} className="flex justify-between text-[#47464b]">
+                    <div key={b.rate} className="flex justify-between text-muted-foreground">
                       <span>GST {b.rate}% (CGST {(b.rate / 2).toFixed(1)}% + SGST {(b.rate / 2).toFixed(1)}%):</span>
                       <span>
                         +{shopSettings.currencySymbol}
@@ -255,7 +255,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                     </div>
                   ))
               ) : activeTaxAmount > 0 ? (
-                <div className="flex justify-between text-[#47464b]">
+                <div className="flex justify-between text-muted-foreground">
                   <span>GST {activeTaxRate}% (CGST {(activeTaxRate / 2).toFixed(1)}% + SGST {(activeTaxRate / 2).toFixed(1)}%):</span>
                   <span>
                     +{shopSettings.currencySymbol}
@@ -265,7 +265,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               ) : null}
 
               {activeTaxAmount > 0 && (
-                <div className="flex justify-between font-bold text-[#1c1b1d] border-t border-dotted border-[#d4d4d8] pt-1">
+                <div className="flex justify-between font-bold text-foreground border-t border-dotted border-border pt-1">
                   <span>Total Tax:</span>
                   <span>
                     +{shopSettings.currencySymbol}
@@ -274,7 +274,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 </div>
               )}
 
-              <div className="flex justify-between text-sm font-extrabold text-[#1c1b1d] border-t border-[#d4d4d8] pt-1">
+              <div className="flex justify-between text-sm font-extrabold text-foreground border-t border-border pt-1">
                 <span>GRAND TOTAL:</span>
                 <span>
                   {shopSettings.currencySymbol}
@@ -284,16 +284,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
               {/* Cash Tendered & Change Return Slip Information */}
               {activePaymentMethod === 'CASH' && order?.tenderedAmount !== undefined && order.tenderedAmount > 0 && (
-                <div className="pt-2 border-t border-dashed border-[#77767b] space-y-1 text-[11px]">
-                  <div className="flex justify-between text-[#47464b]">
+                <div className="pt-2 border-t border-dashed border-border space-y-1 text-[11px]">
+                  <div className="flex justify-between text-muted-foreground">
                     <span>Cash Tendered (Received):</span>
-                    <span className="font-mono font-bold text-[#1c1b1d]">
+                    <span className="font-bold text-foreground">
                       {shopSettings.currencySymbol}{order.tenderedAmount.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between font-bold text-emerald-800">
                     <span>Change Returned:</span>
-                    <span className="font-mono font-black text-xs">
+                    <span className="font-black text-xs">
                       {shopSettings.currencySymbol}
                       {(order.changeDue !== undefined
                         ? order.changeDue
@@ -313,11 +313,11 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   <span>Paid In Full • Verified UPI</span>
                 </div>
                 {order?.upiRefNumber && (
-                  <div className="text-[11px] font-mono font-black text-emerald-950">
+                  <div className="text-[11px] font-black text-emerald-950">
                     UTR / Ref: {order.upiRefNumber}
                   </div>
                 )}
-                <div className="text-[9px] font-mono text-emerald-700">
+                <div className="text-[9px] text-emerald-700">
                   Verification: {order?.verificationMethod?.toUpperCase() || 'CONFIRMED'} &middot; Status: SUCCESS
                 </div>
               </div>
@@ -327,7 +327,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
                   <span>Paid In Full • Cash Tender</span>
                 </div>
-                <div className="text-[9px] font-mono text-zinc-600">
+                <div className="text-[9px] text-zinc-600">
                   Cash collected at billing counter &middot; No balance due
                 </div>
               </div>
@@ -351,7 +351,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                       loading="lazy"
                     />
                   </div>
-                  <div className="text-[9px] font-mono text-amber-900 leading-tight">
+                  <div className="text-[9px] text-amber-900 leading-tight">
                     <span className="font-bold">Balance Due: {shopSettings.currencySymbol}{activeTotal.toFixed(2)}</span>
                     <br />
                     <span>UPI ID: {shopSettings.upiId}</span>
@@ -366,7 +366,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
                   <span>Paid In Full • {activePaymentMethod}</span>
                 </div>
-                <div className="text-[9px] font-mono text-zinc-600">
+                <div className="text-[9px] text-zinc-600">
                   Transaction Authorized &middot; No balance due
                 </div>
               </div>
@@ -374,10 +374,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
             {/* Barcode & Footer Note */}
             <div className="text-center pt-1 space-y-1">
-              <div className="h-9 bg-repeating-linear-gradient flex items-center justify-center font-mono text-[10px] tracking-[0.25em] text-[#1c1b1d] border-y border-[#d4d4d8] py-1">
+              <div className="h-9 bg-repeating-linear-gradient flex items-center justify-center text-[10px] tracking-[0.25em] text-foreground border-y border-border py-1">
                 *ORD-{activeOrderNum}-2026*
               </div>
-              <p className="text-[10px] text-[#77767b] pt-1">
+              <p className="text-[10px] text-muted-foreground pt-1">
                 *** THANK YOU, VISIT AGAIN ***
               </p>
             </div>
@@ -385,10 +385,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         </div>
 
         {/* Action Buttons Footer */}
-        <div className="p-3 bg-[#f6f2f5] border-t border-[#d4d4d8] flex items-center gap-2 shrink-0">
+        <div className="p-3 bg-muted/50 border-t border-border flex items-center gap-2 shrink-0">
           <button
             onClick={handleShareWhatsApp}
-            className="flex-1 py-2.5 rounded-xl bg-white hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 py-2.5 rounded-xl bg-white hover:bg-muted text-foreground border border-border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>SHARE</span>
@@ -396,7 +396,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
           <button
             onClick={handlePrint}
-            className="flex-1 py-2.5 rounded-xl bg-[#18181b] hover:bg-black text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+            className="flex-1 py-2.5 rounded-xl bg-foreground text-background hover:bg-black text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>PRINT</span>

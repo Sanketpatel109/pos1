@@ -78,7 +78,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                     }}
                   />
                   {currentQty > 0 && (
-                    <span className="absolute top-0.5 right-0.5 bg-zinc-900 text-white text-[9px] font-bold font-mono px-1 py-0.2 rounded-full shadow-2xs">
+                    <span className="absolute top-0.5 right-0.5 bg-zinc-900 text-white text-[9px] font-bold px-1 py-0.2 rounded-full shadow-2xs">
                       {currentQty}
                     </span>
                   )}
@@ -94,7 +94,7 @@ export const CatalogSection: React.FC<CatalogSectionProps> = ({
                   <p className="text-[11px] font-semibold text-zinc-900 leading-tight line-clamp-2">
                     {item.name}
                   </p>
-                  <p className="text-xs font-bold text-zinc-900 mt-0.5 font-mono">
+                  <p className="text-xs font-bold text-zinc-900 mt-0.5 ">
                     {currencySymbol}{item.price}
                   </p>
                 </div>

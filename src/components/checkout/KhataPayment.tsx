@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, UserCheck, AlertTriangle, Phone, Wallet, Plus, ShieldAlert, Check } from '../../icons/faIcons';
+import { Search, UserCheck, AlertTriangle, Phone, Wallet, Plus, ShieldAlert, Check } from 'lucide-react';
 import { Customer } from '../../types';
 import { posSound } from '../../utils/sound';
 
@@ -118,7 +118,7 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Grahak Khata Search by name or 10-digit mobile..."
-            className="w-full h-11 pl-9 pr-3 bg-zinc-50 border border-zinc-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-xl text-xs sm:text-sm font-medium text-zinc-900 outline-hidden transition-all shadow-xs"
+            className="w-full h-11 pl-9 pr-3 bg-muted/40 border border-border focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-xs sm:text-sm font-medium text-foreground outline-hidden transition-all shadow-xs"
           />
         </div>
 
@@ -138,17 +138,18 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
       </div>
 
       {/* Inline Create Customer Form */}
+      {/* Inline Create Customer Form */}
       {isAddingCustomer && (
         <form
           onSubmit={handleCreateCustomerSubmit}
-          className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-2xl flex flex-col gap-2.5 animate-in slide-in-from-top-2 duration-150 shadow-xs"
+          className="p-3.5 bg-primary/10 border border-primary/20 rounded-2xl flex flex-col gap-2.5 animate-in slide-in-from-top-2 duration-150 shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-blue-950">Add Customer to Khata</span>
+            <span className="text-xs font-semibold text-foreground">Add Customer to Khata</span>
             <button
               type="button"
               onClick={() => setIsAddingCustomer(false)}
-              className="text-[11px] font-medium text-blue-600 hover:underline cursor-pointer"
+              className="text-xs font-medium text-primary hover:underline cursor-pointer"
             >
               Cancel
             </button>
@@ -160,7 +161,7 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Full Name *"
-              className="h-10 px-3 bg-white border border-zinc-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-xl text-xs font-medium text-zinc-900 outline-hidden"
+              className="h-10 px-3 bg-card border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-xs font-medium text-foreground outline-hidden"
             />
             <input
               type="tel"
@@ -168,7 +169,7 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
               placeholder="Mobile Number *"
-              className="h-10 px-3 bg-white border border-zinc-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-xl text-xs font-medium text-zinc-900 outline-hidden"
+              className="h-10 px-3 bg-card border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-xs font-medium text-foreground outline-hidden"
             />
             <div>
               <input
@@ -179,15 +180,15 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
                 value={newCreditLimit}
                 onChange={(e) => setNewCreditLimit(e.target.value)}
                 placeholder="Udhar Limit (₹) *"
-                className="w-full h-10 px-3 bg-white border border-zinc-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-xl text-xs font-medium text-zinc-900 outline-hidden tabular-nums"
+                className="w-full h-10 px-3 bg-card border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-xs font-medium text-foreground outline-hidden tabular-nums"
               />
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-blue-700">Default credit ceiling: ₹2,000</span>
+            <span className="text-xs text-primary">Default credit ceiling: ₹2,000</span>
             <button
               type="submit"
-              className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-xl transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+              className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs rounded-xl transition-all cursor-pointer shadow-xs active:scale-[0.98]"
             >
               Save & Select Customer
             </button>
@@ -197,10 +198,10 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
 
       {/* Customer Picker List */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-zinc-700">Select Customer</label>
-        <div className="max-h-44 sm:max-h-48 overflow-y-auto flex flex-col gap-1.5 pr-0.5 border border-zinc-200/80 rounded-2xl bg-zinc-50/50 p-2">
+        <label className="text-xs font-semibold text-foreground">Select Customer</label>
+        <div className="max-h-44 sm:max-h-48 overflow-y-auto flex flex-col gap-1.5 pr-0.5 border border-border rounded-2xl bg-muted/30 p-2">
           {filteredCustomers.length === 0 ? (
-            <div className="py-6 text-center text-xs text-zinc-400">
+            <div className="py-6 text-center text-xs text-muted-foreground">
               No customers match "{searchQuery}"
             </div>
           ) : (
@@ -215,22 +216,22 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
                 onClick={() => handleSelect(cust)}
                 className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                   isSelected
-                    ? 'bg-blue-50/60 border-blue-500 shadow-xs'
-                    : 'bg-white hover:bg-zinc-50 border-zinc-200/80'
+                    ? 'bg-primary/10 border-primary shadow-xs'
+                    : 'bg-card hover:bg-muted border-border'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
                       isSelected
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-zinc-100 text-zinc-700'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-foreground'
                     }`}
                   >
                     {cust.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <h5 className="text-xs sm:text-sm font-medium text-zinc-900 truncate">
+                    <h5 className="text-xs sm:text-sm font-medium text-foreground truncate">
                       {cust.name}
                     </h5>
                     <p className="text-[11px] text-zinc-500 flex items-center gap-1 truncate">
@@ -254,7 +255,7 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
                       {cust.creditBalance.toFixed(2)}
                     </span>
                   </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono tabular-nums tracking-tight">
+                  <span className="text-[10px] text-zinc-400 block tabular-nums tracking-tight">
                     Limit: {currencySymbol}{custLimit.toFixed(2)}
                   </span>
                 </div>
@@ -276,43 +277,43 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
-              <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
+              <UserCheck className="w-4 h-4 text-primary shrink-0" />
               <div className="min-w-0">
-                <span className="text-xs font-semibold text-zinc-900 block truncate">
+                <span className="text-xs font-semibold text-foreground block truncate">
                   {selectedCustomer.name}
                 </span>
-                <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-zinc-400" />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-muted-foreground" />
                   {selectedCustomer.phone || 'No phone recorded'}
                 </span>
               </div>
             </div>
             <div className="text-right shrink-0">
-              <span className="text-[10px] font-semibold text-zinc-400 uppercase block">Credit Limit</span>
-              <span className="text-xs font-mono font-medium text-zinc-700 tabular-nums tracking-tight">
+              <span className="text-xs font-semibold text-muted-foreground uppercase block">Credit Limit</span>
+              <span className="text-xs font-medium text-foreground tabular-nums tracking-tight">
                 {currencySymbol}{creditLimit.toFixed(2)}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-100 text-center">
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border text-center">
             <div>
-              <span className="text-[10px] text-zinc-500 uppercase font-medium">Previous Due</span>
-              <div className="text-xs sm:text-sm font-medium text-zinc-800 tabular-nums tracking-tight">
+              <span className="text-xs text-muted-foreground uppercase font-medium">Previous Due</span>
+              <div className="text-xs sm:text-sm font-medium text-foreground tabular-nums tracking-tight">
                 {currencySymbol}{currentOutstanding.toFixed(2)}
               </div>
             </div>
             <div>
-              <span className="text-[10px] text-zinc-500 uppercase font-medium">+ This Bill</span>
-              <div className="text-xs sm:text-sm font-semibold text-blue-600 tabular-nums tracking-tight">
+              <span className="text-xs text-muted-foreground uppercase font-medium">+ This Bill</span>
+              <div className="text-xs sm:text-sm font-semibold text-primary tabular-nums tracking-tight">
                 {currencySymbol}{total.toFixed(2)}
               </div>
             </div>
             <div>
-              <span className="text-[10px] text-zinc-500 uppercase font-medium">Projected Due</span>
+              <span className="text-xs text-muted-foreground uppercase font-medium">Projected Due</span>
               <div
                 className={`text-xs sm:text-sm font-bold tabular-nums tracking-tight ${
-                  isOverLimit ? 'text-rose-600' : 'text-zinc-900'
+                  isOverLimit ? 'text-destructive' : 'text-foreground'
                 }`}
               >
                 {currencySymbol}{projectedOutstanding.toFixed(2)}
@@ -322,16 +323,16 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
 
           {isOverLimit ? (
             isLimitOverrideApproved ? (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-medium flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary text-xs font-medium flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary shrink-0" />
                 <span>
                   Manager PIN Approved: Credit limit override authorized for {selectedCustomer.name}.
                 </span>
               </div>
             ) : (
-              <div className="p-2.5 bg-rose-100/70 border border-rose-300 rounded-xl text-rose-800 text-xs font-medium flex flex-col gap-2">
+              <div className="p-2.5 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-xs font-medium flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                  <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
                   <span>
                     Credit Limit Exceeded: Total ({currencySymbol}{projectedOutstanding.toFixed(2)}) exceeds limit of {currencySymbol}{creditLimit.toFixed(2)}.
                   </span>
@@ -347,7 +348,7 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
                         () => setIsLimitOverrideApproved(true)
                       );
                     }}
-                    className="self-start px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-medium transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="self-start px-3 py-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg text-xs font-medium transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
                   >
                     Request Manager PIN Override
                   </button>
@@ -355,9 +356,9 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
               </div>
             )
           ) : (
-            <div className="text-[11px] text-zinc-500 flex items-center justify-between px-0.5">
+            <div className="text-xs text-muted-foreground flex items-center justify-between px-0.5">
               <span>Remaining Credit Available:</span>
-              <span className="font-medium text-emerald-700 tabular-nums tracking-tight">
+              <span className="font-medium text-primary tabular-nums tracking-tight">
                 {currencySymbol}{Math.max(0, creditLimit - projectedOutstanding).toFixed(2)}
               </span>
             </div>
@@ -406,8 +407,8 @@ export const KhataPayment: React.FC<KhataPaymentProps> = ({
             onClick={handleSettle}
             className={`w-full h-11 mt-auto rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
               !isDisabled
-                ? 'bg-blue-600 hover:bg-blue-700 text-white active:scale-[0.98]'
-                : 'bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed shadow-none'
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98]'
+                : 'bg-muted text-muted-foreground border border-border cursor-not-allowed shadow-none'
             }`}
           >
             {isSubmitting ? (

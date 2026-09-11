@@ -6,11 +6,12 @@ import {
   Minimize2,
   Plus,
   Camera,
-  Cloud,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { ActiveScreen, StaffRole } from '../types';
 import { User } from '../firebase';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export interface HeaderProps {
   activeScreen?: ActiveScreen;
@@ -36,7 +37,6 @@ export const Header: React.FC<HeaderProps> = ({
   heldOrdersCount = 0,
   activeStaffName = 'Anand',
   activeStaffRole = 'OWNER',
-  isSyncing = false,
   onOpenMenu,
   onOpenStaffSwitch,
   onOpenHeldOrders,
@@ -83,95 +83,89 @@ export const Header: React.FC<HeaderProps> = ({
   const operatorDisplayName = activeStaffName || 'Anand';
 
   return (
-    <header className="flex items-center justify-between gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 h-14 w-full bg-white border-b border-zinc-200/80 sticky top-0 z-40 shrink-0 select-none">
-      {/* 
-        ========================================================================
-        LEFT ZONE: [≡ Menu] (36x36px) and store/operator name ("Anand")
-        Avatar circle: 32x32px (w-8 h-8, text-xs)
-        ========================================================================
-      */}
+    <header className="flex items-center justify-between gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 h-14 w-full bg-card border-b border-border sticky top-0 z-40 shrink-0 select-none">
+      {/* LEFT ZONE: [≡ Menu] and store/operator name */}
       <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
         {/* Navigation Menu Trigger [≡] */}
-        <button
+        <Button
           id="btn-sidebar-menu"
-          type="button"
+          variant="outline"
+          size="icon-lg"
           onClick={onOpenMenu}
           aria-label="Open Navigation Menu"
-          className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
+          className="shrink-0"
         >
-          <Menu className="w-[18px] h-[18px]" strokeWidth={2} />
-        </button>
+          <Menu className="size-4" />
+        </Button>
 
         {/* Store Monogram & Name */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-xs">
+          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-xs">
             A
           </div>
           <div className="flex items-center gap-1.5 min-w-0 truncate">
-            <span className="text-xs sm:text-sm font-bold text-zinc-900 tracking-tight truncate">
+            <span className="text-xs sm:text-sm font-bold text-foreground tracking-tight truncate">
               Anand
               <span className="hidden sm:inline"> Supermarket</span>
             </span>
-            <span className="text-zinc-300 text-xs font-semibold hidden md:inline">·</span>
+            <span className="text-border text-xs font-semibold hidden md:inline">·</span>
 
             {/* Operator Tag on Desktop / Tablet */}
-            <button
-              type="button"
+            <Button
               id="btn-header-operator"
+              variant="ghost"
+              size="xs"
               onClick={onOpenStaffSwitch}
               title={`Switch operator: ${operatorDisplayName} (${roleMeta.label})`}
-              className="hidden md:flex items-center gap-1 hover:bg-zinc-50 py-0.5 px-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+              className="hidden md:inline-flex items-center gap-1 shrink-0 h-7"
             >
-              <span className="text-xs font-medium text-zinc-600">{operatorDisplayName}</span>
-              <span className="bg-zinc-100 text-zinc-600 border border-zinc-200 font-mono text-[9px] uppercase font-medium px-1.5 py-0.2 rounded">
+              <span className="text-xs font-medium text-muted-foreground">{operatorDisplayName}</span>
+              <Badge variant="outline" className="text-xs px-1.5 py-0 h-4">
                 {roleMeta.badgeLabel || 'OWNER'}
-              </span>
-            </button>
+              </Badge>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* 
-        ========================================================================
-        RIGHT ZONE: [+] (Custom Item), [] (Scan), [ 1] (Held Bills), [] (Kiosk)
-        Consistent 36x36px rounded-xl (w-9 h-9, 18px icons, bg-zinc-50 border-zinc-200 text-zinc-700)
-        Compact button spacing: gap-1
-        ========================================================================
-      */}
+      {/* RIGHT ZONE: [+] (Custom Item), [Camera] (Scan), [Pause] (Held Bills), [Maximize] (Kiosk) */}
       <div className="flex items-center gap-1 shrink-0">
         {/* [+] Custom Item Button */}
         {onOpenCustomItem && (
-          <button
-            type="button"
+          <Button
             id="btn-header-custom-item"
+            variant="outline"
+            size="icon-lg"
             onClick={onOpenCustomItem}
             aria-label="Add Custom Item"
             title="Add Custom Item"
-            className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
+            className="shrink-0"
           >
-            <Plus className="w-[18px] h-[18px]" strokeWidth={2} />
-          </button>
+            <Plus className="size-4" />
+          </Button>
         )}
 
-        {/* [] Camera/Scan Button */}
+        {/* Camera/Scan Button */}
         {onOpenScanner && (
-          <button
-            type="button"
+          <Button
             id="btn-header-scanner"
+            variant="outline"
+            size="icon-lg"
             onClick={() => onOpenScanner('add-to-bill')}
             aria-label="Scan Barcode / QR Code"
             title="Scan Barcode / QR Code"
-            className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
+            className="shrink-0"
           >
-            <Camera className="w-[18px] h-[18px]" strokeWidth={2} />
-          </button>
+            <Camera className="size-4" />
+          </Button>
         )}
 
-        {/* [ 1] Held Bills Button */}
+        {/* Held Bills Button */}
         {onOpenHeldOrders && (
-          <button
-            type="button"
+          <Button
             id="btn-header-held-bills"
+            variant="outline"
+            size="sm"
             onClick={onOpenHeldOrders}
             aria-label={`Held Bills (${heldOrdersCount})`}
             title={
@@ -179,21 +173,25 @@ export const Header: React.FC<HeaderProps> = ({
                 ? `${heldOrdersCount} parked bill(s). Tap to recall.`
                 : 'Held Bills (0)'
             }
-            className={`h-9 min-w-[36px] px-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs ${
-              heldOrdersCount > 0 ? 'ring-2 ring-blue-600/30' : ''
+            className={`h-9 px-2.5 gap-1 shrink-0 ${
+              heldOrdersCount > 0 ? 'ring-2 ring-primary/30' : ''
             }`}
           >
-            <PauseCircle className="w-4 h-4 text-zinc-700 shrink-0" strokeWidth={2} />
-            <span className="bg-blue-600 text-white text-[11px] font-semibold rounded-full w-4 h-4 flex items-center justify-center shrink-0 leading-none tabular-nums tracking-tight">
+            <PauseCircle className="size-4" />
+            <Badge
+              variant="default"
+              className="px-1.5 py-0 text-xs h-4 min-w-[16px] justify-center tabular-nums"
+            >
               {heldOrdersCount}
-            </span>
-          </button>
+            </Badge>
+          </Button>
         )}
 
-        {/* [] Kiosk Fullscreen Toggle */}
-        <button
-          type="button"
+        {/* Kiosk Fullscreen Toggle */}
+        <Button
           id="btn-header-kiosk-fullscreen"
+          variant="outline"
+          size="icon-lg"
           onClick={toggleFullscreen}
           aria-label={isFullscreen ? 'Exit Fullscreen Kiosk Mode' : 'Enter Fullscreen Kiosk Mode'}
           title={
@@ -201,14 +199,10 @@ export const Header: React.FC<HeaderProps> = ({
               ? 'Exit Fullscreen Kiosk Mode (F11 / Esc)'
               : 'Enter Edge-to-Edge Fullscreen Kiosk Mode (F11)'
           }
-          className="w-9 h-9 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0 shadow-xs"
+          className="shrink-0"
         >
-          {isFullscreen ? (
-            <Minimize2 className="w-[18px] h-[18px]" strokeWidth={2} />
-          ) : (
-            <Maximize2 className="w-[18px] h-[18px]" strokeWidth={2} />
-          )}
-        </button>
+          {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+        </Button>
       </div>
     </header>
   );

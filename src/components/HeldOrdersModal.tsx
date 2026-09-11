@@ -14,7 +14,7 @@ import {
   AlertCircle,
   FileText,
   CheckCircle2,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { Order, ShopSettings } from '../types';
 
 export interface HeldOrdersModalProps {
@@ -138,23 +138,23 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-2xl border border-[#d4d4d8] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-[#1c1b1d] animate-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-2xl w-full max-w-2xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-foreground animate-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-[#d4d4d8] bg-[#f6f2f5] flex items-center justify-between shrink-0">
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border bg-muted/50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs shrink-0">
               <PauseCircle className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-extrabold text-sm sm:text-base text-[#1c1b1d] tracking-tight">
+                <h2 className="font-extrabold text-sm sm:text-base text-foreground tracking-tight">
                   Parked / Held Orders
                 </h2>
-                <span className="bg-[#18181b] text-white text-[10px] font-mono font-black px-2 py-0.5 rounded-full">
+                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
                   {heldOrders.length} {heldOrders.length === 1 ? 'Order' : 'Orders'}
                 </span>
               </div>
-              <p className="text-[11px] text-[#77767b] truncate mt-0.5">
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
                 Temporarily saved tickets waiting to be resumed or paid
               </p>
             </div>
@@ -162,7 +162,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-[#77767b] hover:text-[#1c1b1d] hover:bg-[#eae7ea] transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
             title="Close (Esc)"
           >
             <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -171,20 +171,20 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
         {/* Search & Filter Bar */}
         {heldOrders.length > 0 && (
-          <div className="px-4 py-2.5 sm:px-5 bg-white border-b border-[#f0edf0] flex items-center gap-2 shrink-0">
+          <div className="px-4 py-2.5 sm:px-5 bg-card border-b border-border flex items-center gap-2 shrink-0">
             <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-[#77767b] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by order #, item name, note, or cashier..."
-                className="w-full pl-8 pr-3 py-1.5 bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl text-xs text-[#1c1b1d] placeholder:text-[#77767b] focus:outline-none focus:border-[#18181b] transition-all"
+                className="w-full pl-8 pr-3 py-1.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-primary transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#77767b] hover:text-black font-bold"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground font-bold cursor-pointer"
                 >
                   ×
                 </button>
@@ -194,7 +194,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
             {heldOrders.length > 1 && onClearAllHeld && (
               <button
                 onClick={onClearAllHeld}
-                className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0"
+                className="text-xs font-bold text-destructive hover:bg-destructive/10 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0"
               >
                 Clear All
               </button>
@@ -202,11 +202,11 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
           </div>
         )}
 
-        {/* Current Active Cart Banner Alert (if items exist in register) */}
-        {currentCartCount > 0 && (
-          <div className="px-4 py-2 bg-indigo-50/80 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-900 shrink-0">
-            <div className="flex items-center gap-1.5 font-medium">
-              <ShoppingBag className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+        {/* Informational Cart Notice */}
+        {currentCartCount > 0 && heldOrders.length > 0 && (
+          <div className="px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs text-primary flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-1.5">
+              <ShoppingCart className="w-3.5 h-3.5 text-primary" />
               <span>
                 Register currently has{' '}
                 <strong className="font-bold">
@@ -215,32 +215,32 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 </strong>
               </span>
             </div>
-            <span className="text-[10px] text-indigo-700 font-semibold bg-indigo-100/70 px-2 py-0.5 rounded-md">
+            <span className="text-xs text-primary font-semibold bg-primary/20 px-2 py-0.5 rounded-md">
               Safe Swap Available
             </span>
           </div>
         )}
 
         {/* Orders List Content */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 bg-[#fcf8fb]">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 bg-card">
           {heldOrders.length === 0 ? (
             <div className="py-12 sm:py-16 flex flex-col items-center justify-center text-center p-6 max-w-sm mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-[#f0edf0] border border-[#d4d4d8] flex items-center justify-center mb-3.5 text-[#77767b]">
+              <div className="w-14 h-14 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-3.5 text-muted-foreground">
                 <PauseCircle className="w-7 h-7 stroke-[1.5]" />
               </div>
-              <h3 className="text-sm sm:text-base font-extrabold text-[#1c1b1d]">
+              <h3 className="text-sm sm:text-base font-extrabold text-foreground">
                 No Orders Currently on Hold
               </h3>
-              <p className="text-xs text-[#77767b] mt-1.5 leading-relaxed">
+              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
                 When a customer needs time to retrieve cash or an extra item, tap the{' '}
-                <strong className="text-[#1c1b1d] font-bold">Hold button</strong> in the bill
+                <strong className="text-foreground font-bold">Hold button</strong> in the bill
                 terminal to park their ticket and immediately serve the next person in line.
               </p>
-              <div className="mt-5 p-3 rounded-xl bg-white border border-[#e4e4e7] text-left text-[11px] text-[#77767b] w-full">
-                <span className="font-bold text-[#1c1b1d] block mb-1">
+              <div className="mt-5 p-3 rounded-xl bg-card border border-border text-left text-xs text-muted-foreground w-full">
+                <span className="font-bold text-foreground block mb-1">
                   How Cashiers Use Hold:
                 </span>
-                <ul className="list-disc list-inside space-y-0.5 text-[10.5px]">
+                <ul className="list-disc list-inside space-y-0.5 text-xs">
                   <li>Cart is saved safely in memory & local storage</li>
                   <li>Ticket counter advances for the next customer</li>
                   <li>One-click resume restores items back to register</li>
@@ -248,11 +248,11 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
               </div>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="py-12 text-center text-[#77767b]">
-              <p className="text-xs font-bold text-[#1c1b1d]">
+            <div className="py-12 text-center text-muted-foreground">
+              <p className="text-xs font-bold text-foreground">
                 No parked orders match "{searchQuery}"
               </p>
-              <p className="text-[11px] text-[#77767b] mt-1">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 Try searching by a different order number or cashier name
               </p>
             </div>
@@ -265,38 +265,38 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
               return (
                 <div
                   key={order.id}
-                  className="bg-white border border-[#d4d4d8] hover:border-[#18181b] rounded-2xl p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3"
+                  className="bg-card border border-border hover:border-foreground/30 rounded-2xl p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3"
                 >
                   {/* Card Header: Order #, Time, Cashier, Amount */}
-                  <div className="flex items-start justify-between gap-2 border-b border-[#f0edf0] pb-2.5">
+                  <div className="flex items-start justify-between gap-2 border-b border-border pb-2.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="bg-[#18181b] text-white font-mono font-black text-xs px-2.5 py-1 rounded-lg tracking-wider">
+                      <span className="bg-primary text-primary-foreground font-bold text-xs px-2.5 py-1 rounded-lg tracking-wider">
                         Order #{order.orderNumber}
                       </span>
-                      <span className="flex items-center gap-1 text-[11px] text-[#77767b] font-medium">
-                        <Clock className="w-3 h-3 text-[#77767b]" />
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
                         <span>
                           {relativeTime} ({exactTime})
                         </span>
                       </span>
                       {order.staffName && (
-                        <span className="flex items-center gap-1 text-[10px] text-zinc-600 bg-[#f0edf0] px-2 py-0.5 rounded-md font-semibold">
-                          <User className="w-2.5 h-2.5 text-zinc-500" />
+                        <span className="flex items-center gap-1 text-xs text-foreground bg-secondary px-2 py-0.5 rounded-md font-semibold">
+                          <User className="w-2.5 h-2.5 text-muted-foreground" />
                           <span>{order.staffName}</span>
                         </span>
                       )}
                       {(order as any).note && (
-                        <span className="text-[10px] bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-md font-bold">
+                        <span className="text-xs bg-muted text-foreground border border-border px-2 py-0.5 rounded-md font-bold">
                           Note: {(order as any).note}
                         </span>
                       )}
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-[10px] font-bold text-[#77767b] uppercase block">
+                      <span className="text-xs font-bold text-muted-foreground uppercase block">
                         Total Due
                       </span>
-                      <span className="text-base sm:text-lg font-black font-mono text-[#1c1b1d]">
+                      <span className="text-base sm:text-lg font-black text-foreground tabular-nums">
                         {currencySymbol}
                         {order.total.toFixed(2)}
                       </span>
@@ -304,12 +304,12 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                   </div>
 
                   {/* Items List Preview */}
-                  <div className="bg-[#fcf8fb] border border-[#f0edf0] rounded-xl p-2.5">
-                    <div className="flex items-center justify-between text-[11px] text-[#77767b] font-bold mb-1.5">
+                  <div className="bg-muted/30 border border-border rounded-xl p-2.5">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-bold mb-1.5">
                       <span>
                         Items ({itemsCount} {itemsCount === 1 ? 'unit' : 'units'})
                       </span>
-                      <span className="font-mono">
+                      <span className="tabular-nums">
                         Subtotal: {currencySymbol}
                         {order.subtotal.toFixed(2)}
                       </span>
@@ -319,15 +319,15 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                       {order.items.map((item, idx) => (
                         <span
                           key={item.id || idx}
-                          className="bg-white border border-[#d4d4d8] rounded-lg px-2 py-1 text-xs text-[#1c1b1d] font-semibold flex items-center gap-1.5 shadow-2xs"
+                          className="bg-card border border-border rounded-lg px-2 py-1 text-xs text-foreground font-semibold flex items-center gap-1.5 shadow-2xs"
                         >
-                          <span className="bg-[#18181b] text-white text-[9px] font-mono font-black w-4 h-4 rounded flex items-center justify-center">
+                          <span className="bg-primary text-primary-foreground text-xs font-bold w-4 h-4 rounded flex items-center justify-center">
                             {item.quantity}
                           </span>
                           <span className="truncate max-w-[140px] sm:max-w-[200px]">
                             {item.name}
                           </span>
-                          <span className="text-[10px] font-mono text-[#77767b]">
+                          <span className="text-xs text-muted-foreground tabular-nums">
                             {currencySymbol}
                             {(item.unitPrice * item.quantity).toFixed(2)}
                           </span>
@@ -342,7 +342,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setOrderToDelete(order)}
-                        className="p-2 text-[#77767b] hover:text-[#ba1a1a] hover:bg-red-50 rounded-xl transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1"
+                        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1"
                         title="Discard held order"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -351,10 +351,10 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
                       <button
                         onClick={() => setOrderToPrint(order)}
-                        className="px-2.5 py-1.5 text-zinc-700 hover:text-black hover:bg-[#f0edf0] rounded-xl transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1.5 border border-[#d4d4d8]"
+                        className="px-2.5 py-1.5 text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1.5 border border-border"
                         title="Print holding token slip for customer"
                       >
-                        <Printer className="w-3.5 h-3.5 text-zinc-700" />
+                        <Printer className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="hidden sm:inline">Holding Slip</span>
                       </button>
                     </div>
@@ -362,9 +362,9 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                     {/* Right: Primary Resume Button */}
                     <button
                       onClick={() => handleTriggerResume(order)}
-                      className="px-3.5 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 shadow-md cursor-pointer"
+                      className="px-3.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
                     >
-                      <Play className="w-3.5 h-3.5 fill-white" />
+                      <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Resume to Bill</span>
                     </button>
                   </div>
@@ -375,13 +375,13 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-4 py-3 bg-[#f6f2f5] border-t border-[#d4d4d8] flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-[#77767b] font-medium hidden sm:inline">
+        <div className="px-4 py-3 bg-muted/50 border-t border-border flex items-center justify-between shrink-0">
+          <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
             Held orders are preserved in your station storage even if refreshed.
           </span>
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 bg-white hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-xl text-xs font-extrabold text-[#1c1b1d] transition-all cursor-pointer text-center"
+            className="w-full sm:w-auto px-4 py-2 bg-white hover:bg-muted border border-border rounded-xl text-xs font-extrabold text-foreground transition-all cursor-pointer text-center"
           >
             Close (Esc)
           </button>
@@ -393,25 +393,25 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
           Shown when active cart is NOT empty
           ========================================================================= */}
       {orderToResume && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/70 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md border border-[#d4d4d8] shadow-2xl p-5 text-[#1c1b1d] space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center gap-3 border-b border-[#f0edf0] pb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5 text-amber-700" />
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-card rounded-2xl w-full max-w-md border border-border shadow-2xl p-5 text-foreground space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center gap-3 border-b border-border pb-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm sm:text-base text-[#1c1b1d]">
+                <h3 className="font-extrabold text-sm sm:text-base text-foreground">
                   Active Cart is Not Empty
                 </h3>
-                <p className="text-xs text-[#77767b] mt-0.5">
-                  You have <strong className="text-black">{currentCartCount} items ({currencySymbol}{currentCartTotal.toFixed(2)})</strong> currently in the register.
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  You have <strong className="text-foreground">{currentCartCount} items ({currencySymbol}{currentCartTotal.toFixed(2)})</strong> currently in the register.
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-700 font-medium leading-relaxed">
+            <p className="text-xs text-foreground font-medium leading-relaxed">
               How would you like to handle your current cart when resuming{' '}
-              <strong className="text-black font-black">Order #{orderToResume.orderNumber}</strong>?
+              <strong className="text-foreground font-black">Order #{orderToResume.orderNumber}</strong>?
             </p>
 
             <div className="space-y-2">
@@ -421,73 +421,73 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                   onResumeOrder(orderToResume, 'swap');
                   setOrderToResume(null);
                 }}
-                className="w-full p-3 rounded-xl border-2 border-[#18181b] bg-[#18181b] text-white hover:bg-black text-left flex items-start gap-3 transition-all cursor-pointer shadow-sm group"
+                className="w-full p-3 rounded-xl border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 text-left flex items-start gap-3 transition-all cursor-pointer shadow-xs group"
               >
-                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-white" />
+                <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wide">
-                      Swap & Park Current Cart
+                    <span className="text-xs font-black uppercase tracking-wider">
+                      Park Current & Resume #{orderToResume.orderNumber}
                     </span>
-                    <span className="text-[9px] font-black uppercase bg-amber-400 text-black px-1.5 py-0.5 rounded">
+                    <span className="text-xs font-bold bg-primary-foreground text-primary px-1.5 py-0.5 rounded">
                       Recommended
                     </span>
                   </div>
-                  <p className="text-[11px] text-zinc-300 mt-0.5">
-                    Saves current cart as a new parked order, and loads Order #{orderToResume.orderNumber} onto the counter.
+                  <p className="text-xs text-primary-foreground/80 mt-0.5">
+                    Your active cart of {currentCartCount} items will be safely placed on hold, and #{orderToResume.orderNumber} loaded immediately.
                   </p>
                 </div>
               </button>
 
-              {/* Option 2: Merge Items */}
+              {/* Option 2: Merge Carts */}
               <button
                 onClick={() => {
                   onResumeOrder(orderToResume, 'merge');
                   setOrderToResume(null);
                 }}
-                className="w-full p-3 rounded-xl border border-[#d4d4d8] bg-white hover:bg-[#f6f2f5] text-left flex items-start gap-3 transition-all cursor-pointer shadow-2xs group"
+                className="w-full p-3 rounded-xl border border-border bg-card hover:bg-muted text-left flex items-start gap-3 transition-all cursor-pointer group"
               >
-                <div className="w-7 h-7 rounded-lg bg-[#f0edf0] flex items-center justify-center shrink-0 mt-0.5 text-zinc-800">
-                  <Layers className="w-3.5 h-3.5" />
+                <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                  <Layers className="w-3.5 h-3.5 text-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs font-bold text-[#1c1b1d] block">
-                    Combine / Merge Carts
+                  <span className="text-xs font-bold text-foreground block">
+                    Merge Items Together
                   </span>
-                  <p className="text-[11px] text-[#77767b] mt-0.5">
-                    Appends Order #{orderToResume.orderNumber}'s items into the current cart.
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Combine the items from #{orderToResume.orderNumber} into your current cart into a single ticket.
                   </p>
                 </div>
               </button>
 
-              {/* Option 3: Replace Cart */}
+              {/* Option 3: Discard Active Cart */}
               <button
                 onClick={() => {
                   onResumeOrder(orderToResume, 'replace');
                   setOrderToResume(null);
                 }}
-                className="w-full p-3 rounded-xl border border-red-200 bg-red-50/50 hover:bg-red-50 text-left flex items-start gap-3 transition-all cursor-pointer shadow-2xs group"
+                className="w-full p-3 rounded-xl border border-destructive/30 hover:border-destructive hover:bg-destructive/10 text-left flex items-start gap-3 transition-all cursor-pointer group"
               >
-                <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center shrink-0 mt-0.5 text-red-700">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs font-bold text-red-900 block">
-                    Overwrite / Discard Current Cart
+                  <span className="text-xs font-bold text-destructive block">
+                    Discard Current Cart & Resume
                   </span>
-                  <p className="text-[11px] text-red-700 mt-0.5">
-                    Discards current active items and restores Order #{orderToResume.orderNumber}.
+                  <p className="text-xs text-destructive/80 mt-0.5">
+                    Clear the current {currentCartCount} items permanently and load #{orderToResume.orderNumber}.
                   </p>
                 </div>
               </button>
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-1 flex justify-end">
               <button
                 onClick={() => setOrderToResume(null)}
-                className="px-4 py-2 text-xs font-bold text-[#77767b] hover:text-[#1c1b1d] cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -497,33 +497,33 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
       )}
 
       {/* =========================================================================
-          SUB-MODAL: CONFIRM DISCARD
+          SUB-MODAL: CONFIRM DELETION
           ========================================================================= */}
       {orderToDelete && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/70 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-5 text-[#1c1b1d] space-y-3.5 animate-in zoom-in-95">
-            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-card rounded-2xl w-full max-w-sm border border-border shadow-2xl p-5 text-foreground space-y-3.5 animate-in zoom-in-95">
+            <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-[#1c1b1d]">
+              <h3 className="font-extrabold text-sm sm:text-base text-foreground">
                 Discard Order #{orderToDelete.orderNumber}?
               </h3>
-              <p className="text-xs text-[#77767b] mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 This will permanently delete the parked ticket with {orderToDelete.items.length} items ({currencySymbol}{orderToDelete.total.toFixed(2)}).
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#f0edf0]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
               <button
                 onClick={() => setOrderToDelete(null)}
-                className="px-3.5 py-2 text-xs font-bold text-[#77767b] hover:text-[#1c1b1d] rounded-xl hover:bg-[#f0edf0] transition-colors cursor-pointer"
+                className="px-3.5 py-2 text-xs font-bold text-muted-foreground hover:text-foreground rounded-xl hover:bg-secondary transition-colors cursor-pointer"
               >
                 Keep Order
               </button>
               <button
                 onClick={() => handleConfirmDelete(orderToDelete.id)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl text-xs font-extrabold shadow-xs transition-all cursor-pointer"
               >
                 Yes, Discard
               </button>
@@ -536,52 +536,52 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
           SUB-MODAL: PRINT HOLDING TOKEN SLIP
           ========================================================================= */}
       {orderToPrint && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/70 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-xs border border-[#d4d4d8] shadow-2xl p-4 text-[#1c1b1d] space-y-3 animate-in zoom-in-95">
-            <div className="flex justify-between items-center border-b border-dashed border-zinc-300 pb-2">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-card rounded-2xl w-full max-w-xs border border-border shadow-2xl p-4 text-foreground space-y-3 animate-in zoom-in-95">
+            <div className="flex justify-between items-center border-b border-dashed border-border pb-2">
               <div>
-                <h4 className="font-bold text-xs uppercase tracking-wider text-zinc-900">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-foreground">
                   Holding Slip
                 </h4>
-                <p className="text-[10px] text-zinc-500 font-mono">Token for Customer</p>
+                <p className="text-xs text-muted-foreground">Token for Customer</p>
               </div>
               <button
                 onClick={() => setOrderToPrint(null)}
-                className="text-zinc-500 hover:text-zinc-900 p-1 rounded-md"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Thermal Ticket Preview */}
-            <div className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-3 font-mono text-[11px] space-y-2 text-zinc-800">
-              <div className="text-center border-b border-dashed border-zinc-300 pb-2">
-                <span className="font-black text-xs block text-black">
+            <div className="bg-muted/40 border border-border rounded-xl p-3 text-xs space-y-2 text-foreground">
+              <div className="text-center border-b border-dashed border-border pb-2">
+                <span className="font-bold text-xs block text-foreground">
                   {shopSettings.shopName}
                 </span>
-                <span className="text-[9px] text-zinc-500 block">PARKED ORDER TOKEN</span>
-                <span className="text-base font-black text-zinc-950 block mt-1 bg-white border border-zinc-300 rounded py-0.5">
+                <span className="text-xs text-muted-foreground block">PARKED ORDER TOKEN</span>
+                <span className="text-base font-bold text-foreground block mt-1 bg-card border border-border rounded py-0.5">
                   #{orderToPrint.orderNumber}
                 </span>
               </div>
 
-              <div className="flex justify-between text-[10px] text-zinc-600">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Date: {new Date(orderToPrint.createdAt).toLocaleDateString()}</span>
                 <span>Time: {formatTime(orderToPrint.createdAt)}</span>
               </div>
               {orderToPrint.staffName && (
-                <div className="text-[10px] text-zinc-600">
+                <div className="text-xs text-muted-foreground">
                   Cashier: {orderToPrint.staffName}
                 </div>
               )}
 
-              <div className="border-t border-dashed border-zinc-300 pt-1.5 space-y-1">
+              <div className="border-t border-dashed border-border pt-1.5 space-y-1">
                 {orderToPrint.items.map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-[10px]">
+                  <div key={idx} className="flex justify-between text-xs">
                     <span className="truncate max-w-[150px]">
                       {i.quantity}x {i.name}
                     </span>
-                    <span>
+                    <span className="tabular-nums">
                       {currencySymbol}
                       {(i.unitPrice * i.quantity).toFixed(2)}
                     </span>
@@ -589,15 +589,15 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 ))}
               </div>
 
-              <div className="border-t border-dashed border-zinc-300 pt-1.5 flex justify-between font-black text-xs text-black">
+              <div className="border-t border-dashed border-border pt-1.5 flex justify-between font-bold text-xs text-foreground">
                 <span>TOTAL DUE:</span>
-                <span>
+                <span className="tabular-nums">
                   {currencySymbol}
                   {orderToPrint.total.toFixed(2)}
                 </span>
               </div>
 
-              <p className="text-[9px] text-center text-zinc-500 italic pt-1">
+              <p className="text-xs text-center text-muted-foreground italic pt-1">
                 Present this slip at register when ready to complete your purchase.
               </p>
             </div>
@@ -605,7 +605,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
             <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={() => setOrderToPrint(null)}
-                className="flex-1 py-2 text-xs font-bold text-zinc-600 hover:text-black border border-zinc-300 rounded-xl cursor-pointer"
+                className="flex-1 py-2 text-xs font-bold text-muted-foreground hover:text-foreground border border-border rounded-xl cursor-pointer"
               >
                 Close
               </button>
@@ -613,7 +613,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 onClick={() => {
                   window.print();
                 }}
-                className="flex-1 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-extrabold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                className="flex-1 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Slip</span>

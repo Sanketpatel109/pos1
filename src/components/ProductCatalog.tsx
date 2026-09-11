@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { CatalogItem, Category } from '../types';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
-import { PackageOpen } from '../icons/faIcons';
+import { PackageOpen } from 'lucide-react';
 
 export interface ProductCatalogProps {
   catalog: CatalogItem[];
@@ -55,7 +55,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   return (
     <div
       id="product-catalog-container"
-      className={`flex flex-col h-full w-full bg-[#F8FAFC] overflow-hidden min-h-0 ${className}`}
+      className={`flex flex-col h-full w-full bg-background overflow-hidden min-h-0 ${className}`}
     >
       {/* 
         ========================================================================
@@ -97,14 +97,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           </div>
         ) : (
           /* Empty Search / Category Results State */
-          <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 bg-white rounded-xl border border-slate-200 m-1 shadow-2xs">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mb-3 shadow-2xs">
-              <PackageOpen className="w-6 h-6 text-slate-500" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-900 mb-1">
+          <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 bg-card rounded-lg border border-border m-1 shadow-xs">
+            <PackageOpen className="w-8 h-8 text-muted-foreground mb-2 stroke-[1.5]" />
+            <p className="text-xs font-semibold text-foreground mb-1">
               No matching products
-            </h3>
-            <p className="text-xs text-slate-500 max-w-xs mb-3">
+            </p>
+            <p className="text-[10px] text-muted-foreground max-w-xs mb-3">
               {searchQuery
                 ? `No items found matching "${searchQuery}". Try a different search term or check categories.`
                 : `No items available in the "${selectedCategory}" category.`}
@@ -116,7 +114,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   onSearchChange('');
                   onSelectCategory('All Items');
                 }}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-2xs cursor-pointer"
+                className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md transition-all active:scale-95 shadow-xs cursor-pointer"
               >
                 Show All Items
               </button>

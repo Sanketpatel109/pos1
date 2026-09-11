@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { CheckCircle2, AlertCircle } from '../../icons/faIcons';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { posSound } from '../../utils/sound';
 
 export interface CashTenderProps {
@@ -62,14 +62,14 @@ export const CashTender: React.FC<CashTenderProps> = ({
     <div className="flex flex-col gap-4 flex-1 animate-in fade-in duration-150">
       {/* Absolute Currency Note Chips */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-zinc-700">Quick Cash Presets</label>
+        <label className="text-xs font-semibold text-foreground">Quick Cash Presets</label>
         <div className="flex flex-wrap gap-1.5">
           {noteChips.map((chip) => (
             <button
               key={chip.label}
               type="button"
               onClick={() => handleSelectNote(chip.value)}
-              className="flex-1 min-w-[95px] py-2 px-2 bg-zinc-100 hover:bg-zinc-200 active:scale-95 border border-zinc-200 rounded-xl text-xs font-medium text-zinc-800 transition-all cursor-pointer shadow-2xs text-center whitespace-nowrap tabular-nums tracking-tight"
+              className="flex-1 min-w-[95px] py-2 px-2 bg-muted hover:bg-muted/80 active:scale-95 border border-border rounded-xl text-xs font-medium text-foreground transition-all cursor-pointer shadow-2xs text-center whitespace-nowrap tabular-nums tracking-tight"
             >
               {chip.label}
             </button>
@@ -81,13 +81,13 @@ export const CashTender: React.FC<CashTenderProps> = ({
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="cash-tendered-input"
-          className="text-xs font-semibold text-zinc-700 flex items-center justify-between"
+          className="text-xs font-semibold text-foreground flex items-center justify-between"
         >
           <span>Cash Received</span>
-          <span className="text-[11px] text-zinc-400 font-normal">Type or tap presets</span>
+          <span className="text-xs text-muted-foreground font-normal">Type or tap presets</span>
         </label>
         <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xl font-medium text-zinc-400">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xl font-medium text-muted-foreground">
             {currencySymbol}
           </span>
           <input
@@ -99,7 +99,7 @@ export const CashTender: React.FC<CashTenderProps> = ({
             value={tenderedInput}
             onChange={(e) => onTenderedChange(e.target.value)}
             placeholder={total.toFixed(2)}
-            className="w-full h-14 pl-10 pr-4 bg-zinc-50 border border-zinc-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-xl text-2xl font-bold text-zinc-900 tabular-nums tracking-tight outline-hidden transition-all shadow-xs"
+            className="w-full h-14 pl-10 pr-4 bg-muted/40 border border-border focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-2xl font-bold text-foreground tabular-nums tracking-tight outline-hidden transition-all shadow-xs"
           />
         </div>
       </div>
@@ -107,23 +107,23 @@ export const CashTender: React.FC<CashTenderProps> = ({
       {/* Live Change Calculation Status Box */}
       <div className="mt-auto">
         {isCashSufficient ? (
-          <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-emerald-900 flex items-center justify-between animate-in fade-in duration-150">
+          <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-foreground flex items-center justify-between animate-in fade-in duration-150">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
               <span className="text-xs font-medium">Change Due:</span>
             </div>
-            <span className="text-lg font-bold tabular-nums tracking-tight text-emerald-700">
+            <span className="text-lg font-bold tabular-nums tracking-tight text-primary">
               {currencySymbol}
               {changeDue.toFixed(2)}
             </span>
           </div>
         ) : (
-          <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 flex items-center justify-between animate-in fade-in duration-150">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-foreground flex items-center justify-between animate-in fade-in duration-150">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+              <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
               <span className="text-xs font-medium">Remaining Due:</span>
             </div>
-            <span className="text-lg font-bold tabular-nums tracking-tight text-amber-700">
+            <span className="text-lg font-bold tabular-nums tracking-tight text-destructive">
               {currencySymbol}
               {deficit.toFixed(2)}
             </span>
@@ -141,8 +141,8 @@ export const CashTender: React.FC<CashTenderProps> = ({
         disabled={!isCashSufficient || isSubmitting}
         className={`w-full h-11 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
           isCashSufficient && !isSubmitting
-            ? 'bg-blue-600 hover:bg-blue-700 text-white active:scale-[0.98]'
-            : 'bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed shadow-none'
+            ? 'bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98]'
+            : 'bg-muted text-muted-foreground border border-border cursor-not-allowed shadow-none'
         }`}
       >
         {isSubmitting ? (

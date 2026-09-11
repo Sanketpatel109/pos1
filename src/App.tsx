@@ -62,7 +62,7 @@ import {
   ROLE_DEFINITIONS,
 } from './utils/permissions';
 import { hardware } from './utils/hardware';
-import { Zap, PauseCircle, CheckCircle2, Printer, X } from './icons/faIcons';
+import { Zap, PauseCircle, CheckCircle2, Printer, X } from 'lucide-react';
 import { posSound } from './utils/sound';
 import { auth, onAuthStateChanged, User } from './firebase';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
@@ -1399,9 +1399,9 @@ export default function App() {
   };
 
   return (
-    <div className="w-full h-screen h-[100dvh] bg-zinc-50 flex flex-col overflow-hidden selection:bg-blue-600 selection:text-white">
+    <div className="w-full h-screen h-[100dvh] bg-background flex flex-col overflow-hidden selection:bg-primary selection:text-primary-foreground">
       {/* Responsive POS Station Container - Edge-to-Edge Full Screen for Retail Workstations */}
-      <div className="w-full h-full bg-zinc-50 flex flex-col overflow-hidden relative">
+      <div className="w-full h-full bg-background flex flex-col overflow-hidden relative">
         {/* Top App Bar Header */}
         <Header
           activeScreen={activeScreen}
@@ -1955,7 +1955,7 @@ export default function App() {
               <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
                 Laser Gun Scanned
               </span>
-              <span className="text-[11px] font-mono font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">
+              <span className="text-[11px] font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">
                 Qty in Bill: {laserScanNotification.cartQty}
               </span>
             </div>
@@ -2000,7 +2000,7 @@ export default function App() {
                   ? 'Ticket Parked on Hold'
                   : 'Ticket Resumed to Cart'}
               </span>
-              <span className="text-[11px] font-mono font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.2 rounded">
+              <span className="text-[11px] font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.2 rounded">
                 #{heldToastNotification.orderNumber}
               </span>
             </div>

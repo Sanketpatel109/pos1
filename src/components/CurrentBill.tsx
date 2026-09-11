@@ -1,8 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Minus, Plus, ShoppingBag, Trash2, X, Check } from '../icons/faIcons';
+import { Minus, Plus, ShoppingBag, Trash2, X, Check } from 'lucide-react';
 import { BillItem } from '../types';
 import { CartSummary } from './CartSummary';
 import { PaymentModal } from './checkout/PaymentModal';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 export interface CurrentBillProps {
   orderNumber: number;
@@ -101,39 +104,40 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
   const totalDue = subtotal + taxAmount;
 
   return (
-    <div className="flex flex-col bg-white border-t md:border-t-0 border-zinc-200/80 z-10 min-h-0 h-full overflow-hidden select-none">
+    <div className="flex flex-col bg-card border-t md:border-t-0 border-border z-10 min-h-0 h-full overflow-hidden select-none">
       {/* 
         ========================================================================
         BILL HEADER: Fixed at top (stays completely still)
         India-First Terminology: "Current Bill" · "Bill #042"
         ========================================================================
       */}
-      <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-zinc-200/80 bg-white shrink-0">
+      <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-900 shrink-0" />
-          <h2 className="text-xs sm:text-sm text-zinc-900 font-semibold tracking-tight truncate">
+          <ShoppingBag className="w-4 h-4 text-foreground shrink-0" />
+          <h2 className="text-sm text-foreground font-semibold tracking-tight truncate">
             Current Bill
           </h2>
-          <span className="bg-zinc-100 text-zinc-800 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium border border-zinc-200 shrink-0 tabular-nums tracking-tight">
+          <Badge variant="secondary" className="text-xs px-2 py-0.5 tabular-nums">
             {totalItemCount}
-          </span>
+          </Badge>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Bill Number Badge (India-First: "Bill #042") */}
-          <span className="bg-zinc-900 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-mono font-medium tracking-wide tabular-nums">
+          <Badge variant="default" className="text-xs px-2 py-0.5 tabular-nums">
             Bill {displayBillNumber}
-          </span>
+          </Badge>
 
           {onCloseMobile && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={onCloseMobile}
               title="Close bill"
-              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <X className="w-4 h-4" />
-            </button>
+              <X className="size-4" />
+            </Button>
           )}
         </div>
       </div>
@@ -147,13 +151,13 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
       */}
       <div
         ref={itemsContainerRef}
-        className="h-[176px] sm:h-[184px] md:h-auto md:flex-1 min-h-[176px] overflow-y-auto overscroll-contain px-2.5 sm:px-4 divide-y divide-zinc-100 bg-white scrollbar-thin"
+        className="h-[176px] sm:h-[184px] md:h-auto md:flex-1 min-h-[176px] overflow-y-auto overscroll-contain px-2.5 sm:px-4 divide-y divide-border bg-card scrollbar-thin"
       >
         {items.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center py-2 text-zinc-400">
-            <ShoppingBag className="w-5 h-5 mb-1 text-zinc-300 stroke-[1.5]" />
-            <p className="text-xs font-semibold text-zinc-800">Bill is empty</p>
-            <p className="text-[10px] text-zinc-500">Tap products to add items</p>
+          <div className="h-full flex flex-col items-center justify-center text-center py-2 text-muted-foreground">
+            <ShoppingBag className="w-5 h-5 mb-1 text-muted-foreground/60 stroke-[1.5]" />
+            <p className="text-xs font-semibold text-foreground">Bill is empty</p>
+            <p className="text-xs text-muted-foreground">Tap products to add items</p>
           </div>
         ) : (
           items.map((item, idx) => (
@@ -161,19 +165,19 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
               key={item.id}
               id={`bill-item-${item.id}`}
               className={`grid grid-cols-[1fr_84px_68px_24px] items-center gap-1.5 py-1 sm:py-1.5 transition-colors ${
-                idx === items.length - 1 ? 'bg-zinc-50/50' : ''
+                idx === items.length - 1 ? 'bg-muted/30' : ''
               }`}
             >
               {/* Column 1: Item Name (takes all remaining space, truncated) */}
               <div className="min-w-0 pr-1 flex flex-col justify-center">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <h3 className="text-sm font-medium text-zinc-900 truncate">
+                  <h3 className="text-sm font-medium text-foreground truncate">
                     {item.name}
                   </h3>
                   {item.note && (
-                    <span className="text-[9px] bg-zinc-100 text-zinc-600 px-1 py-0.2 rounded font-mono border border-zinc-200 shrink-0">
+                    <Badge variant="outline" className="text-xs px-1 py-0 h-4 shrink-0">
                       {item.note}
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 {/* Unit price with Price Override trigger */}
@@ -186,8 +190,8 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
                       }}
                       className="flex items-center gap-1"
                     >
-                      <span className="text-[11px] font-mono text-zinc-400">{currencySymbol}</span>
-                      <input
+                      <span className="text-xs text-muted-foreground">{currencySymbol}</span>
+                      <Input
                         type="number"
                         step="0.01"
                         min="0"
@@ -195,33 +199,37 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
                         value={editPriceVal}
                         onChange={(e) => setEditPriceVal(e.target.value)}
                         onBlur={() => handleSaveNewRate(item.id)}
-                        className="w-16 h-5 px-1 bg-zinc-50 border border-blue-600 rounded text-[11px] font-bold text-zinc-900 outline-hidden tabular-nums tracking-tight"
+                        className="w-16 h-6 px-1 text-xs font-bold text-foreground tabular-nums tracking-tight"
                       />
-                      <button
+                      <Button
                         type="submit"
+                        size="icon-xs"
+                        variant="default"
                         title="Save price"
-                        className="h-5 px-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[9px] font-bold cursor-pointer shadow-xs flex items-center justify-center"
+                        className="h-6 w-6"
                       >
-                        <Check className="w-2.5 h-2.5" />
-                      </button>
-                      <button
+                        <Check className="size-3" />
+                      </Button>
+                      <Button
                         type="button"
+                        size="icon-xs"
+                        variant="secondary"
                         onClick={() => setEditingItemId(null)}
                         title="Cancel"
-                        className="h-5 px-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded text-[9px] cursor-pointer flex items-center justify-center"
+                        className="h-6 w-6"
                       >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
+                        <X className="size-3" />
+                      </Button>
                     </form>
                   ) : (
                     <button
                       type="button"
                       onClick={() => handleInitiatePriceOverride(item)}
-                      className="text-[11px] text-zinc-500 hover:text-blue-600 font-mono truncate text-left group flex items-center gap-1 cursor-pointer tabular-nums tracking-tight"
+                      className="text-xs text-muted-foreground hover:text-primary truncate text-left group flex items-center gap-1 cursor-pointer tabular-nums tracking-tight font-medium"
                       title={canOverridePrice ? "Tap to edit price" : "Tap to override price (Manager PIN required)"}
                     >
                       <span>{currencySymbol}{item.unitPrice.toFixed(2)} / ea</span>
-                      <span className="text-[9px] text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity underline">
+                      <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity underline">
                         edit
                       </span>
                     </button>
@@ -230,9 +238,11 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
               </div>
 
               {/* Column 2: Quantity Stepper (Fixed width: exactly w-[84px] h-7) */}
-              <div className="w-[84px] h-7 flex items-center justify-between bg-zinc-100 rounded-lg px-1 shadow-2xs">
-                <button
+              <div className="w-[84px] h-7 flex items-center justify-between bg-muted rounded-md px-1 shadow-xs">
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   id={`btn-decrement-${item.id}`}
                   onClick={() => {
                     if (item.quantity <= 1) {
@@ -242,43 +252,47 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
                     }
                   }}
                   aria-label={`Decrease quantity of ${item.name}`}
-                  className="h-5 w-5 flex items-center justify-center text-zinc-700 font-bold active:bg-zinc-200 rounded transition-colors cursor-pointer"
+                  className="h-5 w-5 rounded p-0 text-foreground"
                 >
-                  <Minus className="w-3 h-3 stroke-[2.5]" />
-                </button>
+                  <Minus className="size-3 stroke-[2.5]" />
+                </Button>
 
-                <span className="w-6 text-center text-xs font-semibold text-zinc-900 tabular-nums tracking-tight">
+                <span className="w-6 text-center text-xs font-semibold text-foreground tabular-nums tracking-tight font-medium">
                   {item.quantity}
                 </span>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   id={`btn-increment-${item.id}`}
                   onClick={() => onUpdateQuantity(item.id, 1)}
                   aria-label={`Increase quantity of ${item.name}`}
-                  className="h-5 w-5 flex items-center justify-center text-zinc-700 font-bold active:bg-zinc-200 rounded transition-colors cursor-pointer"
+                  className="h-5 w-5 rounded p-0 text-foreground"
                 >
-                  <Plus className="w-3 h-3 stroke-[2.5]" />
-                </button>
+                  <Plus className="size-3 stroke-[2.5]" />
+                </Button>
               </div>
 
               {/* Column 3: Total Price (Fixed width: exactly w-[68px]) */}
-              <div className="w-[68px] text-right font-semibold text-zinc-900 tabular-nums tracking-tight text-sm">
+              <div className="w-[68px] text-right font-semibold text-foreground tabular-nums tracking-tight font-medium text-sm">
                 {currencySymbol}{(item.unitPrice * item.quantity).toFixed(2)}
               </div>
 
               {/* Column 4: Trash Button (Fixed width: w-6) */}
               <div className="w-6 flex items-center justify-end">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   id={`btn-remove-item-${item.id}`}
                   onClick={() => onRemoveItem(item.id)}
                   aria-label={`Remove ${item.name} from bill`}
                   title={`Remove ${item.name}`}
-                  className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  <Trash2 className="size-3.5" />
+                </Button>
               </div>
             </div>
           ))

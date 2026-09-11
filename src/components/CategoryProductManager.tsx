@@ -16,10 +16,14 @@ import {
   AlertTriangle,
   Truck,
   Printer,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { Category, CatalogItem, StaffRole, StorePermissions } from '../types';
 import { canViewCostPrice } from '../utils/permissions';
 import { AddProductModal } from './AddProductModal';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 interface CategoryProductManagerProps {
   categories: Category[];
@@ -286,7 +290,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-[#fcf8fb] overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 bg-background text-foreground overflow-hidden">
       {/* 
         ========================================================================
         TABLET VIEW: 2-Column Split (Left: Categories, Right: Products)
@@ -295,49 +299,49 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
       */}
 
       {/* Mobile-only Segmented Tab Header */}
-      <div className="md:hidden p-3 bg-[#f6f2f5] border-b border-[#d4d4d8] flex items-center justify-between gap-2 shrink-0">
-        <div className="flex bg-white p-1 rounded-xl border border-[#d4d4d8]">
-          <button
+      <div className="md:hidden p-3 bg-card border-b border-border flex items-center justify-between gap-2 shrink-0">
+        <div className="flex bg-muted/40 p-1 rounded-lg border border-border">
+          <Button
+            size="xs"
+            variant={activeTab === 'categories' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('categories')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'categories'
-                ? 'bg-[#18181b] text-white shadow-2xs'
-                : 'text-[#47464b] hover:text-[#1c1b1d]'
-            }`}
+            className="h-7 text-xs font-medium cursor-pointer"
           >
             Categories ({categories.length})
-          </button>
-          <button
+          </Button>
+          <Button
+            size="xs"
+            variant={activeTab === 'products' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('products')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'products'
-                ? 'bg-[#18181b] text-white shadow-2xs'
-                : 'text-[#47464b] hover:text-[#1c1b1d]'
-            }`}
+            className="h-7 text-xs font-medium cursor-pointer"
           >
             Products ({catalog.length})
-          </button>
+          </Button>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button
+          <Button
+            size="icon-sm"
+            variant="outline"
             onClick={() => setIsXlsModalOpen(true)}
-            className="p-2 bg-white hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+            className="cursor-pointer"
             title="Import CSV"
           >
             <FileSpreadsheet className="w-4 h-4" />
-          </button>
-          <button
+          </Button>
+          <Button
+            size="icon-sm"
+            variant="default"
             onClick={
               activeTab === 'categories'
                 ? handleOpenAddCategory
                 : handleOpenAddProduct
             }
-            className="p-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+            className="cursor-pointer"
             title="Add Item"
           >
             <Plus className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -350,23 +354,25 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         <div
           className={`${
             activeTab === 'categories' ? 'flex' : 'hidden'
-          } md:flex flex-col md:w-1/3 lg:w-3/10 bg-[#f6f2f5] md:border-r border-[#d4d4d8] min-h-0 flex-1 md:flex-none`}
+          } md:flex flex-col md:w-1/3 lg:w-3/10 bg-muted/20 md:border-r border-border min-h-0 flex-1 md:flex-none`}
         >
           {/* Categories Header */}
-          <div className="p-3.5 border-b border-[#d4d4d8] flex justify-between items-center bg-[#f6f2f5] shrink-0">
+          <div className="p-3.5 border-b border-border flex justify-between items-center bg-card shrink-0">
             <div>
-              <h2 className="text-xs sm:text-sm font-extrabold text-[#1c1b1d] uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-[#18181b]" />
+              <h2 className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-primary" />
                 <span>Categories ({categories.length})</span>
               </h2>
             </div>
-            <button
+            <Button
+              size="xs"
+              variant="default"
               onClick={handleOpenAddCategory}
-              className="px-2.5 py-1.5 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95 transition-all"
+              className="h-7 px-2.5 gap-1 text-xs font-medium cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New</span>
-            </button>
+            </Button>
           </div>
 
           {/* Categories List */}
@@ -378,17 +384,17 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                   : catalog.filter((i) => i.category.toLowerCase() === cat.name.toLowerCase()).length;
 
               return (
-                <div
+                <Card
                   key={cat.id}
-                  className="bg-white border border-[#d4d4d8] rounded-xl p-3 flex items-center justify-between shadow-2xs hover:border-[#18181b] transition-all"
+                  className="p-3 flex items-center justify-between shadow-xs border-border hover:border-primary/50 transition-all bg-card"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-[#f0edf0] text-[#1c1b1d] flex items-center justify-center font-bold text-xs shrink-0">
-                      <Layers className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-md bg-muted text-foreground flex items-center justify-center font-bold text-xs shrink-0">
+                      <Layers className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-xs text-[#1c1b1d] truncate">{cat.name}</h3>
-                      <p className="text-[10px] text-[#77767b] font-mono">
+                      <h3 className="font-semibold text-xs text-foreground truncate">{cat.name}</h3>
+                      <p className="text-[10px] text-muted-foreground tabular-nums">
                         {count} items
                       </p>
                     </div>
@@ -396,23 +402,27 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
 
                   {cat.name !== 'ALL' && cat.name !== 'All Items' && (
                     <div className="flex items-center gap-1 shrink-0">
-                      <button
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
                         onClick={() => handleOpenEditCategory(cat)}
-                        className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] cursor-pointer"
+                        className="cursor-pointer text-muted-foreground hover:text-foreground"
                         title="Edit Category"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
                         onClick={() => onDeleteCategory(cat.id)}
-                        className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#ffdad6] text-[#ba1a1a] cursor-pointer"
+                        className="cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
                         title="Delete Category"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -425,24 +435,24 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         <div
           className={`${
             activeTab === 'products' ? 'flex' : 'hidden'
-          } md:flex flex-col md:w-2/3 lg:w-7/10 bg-white min-h-0 flex-1`}
+          } md:flex flex-col md:w-2/3 lg:w-7/10 bg-background min-h-0 flex-1`}
         >
           {/* Products Filter & Actions Header */}
-          <div className="p-3.5 border-b border-[#d4d4d8] bg-white flex flex-col gap-2.5 shrink-0">
+          <div className="p-3.5 border-b border-border bg-card flex flex-col gap-2.5 shrink-0">
             <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between">
-              <div className="flex-1 bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl px-3 py-2 flex items-center gap-2 focus-within:border-[#18181b] focus-within:bg-white transition-all">
-                <Search className="w-4 h-4 text-[#77767b] shrink-0" />
-                <input
+              <div className="flex-1 relative">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Input
                   type="text"
                   placeholder="Search catalog items by name, barcode, SKU, category..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full text-xs text-[#1c1b1d] bg-transparent focus:outline-hidden placeholder-[#77767b]"
+                  className="w-full pl-9 pr-8 h-8 text-xs bg-background"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="text-[#77767b] hover:text-[#1c1b1d] p-0.5 rounded-full cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -451,27 +461,29 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
 
               <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 {onOpenPurchaseInward && (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={onOpenPurchaseInward}
-                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400"
                     title="Receive vendor stock & inward purchase"
                   >
                     <Truck className="w-3.5 h-3.5" />
                     <span>Inward Stock</span>
-                  </button>
+                  </Button>
                 )}
 
                 {/* Tools Dropdown Menu */}
                 <div className="relative">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setIsToolsOpen(!isToolsOpen)}
-                    className="px-3 py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] border border-[#d4d4d8] rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer"
                     title="Tools Menu"
                   >
                     <span>Tools ▾</span>
-                  </button>
+                  </Button>
 
                   {isToolsOpen && (
                     <>
@@ -479,7 +491,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                         className="fixed inset-0 z-20"
                         onClick={() => setIsToolsOpen(false)}
                       />
-                      <div className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-[#d4d4d8] rounded-xl shadow-lg p-1.5 z-30 flex flex-col gap-1">
+                      <div className="absolute right-0 top-full mt-1.5 w-48 bg-popover border border-border rounded-lg shadow-lg p-1.5 z-30 flex flex-col gap-1 text-popover-foreground">
                         {onOpenBarcodeGenerator && (
                           <button
                             type="button"
@@ -487,9 +499,9 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                               setIsToolsOpen(false);
                               onOpenBarcodeGenerator();
                             }}
-                            className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                            className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-foreground hover:bg-muted rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                           >
-                            <Barcode className="w-3.5 h-3.5 text-indigo-600" />
+                            <Barcode className="w-3.5 h-3.5 text-primary" />
                             <span>Print Labels</span>
                           </button>
                         )}
@@ -499,9 +511,9 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                             setIsToolsOpen(false);
                             handleDownloadSampleCsv();
                           }}
-                          className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-foreground hover:bg-muted rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                         >
-                          <Download className="w-3.5 h-3.5 text-slate-600" />
+                          <Download className="w-3.5 h-3.5 text-muted-foreground" />
                           <span>Download Template</span>
                         </button>
                         <button
@@ -510,7 +522,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                             setIsToolsOpen(false);
                             setIsXlsModalOpen(true);
                           }}
-                          className="w-full px-2.5 py-1.5 text-left text-xs font-semibold text-slate-800 hover:bg-slate-100 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-foreground hover:bg-muted rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                         >
                           <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Import CSV</span>
@@ -520,55 +532,50 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                   )}
                 </div>
 
-                <button
+                <Button
                   type="button"
+                  variant="default"
                   onClick={handleOpenAddProduct}
-                  className="px-3.5 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                  className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>Add Product</span>
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Quick Stock Filters */}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                size="xs"
+                variant={productFilter === 'ALL' ? 'default' : 'outline'}
                 onClick={() => setProductFilter('ALL')}
-                className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                  productFilter === 'ALL'
-                    ? 'bg-[#18181b] text-white shadow-2xs'
-                    : 'bg-[#f6f2f5] text-[#47464b] border border-[#d4d4d8] hover:bg-[#eae7ea]'
-                }`}
+                className="h-7 px-3 text-xs font-medium cursor-pointer"
               >
                 All Items ({catalog.length})
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                size="xs"
+                variant={productFilter === 'LOW_STOCK' ? 'default' : 'outline'}
                 onClick={() => setProductFilter('LOW_STOCK')}
-                className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  productFilter === 'LOW_STOCK'
-                    ? 'bg-amber-500 text-zinc-950 shadow-2xs'
-                    : lowStockCount > 0
-                    ? 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
-                    : 'bg-[#f6f2f5] text-[#77767b] border border-[#d4d4d8]'
+                className={`h-7 px-3 text-xs font-medium cursor-pointer gap-1.5 ${
+                  productFilter !== 'LOW_STOCK' && lowStockCount > 0 ? 'text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950 dark:text-amber-400' : ''
                 }`}
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Low Stock Alerts ({lowStockCount})</span>
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Products Grid / List */}
-          <div className="flex-1 overflow-y-auto p-3.5 bg-[#fcf8fb] no-scrollbar">
+          <div className="flex-1 overflow-y-auto p-3.5 bg-background no-scrollbar">
             {catalog.length === 0 ? (
-              <div className="h-60 flex flex-col items-center justify-center text-center text-[#77767b]">
-                <Package className="w-9 h-9 text-[#c8c5cb] mb-2" />
-                <p className="text-xs font-bold text-[#1c1b1d]">Product Catalog is Empty</p>
-                <p className="text-[11px] text-[#77767b] mt-0.5">Click "Add Product" or "Import CSV" to populate</p>
+              <div className="h-60 flex flex-col items-center justify-center text-center text-muted-foreground">
+                <Package className="w-9 h-9 text-muted-foreground/40 mb-2" />
+                <p className="text-xs font-bold text-foreground">Product Catalog is Empty</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Click "Add Product" or "Import CSV" to populate</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -594,11 +601,11 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                     const isLowStock = !isOutOfStock && currentStock <= threshold;
 
                     return (
-                      <div
+                      <Card
                         key={item.id}
-                        className="bg-white border border-[#d4d4d8] rounded-2xl p-3 flex flex-col justify-between shadow-2xs hover:border-[#18181b] hover:shadow-xs transition-all gap-2"
+                        className="p-3 flex flex-col justify-between shadow-xs hover:border-primary/50 transition-all gap-2 border-border bg-card"
                       >
-                        <div className="w-full h-24 bg-[#f0edf0] rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
+                        <div className="w-full h-24 bg-muted rounded-md overflow-hidden shrink-0 relative flex items-center justify-center">
                           {item.image ? (
                             <img
                               src={item.image}
@@ -610,53 +617,53 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                               }}
                             />
                           ) : (
-                            <Tag className="w-7 h-7 text-[#77767b]" />
+                            <Tag className="w-7 h-7 text-muted-foreground/50" />
                           )}
 
                           {/* Live Stock Overlay Pill */}
                           <div className="absolute top-2 right-2">
                             {isOutOfStock ? (
-                              <span className="text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded-md shadow-xs">
+                              <Badge variant="destructive" className="text-[10px] font-semibold py-0 shadow-xs uppercase">
                                 Out of Stock
-                              </span>
+                              </Badge>
                             ) : isLowStock ? (
-                              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1">
+                              <Badge variant="outline" className="text-[10px] font-semibold py-0 shadow-xs bg-amber-500 text-zinc-950 border-amber-600 flex items-center gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5" />
                                 {currentStock} {item.unit || 'pcs'} left
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="text-[10px] font-bold bg-white/90 backdrop-blur-xs text-zinc-800 border border-zinc-200 px-2 py-0.5 rounded-md shadow-xs">
+                              <Badge variant="secondary" className="text-[10px] font-medium py-0 shadow-xs">
                                 {currentStock} {item.unit || 'pcs'}
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-extrabold text-xs sm:text-sm text-[#1c1b1d] truncate">
+                          <h3 className="font-semibold text-xs sm:text-sm text-foreground truncate">
                             {item.name}
                           </h3>
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            <span className="text-[10px] font-bold text-[#77767b] bg-[#f0edf0] px-2 py-0.5 rounded inline-block uppercase">
+                            <Badge variant="outline" className="text-[10px] py-0 uppercase font-medium">
                               {item.category}
-                            </span>
+                            </Badge>
                             {(item.barcode || item.sku) && (
-                              <span className="text-[10px] font-mono text-[#1c1b1d] bg-[#eae7ea] px-1.5 py-0.5 rounded flex items-center gap-1">
-                                <Barcode className="w-2.5 h-2.5 text-[#77767b]" />
+                              <Badge variant="secondary" className="text-[10px] py-0 flex items-center gap-1">
+                                <Barcode className="w-2.5 h-2.5 text-muted-foreground" />
                                 <span>{item.barcode || item.sku}</span>
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-[#f0edf0]">
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
                           <div>
-                            <span className="font-black text-sm font-mono text-[#1c1b1d]">
+                            <span className="font-bold text-sm text-foreground tabular-nums tracking-tight font-medium">
                               {currencySymbol}
                               {item.price.toFixed(2)}
                             </span>
                             {item.costPrice && canSeeCost && (
-                              <span className="text-[10px] text-zinc-400 block font-mono">
+                              <span className="text-[10px] text-muted-foreground block tabular-nums">
                                 Cost: {currencySymbol}{item.costPrice.toFixed(0)}
                               </span>
                             )}
@@ -664,34 +671,40 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
 
                           <div className="flex items-center gap-1">
                             {onOpenBarcodeGenerator && (
-                              <button
+                              <Button
+                                size="icon-xs"
+                                variant="ghost"
                                 type="button"
                                 onClick={() => onOpenBarcodeGenerator(item.id)}
-                                className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-indigo-50 text-indigo-700 cursor-pointer transition-colors"
+                                className="cursor-pointer text-primary hover:bg-primary/10"
                                 title="Print Barcode Label for this item"
                               >
                                 <Barcode className="w-3.5 h-3.5" />
-                              </button>
+                              </Button>
                             )}
-                            <button
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
                               type="button"
                               onClick={() => handleOpenEditProduct(item)}
-                              className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#eae7ea] text-[#1c1b1d] cursor-pointer"
+                              className="cursor-pointer text-muted-foreground hover:text-foreground"
                               title="Edit"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              size="icon-xs"
+                              variant="ghost"
                               type="button"
                               onClick={() => onDeleteProduct(item.id)}
-                              className="p-1.5 rounded-lg bg-[#f6f2f5] hover:bg-[#ffdad6] text-[#ba1a1a] cursor-pointer"
+                              className="cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
                               title="Delete"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     );
                   })}
               </div>
@@ -703,36 +716,38 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
       {/* Category Edit Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3">
-            <h3 className="font-bold text-sm text-[#1c1b1d]">
+          <Card className="w-full max-w-sm border-border shadow-2xl p-4 space-y-3 bg-card text-foreground">
+            <h3 className="font-bold text-sm text-foreground">
               {editingCategory ? 'Edit Category' : 'Create New Category'}
             </h3>
             <form onSubmit={handleSaveCategory} className="space-y-3">
-              <input
+              <Input
                 type="text"
                 placeholder="Category Name (e.g. Desserts)"
                 value={categoryNameInput}
                 onChange={(e) => setCategoryNameInput(e.target.value)}
-                className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-2 text-xs text-[#1c1b1d] focus:outline-hidden"
+                className="w-full h-9 text-xs bg-background"
                 autoFocus
               />
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="flex-1 py-2 bg-[#f6f2f5] text-[#1c1b1d] rounded-xl text-xs font-bold border border-[#d4d4d8]"
+                  className="flex-1 h-9 text-xs font-medium cursor-pointer"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="flex-1 py-2 bg-[#18181b] text-white rounded-xl text-xs font-bold hover:bg-black"
+                  variant="default"
+                  className="flex-1 h-9 text-xs font-medium cursor-pointer"
                 >
                   Save
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -750,33 +765,34 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
       {/* CSV Bulk Import Modal */}
       {isXlsModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3 text-[#1c1b1d]">
+          <Card className="w-full max-w-sm border-border shadow-2xl p-4 space-y-3 bg-card text-foreground">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-sm">Bulk Catalog Import</h3>
               <button
                 onClick={() => setIsXlsModalOpen(false)}
-                className="text-[#77767b] hover:text-[#1c1b1d]"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-[#47464b] space-y-1">
+            <p className="text-xs text-muted-foreground space-y-1">
               <span>Upload a .csv file with inventory details. Existing barcodes will update stock and pricing; new items will be added:</span>
-              <code className="bg-[#f0edf0] p-1.5 rounded text-[10px] font-mono block leading-relaxed break-all">
+              <code className="bg-muted p-1.5 rounded text-[10px] block leading-relaxed break-all mt-1">
                 name, barcode, category, selling_price, cost_price, gst_rate, stock_quantity, unit
               </code>
             </p>
 
-            <button
+            <Button
+              variant="outline"
               onClick={handleDownloadSampleCsv}
-              className="w-full py-2 bg-[#f6f2f5] hover:bg-[#eae7ea] border border-[#d4d4d8] rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+              className="w-full h-9 text-xs font-medium gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download Sample CSV Template</span>
-            </button>
+            </Button>
 
-            <label className="w-full py-3 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
+            <label className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors">
               <Upload className="w-3.5 h-3.5" />
               <span>Select CSV File</span>
               <input
@@ -786,9 +802,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                 className="hidden"
               />
             </label>
-          </div>
+          </Card>
         </div>
       )}
     </div>
   );
 };
+

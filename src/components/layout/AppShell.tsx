@@ -10,7 +10,7 @@ import {
   X,
   FileText,
   ChevronRight,
-} from '../../icons/faIcons';
+} from 'lucide-react';
 import { Header, ConnectivityStatus } from './Header';
 
 export type NavScreenId =

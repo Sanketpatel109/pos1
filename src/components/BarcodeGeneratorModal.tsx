@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, Barcode as BarcodeIcon, Tag, Sliders, Check, Copy, Sparkles } from '../icons/faIcons';
+import { X, Printer, Barcode as BarcodeIcon, Tag, Sliders, Check, Copy, Sparkles } from 'lucide-react';
 import { CatalogItem } from '../types';
 
 interface BarcodeGeneratorModalProps {
@@ -124,7 +124,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
           y={46}
           textAnchor="middle"
           fontSize="10"
-          fontFamily="monospace"
+          fontFamily="inherit"
           fontWeight="bold"
           fill="#1c1b1d"
           letterSpacing="2"
@@ -225,7 +225,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
                     type="text"
                     value={skuValue}
                     onChange={(e) => setSkuValue(e.target.value)}
-                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-mono text-zinc-800"
+                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs text-zinc-800"
                   />
                 </div>
               </div>
@@ -245,7 +245,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
                   type="text"
                   value={barcodeValue}
                   onChange={(e) => setBarcodeValue(e.target.value)}
-                  className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-zinc-800 tracking-wider"
+                  className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-800 tracking-wider"
                 />
               </div>
             </div>
@@ -341,7 +341,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
                   </div>
 
                   <div className="w-full flex items-center justify-between px-1 text-[10px] font-bold text-zinc-800">
-                    <span className="font-mono text-[9px] text-zinc-500">{skuValue}</span>
+                    <span className="text-[9px] text-zinc-500">{skuValue}</span>
                     {showPrice && (
                       <span className="text-xs font-black text-zinc-950">
                         {currencySymbol}{priceValue.toFixed(2)}

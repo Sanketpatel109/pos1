@@ -6,7 +6,7 @@ import {
   PauseCircle,
   Plus,
   Camera,
-} from '../../icons/faIcons';
+} from 'lucide-react';
 
 export type ConnectivityStatus = 'online' | 'syncing' | 'offline';
 
@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="hidden md:flex items-center gap-1 hover:bg-slate-50 py-0.5 px-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
             >
               <span className="text-xs font-medium text-slate-600">{cashierName}</span>
-              <span className="bg-slate-100 text-slate-600 border border-slate-200 font-mono text-[9px] uppercase font-bold px-1.5 py-0.2 rounded">
+              <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[9px] uppercase font-bold px-1.5 py-0.2 rounded">
                 OWNER
               </span>
             </button>

@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { ShieldAlert, KeyRound, X, Check, Lock, Delete } from '../icons/faIcons';
+import { ShieldAlert, Check, Lock, Delete } from 'lucide-react';
 import { StaffMember } from '../types';
 import { verifyManagerOrOwnerPin, verifyOwnerPin, normalizeRole } from '../utils/permissions';
 import { posSound } from '../utils/sound';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface ManagerPinModalProps {
   isOpen: boolean;
@@ -39,8 +49,6 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
   const displayDesc = description || actionDescription || 'This area contains confidential business data or privileged controls.';
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-
-  if (!isOpen) return null;
 
   const isOwnerOnly = requiredRole === 'OWNER';
   const managers = staffList.filter(
@@ -90,140 +98,129 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl border border-zinc-200 w-full max-w-sm overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-zinc-900 text-white p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-              <Lock className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm leading-tight text-white">{displayTitle}</h3>
-              <p className="text-[11px] text-zinc-400">
-                {requiredRoleLabel ? `Security Override • ${requiredRoleLabel}` : 'Security Override'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <Lock className="size-4 text-foreground" />
+            <span>{displayTitle}</span>
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            {requiredRoleLabel ? `Security Override • ${requiredRoleLabel}` : 'Security Override'}
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Content Body */}
-        <div className="p-5 flex flex-col items-center text-center">
-          {/* Decoupled Elevation vs Session Notice */}
-          <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-2.5 mb-3 text-left">
-            <div className="flex items-center gap-1.5 text-amber-900 font-bold text-[11px]">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+        <div className="flex flex-col items-center text-center space-y-3">
+          {/* Elevation notice */}
+          <div className="w-full bg-muted/60 border border-border rounded-md p-2.5 text-left">
+            <div className="flex items-center gap-1.5 text-foreground font-medium text-xs">
+              <ShieldAlert className="size-3.5 text-primary shrink-0" />
               <span>Temporary Action Approval Only</span>
             </div>
-            <p className="text-[10px] text-amber-800 mt-0.5 leading-snug">
-              Authorizes this single operation only. The terminal session remains active under{' '}
-              <strong className="font-extrabold text-amber-950 underline decoration-amber-400">
+            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+              Authorizes this single operation only. Current session stays under{' '}
+              <strong className="font-semibold text-foreground">
                 {activeStaffName || 'Staff'} {activeStaffRole ? `(${activeStaffRole})` : ''}
               </strong>.
             </p>
           </div>
 
-          <p className="text-xs text-zinc-600 mb-3 max-w-xs">{displayDesc}</p>
+          <p className="text-xs text-muted-foreground max-w-xs">{displayDesc}</p>
 
           {/* Authorizers badges */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
-              Eligible Approvers:
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Approvers:
             </span>
             {managers.map((m) => (
-              <span
-                key={m.id}
-                className="text-[10px] font-medium bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded-full border border-zinc-200"
-              >
+              <Badge key={m.id} variant="secondary" className="text-[11px] font-medium">
                 {m.name}
-              </span>
+              </Badge>
             ))}
           </div>
 
           {/* PIN Display Circles */}
-          <div className="flex justify-center gap-3 my-2">
+          <div className="flex justify-center gap-3 py-1">
             {[0, 1, 2, 3].map((idx) => (
               <div
                 key={idx}
-                className={`w-4 h-4 rounded-full border-2 transition-all ${
+                className={`size-3.5 rounded-full border transition-all ${
                   pin.length > idx
-                    ? 'bg-zinc-900 border-zinc-900 scale-110'
-                    : 'bg-transparent border-zinc-300'
+                    ? 'bg-foreground border-foreground scale-110'
+                    : 'bg-transparent border-input'
                 }`}
               />
             ))}
           </div>
 
           {error && (
-            <p className="text-xs text-rose-600 font-medium mt-2 flex items-center gap-1 animate-in fade-in">
-              <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+            <p className="text-xs text-destructive font-medium flex items-center gap-1">
+              <ShieldAlert className="size-3.5 shrink-0" />
               {error}
             </p>
           )}
 
           {/* Numeric Keypad */}
-          <div className="grid grid-cols-3 gap-2.5 w-full mt-4 max-w-[240px]">
+          <div className="grid grid-cols-3 gap-2 w-full max-w-[240px] pt-1">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-              <button
+              <Button
                 key={digit}
                 type="button"
+                variant="outline"
                 onClick={() => handleKeypadPress(digit)}
-                className="h-11 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-base font-bold text-zinc-800 transition-all active:scale-95 shadow-2xs cursor-pointer"
+                className="h-10 text-base font-semibold"
               >
                 {digit}
-              </button>
+              </Button>
             ))}
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleClear}
-              className="h-11 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-600 transition-all active:scale-95 shadow-2xs cursor-pointer"
+              className="h-10 text-xs font-medium text-muted-foreground"
             >
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => handleKeypadPress('0')}
-              className="h-11 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-base font-bold text-zinc-800 transition-all active:scale-95 shadow-2xs cursor-pointer"
+              className="h-10 text-base font-semibold"
             >
               0
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleBackspace}
               aria-label="Backspace"
-              className="h-11 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-600 transition-all active:scale-95 shadow-2xs cursor-pointer flex items-center justify-center"
+              className="h-10 text-xs font-medium text-muted-foreground"
             >
-              <Delete className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 w-full mt-5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={pin.length < 4}
-              onClick={() => handleSubmit()}
-              className="flex-1 py-2.5 bg-zinc-900 hover:bg-black disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Authorize
-            </button>
+              <Delete className="size-4" />
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+
+        <DialogFooter className="gap-2 sm:gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={pin.length < 4}
+            onClick={() => handleSubmit()}
+          >
+            <Check className="size-3.5 mr-1" />
+            Authorize
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
+
+export default ManagerPinModal;

@@ -12,7 +12,7 @@ import {
   ChevronRight,
   Lock,
   Settings,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { ActiveScreen, ShopSettings, StaffRole } from '../types';
 import { User } from '../firebase';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -142,25 +142,25 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     <div className="fixed inset-0 z-50 flex animate-in fade-in duration-150">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-zinc-950/40 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="relative w-80 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-10 border-r border-zinc-200">
+      <div className="relative w-80 max-w-[85vw] bg-card h-full shadow-2xl flex flex-col z-10 border-r border-border">
         {/* Header */}
-        <div className="p-4 border-b border-zinc-100 bg-white flex items-center justify-between">
+        <div className="p-4 border-b border-border bg-card flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+            <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs">
               M
             </div>
             <div>
-              <h2 className="font-bold text-sm text-zinc-900 leading-none">
+              <h2 className="font-bold text-sm text-foreground leading-none">
                 MonoPOS • {shopSettings.shopName || 'Anand Supermarket'}
               </h2>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                <span className="text-xs font-medium text-zinc-700">
+                <span className="text-xs font-medium text-muted-foreground">
                   {activeStaffName} ({roleMeta.label})
                 </span>
               </div>
@@ -169,7 +169,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -179,7 +179,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
           {menuGroups.map((group) => (
             <div key={group.groupTitle} className="space-y-1">
-              <div className="px-2 pb-1 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+              <div className="px-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {group.groupTitle}
               </div>
               <div className="space-y-1">
@@ -202,21 +202,21 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                           onRequestManagerOverride(item.id);
                         }
                       }}
-                      className={`w-full p-2.5 rounded-xl flex items-center gap-3 transition-all text-left cursor-pointer ${
+                      className={`w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left cursor-pointer ${
                         isActive
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-primary text-primary-foreground shadow-xs'
                           : isAccessible
-                          ? 'hover:bg-zinc-100 text-zinc-900'
-                          : 'hover:bg-amber-50/60 text-zinc-900 opacity-85'
+                          ? 'hover:bg-muted text-foreground'
+                          : 'hover:bg-amber-500/10 text-foreground opacity-85'
                       }`}
                     >
                       <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                           isActive
-                            ? 'bg-white/20 text-white'
+                            ? 'bg-primary-foreground/20 text-primary-foreground'
                             : isAccessible
-                            ? 'bg-zinc-100 text-zinc-700'
-                            : 'bg-amber-100 text-amber-900'
+                            ? 'bg-secondary text-secondary-foreground'
+                            : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -225,21 +225,21 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p
                             className={`text-xs font-semibold leading-tight ${
-                              isActive ? 'text-white' : 'text-zinc-900'
+                              isActive ? 'text-primary-foreground' : 'text-foreground'
                             }`}
                           >
                             {item.label}
                           </p>
                           {!isAccessible && (
-                            <span className="text-[9px] font-medium text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded flex items-center gap-0.5 border border-amber-300">
+                            <span className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-amber-500/30">
                               <Lock className="w-2.5 h-2.5" />
                               {reqRole}
                             </span>
                           )}
                         </div>
                         <p
-                          className={`text-[10px] truncate mt-0.5 ${
-                            isActive ? 'text-blue-100' : 'text-zinc-500'
+                          className={`text-xs truncate mt-0.5 ${
+                            isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'
                           }`}
                         >
                           {item.description}
@@ -248,11 +248,11 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                       {isAccessible ? (
                         <ChevronRight
                           className={`w-3.5 h-3.5 shrink-0 ${
-                            isActive ? 'text-white' : 'text-zinc-400'
+                            isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                           }`}
                         />
                       ) : (
-                        <Lock className="w-3.5 h-3.5 shrink-0 text-amber-700" />
+                        <Lock className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                       )}
                     </button>
                   );
@@ -268,22 +268,22 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         </div>
 
         {/* Store Information & Cloud Sync Footer */}
-        <div className="p-3 border-t border-zinc-100 bg-zinc-50 flex items-center justify-between text-xs text-zinc-600">
+        <div className="p-3 border-t border-border bg-muted/40 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
                 isSyncing
-                  ? 'bg-blue-600 animate-ping'
+                  ? 'bg-primary animate-ping'
                   : navigator.onLine !== false
                   ? 'bg-emerald-600'
                   : 'bg-amber-600'
               }`}
             />
-            <span className="font-medium text-[11px] text-zinc-800">
+            <span className="font-medium text-xs text-foreground">
               Cloud Status: {isSyncing ? 'Syncing...' : navigator.onLine !== false ? 'Live (Protected)' : 'Offline'}
             </span>
           </div>
-          <span className="font-mono text-[10px] font-medium bg-white text-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-200 shadow-2xs">
+          <span className="text-xs font-medium bg-card text-foreground px-2 py-0.5 rounded-md border border-border shadow-xs">
             58mm POS
           </span>
         </div>

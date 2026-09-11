@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { QrCode } from '../../icons/faIcons';
+import { QrCode } from 'lucide-react';
 import { posSound } from '../../utils/sound';
 
 export interface UPIPaymentProps {
@@ -51,8 +51,8 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
   return (
     <div className="flex flex-col items-center gap-4 py-1 animate-in fade-in duration-150">
       {/* Dynamic QR Box */}
-      <div className="flex flex-col items-center p-3.5 bg-white rounded-2xl border border-zinc-200/80 shadow-xs relative">
-        <div className="relative w-[190px] h-[190px] sm:w-[210px] sm:h-[210px] flex items-center justify-center bg-white rounded-xl overflow-hidden p-1">
+      <div className="flex flex-col items-center p-3.5 bg-card rounded-2xl border border-border shadow-xs relative">
+        <div className="relative w-[190px] h-[190px] sm:w-[210px] sm:h-[210px] flex items-center justify-center bg-card rounded-xl overflow-hidden p-1">
           <canvas
             ref={canvasRef}
             className="w-full h-full object-contain"
@@ -64,9 +64,9 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
         <div className="mt-2.5 flex items-center justify-between w-full px-1">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[11px] font-medium text-zinc-700">Scan via Any UPI App</span>
+            <span className="text-xs font-medium text-foreground">Scan via Any UPI App</span>
           </div>
-          <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 tabular-nums tracking-tight">
+          <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20 tabular-nums tracking-tight">
             {currencySymbol}
             {total.toFixed(2)}
           </span>
@@ -74,12 +74,12 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
       </div>
 
       {/* Store UPI ID / VPA row */}
-      <div className="w-full flex items-center justify-between bg-zinc-50 px-3.5 py-2.5 rounded-xl border border-zinc-200">
+      <div className="w-full flex items-center justify-between bg-muted/40 px-3.5 py-2.5 rounded-xl border border-border">
         <div className="flex flex-col min-w-0 pr-2">
-          <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Merchant UPI ID (VPA)
           </span>
-          <span className="text-xs sm:text-sm font-mono font-medium text-zinc-800 truncate">
+          <span className="text-xs sm:text-sm font-medium text-foreground truncate">
             {storeVpa}
           </span>
         </div>
@@ -87,9 +87,9 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
 
       {/* Last 4 Digits of UPI / UTR (Optional) */}
       <div className="w-full flex flex-col gap-1.5">
-        <label htmlFor="upi-utr-input" className="text-xs font-semibold text-zinc-700 flex items-center justify-between">
+        <label htmlFor="upi-utr-input" className="text-xs font-semibold text-foreground flex items-center justify-between">
           <span>Last 4 Digits of UPI / UTR (Optional)</span>
-          <span className="text-[10px] text-zinc-400 font-normal">e.g. 4521</span>
+          <span className="text-xs text-muted-foreground font-normal">e.g. 4521</span>
         </label>
         <input
           id="upi-utr-input"
@@ -100,7 +100,7 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
           value={utrNumber}
           onChange={(e) => setUtrNumber(e.target.value.replace(/\D/g, '').slice(0, 4))}
           placeholder="e.g. 4521"
-          className="w-full h-11 px-3 bg-zinc-50 border border-zinc-200 focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-xl text-sm font-mono text-zinc-900 outline-hidden transition-all shadow-xs tracking-wider tabular-nums"
+          className="w-full h-11 px-3 bg-muted/40 border border-border focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm text-foreground outline-hidden transition-all shadow-xs tracking-wider tabular-nums"
         />
       </div>
 
@@ -116,7 +116,7 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
             verificationMethod: utrNumber.trim() ? 'utr' : 'gateway',
           });
         }}
-        className="w-full h-11 mt-1 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs bg-blue-600 hover:bg-blue-700 text-white active:scale-[0.98]"
+        className="w-full h-11 mt-1 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground active:scale-[0.98]"
       >
         {isSubmitting ? (
           <span>Recording UPI Payment...</span>

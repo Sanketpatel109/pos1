@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X } from '../icons/faIcons';
+import { Search, X } from 'lucide-react';
 import { CatalogItem, Category } from '../types';
 
 export interface CategoryBarProps {
@@ -61,15 +61,15 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   return (
     <div
       id="category-search-bar"
-      className="w-full h-11 sm:h-12 px-2 sm:px-3 bg-white border-b border-zinc-200/80 flex items-center gap-1.5 sm:gap-2 shrink-0 select-none z-10"
+      className="w-full h-11 sm:h-12 px-2 sm:px-3 bg-card border-b border-border flex items-center gap-1.5 sm:gap-2 shrink-0 select-none z-10"
     >
       {isSearchOpen ? (
         /* ====================================================================
            INLINE SEARCH INPUT OVERLAY
            Smoothly replaces the row to reclaim vertical screen space
            ==================================================================== */
-        <div className="flex-1 flex items-center gap-2 bg-zinc-50 border border-zinc-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-600/20 focus-within:border-blue-600 rounded-xl px-2.5 h-9 sm:h-11 transition-all shadow-2xs">
-          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400 shrink-0" />
+        <div className="flex-1 flex items-center gap-2 bg-background border border-border focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary rounded-lg px-2.5 h-9 sm:h-10 transition-all shadow-xs">
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
           <input
             ref={searchInputRef}
             type="text"
@@ -83,14 +83,14 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
             }}
             placeholder={placeholder}
             aria-label="Search catalog products"
-            className="w-full text-xs sm:text-sm font-medium text-zinc-900 placeholder-zinc-400 bg-transparent focus:outline-none"
+            className="w-full text-xs sm:text-sm font-medium text-foreground placeholder-muted-foreground bg-transparent focus:outline-none"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => onSearchChange('')}
               aria-label="Clear search query"
-              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200 transition-colors cursor-pointer shrink-0"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -98,7 +98,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
           <button
             type="button"
             onClick={handleCloseSearch}
-            className="text-[11px] sm:text-xs font-medium text-zinc-700 hover:bg-zinc-200 px-3 py-1.5 bg-zinc-100 rounded-xl shrink-0 cursor-pointer active:scale-95 transition-all"
+            className="text-[11px] sm:text-xs font-medium text-foreground hover:bg-muted px-3 py-1.5 bg-secondary rounded-lg shrink-0 cursor-pointer active:scale-95 transition-all"
           >
             Done
           </button>
@@ -117,11 +117,11 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
             onClick={handleOpenSearch}
             aria-label="Search Products"
             title="Search Products (Tap to open)"
-            className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 text-zinc-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-xs relative"
+            className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-muted/70 border border-border hover:bg-muted text-foreground flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-xs relative"
           >
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-700" />
+            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-foreground" />
             {searchQuery && (
-              <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600 ring-2 ring-white" />
+              <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary ring-2 ring-background" />
             )}
           </button>
 
@@ -142,18 +142,18 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
                   type="button"
                   id={`chip-category-${catName.toLowerCase().replace(/\s+/g, '-')}`}
                   onClick={() => onSelectCategory(catName)}
-                  className={`h-8 sm:h-9 px-3 rounded-xl text-[11px] sm:text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${
+                  className={`h-8 sm:h-9 px-3 rounded-lg text-[11px] sm:text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-white border border-zinc-200/80 text-zinc-700 hover:bg-zinc-50 shadow-2xs'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'bg-muted/50 border border-border text-foreground hover:bg-muted shadow-xs'
                   }`}
                 >
                   <span className="leading-none">{catName}</span>
                   <span
-                    className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-md tabular-nums tracking-tight font-medium leading-none ${
+                    className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-sm tabular-nums tracking-tight font-medium leading-none ${
                       isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-zinc-100 text-zinc-600'
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-background text-muted-foreground border border-border/50'
                     }`}
                   >
                     {count}

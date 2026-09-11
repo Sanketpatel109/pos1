@@ -11,7 +11,7 @@ import {
   AlertCircle,
   FileText,
   Clock,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { CatalogItem, InwardStockEntry, InwardStockItem } from '../types';
 
 interface PurchaseInwardModalProps {
@@ -153,7 +153,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-5 bg-white border-b border-zinc-100 text-zinc-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
               <PackagePlus className="w-5 h-5" />
             </div>
             <div>
@@ -236,7 +236,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                       value={invoiceNumber}
                       onChange={(e) => setInvoiceNumber(e.target.value)}
                       placeholder="e.g. INV-2026-904"
-                      className="w-full text-xs font-semibold text-zinc-800 focus:outline-hidden font-mono"
+                      className="w-full text-xs font-semibold text-zinc-800 focus:outline-hidden "
                     />
                   </div>
                 </div>
@@ -251,7 +251,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-[0.98]"
+                    className="h-10 px-4 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-[0.98]"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Product
                   </button>
@@ -269,11 +269,11 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                         className="p-3 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                       >
                         <div className="flex-1 min-w-0 w-full sm:w-auto">
-                          <label className="text-[10px] text-zinc-400 block mb-0.5">Product</label>
+                          <label className="text-xs text-muted-foreground block mb-0.5">Product</label>
                           <select
                             value={item.productId}
                             onChange={(e) => handleProductSelect(idx, e.target.value)}
-                            className="w-full h-10 bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 text-xs font-medium text-zinc-800 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                            className="w-full h-10 bg-muted/40 border border-zinc-200 rounded-xl px-2.5 text-xs font-medium text-foreground focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary"
                           >
                             {catalog.map((catItem) => (
                               <option key={catItem.id} value={catItem.id}>
@@ -285,7 +285,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
 
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                           <div className="w-24">
-                            <label className="text-[10px] text-zinc-400 block mb-0.5">Received Qty</label>
+                            <label className="text-xs text-muted-foreground block mb-0.5">Received Qty</label>
                             <input
                               type="number"
                               min="1"
@@ -293,12 +293,12 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                               onChange={(e) =>
                                 handleUpdateItem(idx, 'quantity', parseInt(e.target.value) || 0)
                               }
-                              className="w-full h-10 bg-zinc-50 border border-zinc-200 rounded-xl px-2 text-xs font-medium text-center text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 tabular-nums tracking-tight"
+                              className="w-full h-10 bg-muted/40 border border-zinc-200 rounded-xl px-2 text-xs font-medium text-center text-foreground focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums tracking-tight"
                             />
                           </div>
 
                           <div className="w-28">
-                            <label className="text-[10px] text-zinc-400 block mb-0.5">
+                            <label className="text-xs text-muted-foreground block mb-0.5">
                               Cost/Unit ({currencySymbol})
                             </label>
                             <input
@@ -308,13 +308,13 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                               onChange={(e) =>
                                 handleUpdateItem(idx, 'unitCost', parseFloat(e.target.value) || 0)
                               }
-                              className="w-full h-10 bg-zinc-50 border border-zinc-200 rounded-xl px-2 text-xs font-medium text-center text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 tabular-nums tracking-tight"
+                              className="w-full h-10 bg-muted/40 border border-zinc-200 rounded-xl px-2 text-xs font-medium text-center text-foreground focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums tracking-tight"
                             />
                           </div>
 
                           <div className="w-24 text-right">
-                            <span className="text-[10px] text-zinc-400 block mb-0.5">New Stock</span>
-                            <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 inline-block tabular-nums tracking-tight">
+                            <span className="text-xs text-muted-foreground block mb-0.5">New Stock</span>
+                            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20 inline-block tabular-nums tracking-tight">
                               {newStock} {catalogItem?.unit || 'pcs'}
                             </span>
                           </div>
@@ -323,7 +323,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
                             disabled={itemsToReceive.length === 1}
-                            className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg disabled:opacity-30 cursor-pointer"
+                            className="p-1.5 text-muted-foreground hover:text-destructive rounded-lg disabled:opacity-30 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -343,7 +343,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                   <span className="text-xl font-bold text-zinc-900 tabular-nums tracking-tight">
                     {currencySymbol}{totalInwardCost.toFixed(2)}
                   </span>
-                  <span className="text-[10px] text-zinc-400 block mt-0.5">
+                  <span className="text-xs text-muted-foreground block mt-0.5">
                     Received by {activeStaffName}
                   </span>
                 </div>
@@ -358,7 +358,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 sm:flex-none h-11 px-5 rounded-xl text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                    className="flex-1 sm:flex-none h-11 px-5 rounded-xl text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Confirm Stock Replenishment</span>
@@ -380,7 +380,7 @@ export const PurchaseInwardModal: React.FC<PurchaseInwardModalProps> = ({
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <span className="font-extrabold text-zinc-900">{entry.supplierName}</span>
-                        <span className="font-mono text-[10px] bg-zinc-200 text-zinc-700 px-2 py-0.5 rounded-md font-bold">
+                        <span className="text-[10px] bg-zinc-200 text-zinc-700 px-2 py-0.5 rounded-md font-bold">
                           {entry.invoiceNumber}
                         </span>
                       </div>

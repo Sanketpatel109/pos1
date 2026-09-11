@@ -44,7 +44,7 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
   return (
     <div
       id="direct-thermal-receipt"
-      className="direct-thermal-receipt-print-only print:m-0 w-full max-w-[320px] mx-auto bg-white text-black font-mono text-[11px] leading-tight p-2"
+      className="direct-thermal-receipt-print-only print:m-0 w-full max-w-[320px] mx-auto bg-white text-black text-[11px] leading-tight p-2"
     >
       {/* Store Header */}
       <div className="text-center space-y-0.5 border-b border-dashed border-black pb-2 mb-2">
@@ -207,7 +207,7 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
 
       {/* Barcode & Footer */}
       <div className="text-center pt-1 space-y-1 text-[10px]">
-        <div className="border-y border-black py-0.5 font-mono tracking-[0.2em] font-bold">
+        <div className="border-y border-black py-0.5 tracking-[0.2em] font-bold">
           *ORD-{order.orderNumber}-2026*
         </div>
         <p className="font-bold">*** THANK YOU, VISIT AGAIN ***</p>

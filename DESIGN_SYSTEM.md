@@ -16,5 +16,5 @@
 - Destructive (Void, Discard): bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl h-11 px-4
 
 ## 4. Typography & Numbers
-- Font: Geist Sans for UI text; Geist Mono for receipt tokens and barcodes.
+- Font: Geist Sans for all UI text, receipts, tokens, barcodes, and numbers.
 - Financial Accuracy: Apply tabular-nums tracking-tight to all currency amounts (₹), quantities, percentages, and totals.

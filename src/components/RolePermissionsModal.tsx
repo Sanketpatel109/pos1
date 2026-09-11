@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   ShieldAlert,
   Delete,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { StaffMember, StaffRole, StorePermissions, DEFAULT_STORE_PERMISSIONS } from '../types';
 import { normalizeRole, ROLE_DEFINITIONS, verifyOwnerPin } from '../utils/permissions';
 import { posSound } from '../utils/sound';
@@ -220,7 +220,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                 <h2 className="text-base font-extrabold text-white leading-tight">
                   Store Policy & Role Permissions
                 </h2>
-                <span className="text-[10px] bg-zinc-800 text-zinc-300 font-mono px-2 py-0.5 rounded border border-zinc-700">
+                <span className="text-[10px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded border border-zinc-700">
                   Active: {activeStaff.name} ({ROLE_DEFINITIONS[activeRole].badgeLabel})
                 </span>
               </div>
@@ -337,7 +337,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-zinc-900">Sell on Customer Credit (Khata)</span>
-                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded font-mono">
+                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded ">
                           staff.allowKhata
                         </code>
                       </div>
@@ -374,7 +374,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-zinc-900">Modify Cart Item Prices</span>
-                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded font-mono">
+                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded ">
                           staff.allowPriceOverride
                         </code>
                       </div>
@@ -415,7 +415,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-zinc-900">Receive Supplier Crates (Stock Inward)</span>
-                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded font-mono">
+                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded ">
                           staff.allowStockInward
                         </code>
                       </div>
@@ -471,7 +471,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-zinc-900">View Buying Rates & Margins</span>
-                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded font-mono">
+                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded ">
                           manager.viewCostPrice
                         </code>
                       </div>
@@ -512,7 +512,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-zinc-900">Cancel / Void Completed Invoices</span>
-                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded font-mono">
+                        <code className="text-[10px] bg-zinc-100 text-zinc-600 px-1 py-0.5 rounded ">
                           manager.allowBillVoid
                         </code>
                       </div>
@@ -587,7 +587,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       />
                       <span>{s.name}</span>
                       <span
-                        className={`text-[9px] px-1 rounded uppercase font-mono ${
+                        className={`text-[9px] px-1 rounded uppercase ${
                           isSelected ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-600'
                         }`}
                       >
@@ -706,7 +706,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                 {[0, 1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className={`w-11 h-12 rounded-xl border-2 flex items-center justify-center text-lg font-black font-mono transition-all ${
+                    className={`w-11 h-12 rounded-xl border-2 flex items-center justify-center text-lg font-black transition-all ${
                       ownerPinInput.length > i
                         ? 'border-amber-500 bg-amber-50/50 text-amber-950'
                         : 'border-zinc-200 bg-zinc-50 text-zinc-400'

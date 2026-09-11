@@ -8,9 +8,10 @@ import {
   Receipt,
   PauseCircle,
   ShoppingBag,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { BillItem } from '../types';
 import { useCart } from '../context/CartContext';
+import { CartSummary } from './CartSummary';
 
 export interface QuickBillPOSProps {
   currencySymbol?: string;
@@ -255,12 +256,12 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
   const computedInputTotal = qty * inputAmountVal;
 
   const keyBtnClass =
-    'rounded-xl font-bold text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-2xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 bg-white border-zinc-200 text-zinc-900 hover:bg-zinc-50';
+    'rounded-md font-bold text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 bg-card border-border text-foreground hover:bg-muted';
 
   return (
-    <div className="flex-1 min-h-0 h-full w-full bg-zinc-50 overflow-hidden select-none flex flex-col md:flex-row">
+    <div className="flex-1 min-h-0 h-full w-full bg-background overflow-hidden select-none flex flex-col md:flex-row">
       {/* 2-Column POS Terminal Canvas on md/lg/xl, stacked on mobile */}
-      <div className="w-full h-full flex flex-col md:flex-row min-h-0 bg-zinc-50 overflow-hidden">
+      <div className="w-full h-full flex flex-col md:flex-row min-h-0 bg-background overflow-hidden">
         {/* 
           ======================================================================
           BILL ITEMS & SETTLEMENT PANE
@@ -268,22 +269,22 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           Tablet/Desktop (>=768px): Right Column (order-2, md:w-5/12 or md:col-span-5, sticky full-height with border-l)
           ======================================================================
         */}
-        <div className="order-1 md:order-2 w-full md:w-[38%] lg:w-[35%] h-[315px] sm:h-[335px] md:h-full flex flex-col min-h-0 border-b md:border-b-0 md:border-l border-zinc-200/80 overflow-hidden bg-white shrink-0">
-          {/* Header Row: Bill Items & Bill #{billNo} */}
-          <div className="flex justify-between items-center px-3 py-1.5 sm:px-4 sm:py-2.5 border-b border-zinc-200/80 bg-white shrink-0">
+        <div className="order-1 md:order-2 w-full md:w-[38%] lg:w-[35%] h-[315px] sm:h-[335px] md:h-full flex flex-col min-h-0 border-b md:border-b-0 md:border-l border-border overflow-hidden bg-card shrink-0">
+          {/* Header Row: Current Bill & Bill #{displayBillNo} */}
+          <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-900 shrink-0" />
-              <h2 className="text-xs sm:text-sm text-zinc-900 font-semibold tracking-tight truncate">
-                Bill Items
+              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-foreground shrink-0" />
+              <h2 className="text-xs sm:text-sm text-foreground font-semibold tracking-tight truncate">
+                Current Bill
               </h2>
-              <span className="bg-zinc-100 text-zinc-800 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.2 rounded-full font-medium border border-zinc-200 shrink-0 tabular-nums tracking-tight">
+              <span className="bg-muted text-foreground text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium border border-border shrink-0 tabular-nums tracking-tight font-medium">
                 {totalItemCount}
               </span>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               {/* Bill Number Badge (India-First: "Bill #042") */}
-              <span className="bg-zinc-900 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-lg font-mono font-medium tracking-wide tabular-nums">
+              <span className="bg-primary text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-medium tracking-wide tabular-nums font-medium">
                 Bill #{displayBillNo}
               </span>
             </div>
@@ -292,15 +293,13 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           {/* Scrollable Items Stack (Internal Scroll Only - at least 4 items visible) */}
           <div
             ref={itemsContainerRef}
-            className="flex-1 min-h-[160px] overflow-y-auto overscroll-contain px-3 sm:px-3.5 divide-y divide-zinc-100 bg-white scrollbar-thin"
+            className="flex-1 min-h-[160px] overflow-y-auto overscroll-contain px-3 sm:px-3.5 divide-y divide-border bg-card scrollbar-thin"
           >
             {items.length === 0 ? (
-              <div className="h-full min-h-[90px] flex flex-col items-center justify-center text-center py-4 text-zinc-400">
-                <Receipt className="w-6 h-6 text-zinc-300 mb-1 stroke-[1.5]" />
-                <p className="text-xs font-semibold text-zinc-900">Bill is empty</p>
-                <p className="text-[10px] text-zinc-500 mt-0.5">
-                  Type an amount on keypad and tap "Add to Bill"
-                </p>
+              <div className="h-full flex flex-col items-center justify-center text-center py-2 text-muted-foreground">
+                <ShoppingBag className="w-5 h-5 mb-1 text-muted-foreground/60 stroke-[1.5]" />
+                <p className="text-xs font-semibold text-foreground">Bill is empty</p>
+                <p className="text-[10px] text-muted-foreground">Tap products to add items</p>
               </div>
             ) : (
               items.map((item, idx) => (
@@ -308,20 +307,20 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   key={item.id}
                   id={`bill-item-${item.id}`}
                   className={`py-1 sm:py-1.5 flex items-center justify-between gap-1.5 sm:gap-2 rounded-xs px-1 -mx-1 transition-colors ${
-                    idx === items.length - 1 ? 'bg-zinc-50/50' : 'bg-white'
+                    idx === items.length - 1 ? 'bg-muted/30' : 'bg-card'
                   }`}
                 >
                   {/* Column 1: Item Name & Sub-details */}
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-                    <span className="text-[10px] sm:text-xs font-medium text-zinc-400 font-mono w-4 shrink-0 tabular-nums">
+                    <span className="text-[10px] sm:text-xs font-medium text-muted-foreground w-4 shrink-0 tabular-nums">
                       #{idx + 1}
                     </span>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs sm:text-sm font-medium text-zinc-900 truncate leading-tight">
+                      <span className="text-xs sm:text-sm font-medium text-foreground truncate leading-tight">
                         {item.name}
                       </span>
                       {item.quantity > 1 && (
-                        <span className="text-[10px] sm:text-[11px] text-zinc-500 font-mono font-medium tabular-nums tracking-tight">
+                        <span className="text-[10px] sm:text-[11px] text-muted-foreground font-medium tabular-nums tracking-tight">
                           ({item.quantity} × {currencySymbol}
                           {item.unitPrice.toFixed(2)})
                         </span>
@@ -330,18 +329,18 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   </div>
 
                   {/* Column 2: Quantity Stepper [ - {qty} + ] */}
-                  <div className="w-[74px] sm:w-[82px] h-6 sm:h-7 flex items-center justify-between bg-zinc-100 rounded-lg px-1 shadow-2xs shrink-0">
+                  <div className="w-[74px] sm:w-[82px] h-6 sm:h-7 flex items-center justify-between bg-muted rounded-md px-1 shadow-xs shrink-0">
                     <button
                       type="button"
                       id={`btn-qb-dec-${item.id}`}
                       onClick={() => handleUpdateQuantity(item.id, -1)}
-                      className="h-5 w-5 flex items-center justify-center text-zinc-700 font-bold active:bg-zinc-200 rounded transition-colors cursor-pointer"
+                      className="h-5 w-5 flex items-center justify-center text-foreground font-bold active:bg-muted-foreground/20 rounded transition-colors cursor-pointer"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-3 h-3 stroke-[2.5]" />
                     </button>
 
-                    <span className="w-5 text-center text-xs font-medium text-zinc-900 tabular-nums tracking-tight">
+                    <span className="w-5 text-center text-xs font-medium text-foreground tabular-nums tracking-tight font-medium">
                       {item.quantity}
                     </span>
 
@@ -349,7 +348,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                       type="button"
                       id={`btn-qb-inc-${item.id}`}
                       onClick={() => handleUpdateQuantity(item.id, 1)}
-                      className="h-5 w-5 flex items-center justify-center text-zinc-700 font-bold active:bg-zinc-200 rounded transition-colors cursor-pointer"
+                      className="h-5 w-5 flex items-center justify-center text-foreground font-bold active:bg-muted-foreground/20 rounded transition-colors cursor-pointer"
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-3 h-3 stroke-[2.5]" />
@@ -357,7 +356,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   </div>
 
                   {/* Column 3: Total Price */}
-                  <div className="w-[58px] sm:w-[68px] text-right font-medium text-zinc-900 tabular-nums tracking-tight text-xs sm:text-sm font-mono shrink-0">
+                  <div className="w-[58px] sm:w-[68px] text-right font-medium text-foreground tabular-nums tracking-tight font-medium text-xs sm:text-sm shrink-0">
                     {currencySymbol}
                     {(item.unitPrice * item.quantity).toFixed(2)}
                   </div>
@@ -368,7 +367,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                       type="button"
                       id={`btn-remove-item-${item.id}`}
                       onClick={() => handleRemoveItem(item.id)}
-                      className="p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                      className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors cursor-pointer"
                       aria-label={`Remove ${item.name}`}
                       title={`Remove ${item.name}`}
                     >
@@ -380,96 +379,21 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
             )}
           </div>
 
-          {/* Subtotal, Total, and Fixed Bottom Action Buttons Row */}
-          <div className="px-3.5 py-2 sm:py-2.5 bg-white border-t border-zinc-200/80 shrink-0 flex flex-col gap-1.5 select-none">
-            {/* Subtotal & GST Line */}
-            <div className="flex justify-between items-center text-xs text-zinc-500">
-              <span>
-                Subtotal ({totalItemCount} items)
-                {taxRate > 0 && (
-                  <span className="text-zinc-400 ml-1">
-                    · Incl. {currencySymbol}{taxAmount.toFixed(2)} GST
-                  </span>
-                )}
-              </span>
-              <span className="font-mono font-medium text-zinc-900 tabular-nums tracking-tight">
-                {currencySymbol}
-                {subtotal.toFixed(2)}
-              </span>
-            </div>
-
-            {/* Total Line */}
-            <div className="flex justify-between items-baseline border-t border-zinc-100 pt-1">
-              <span className="text-xs font-semibold text-zinc-900 uppercase tracking-wider">
-                TOTAL
-              </span>
-              <span className="text-lg sm:text-xl font-bold text-zinc-900 font-mono leading-none tracking-tight tabular-nums">
-                {currencySymbol}
-                {grandTotal.toFixed(2)}
-              </span>
-            </div>
-
-            {/* Action Buttons Row: [  Clear ] [  Hold ] [  PRINT ] [ Pay ₹... → ] */}
-            <div className="flex items-center gap-2 pt-0.5">
-              {/* [  Clear ] */}
-              <button
-                type="button"
-                id="btn-quickbill-clear"
-                onClick={handleClearAll}
-                disabled={items.length === 0}
-                title="Clear active bill"
-                className="flex items-center justify-center bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl transition-all active:scale-95 w-9 h-9 sm:w-10 sm:h-10 shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-
-              {/* [  Hold ] */}
-              <button
-                type="button"
-                id="btn-quickbill-hold"
-                onClick={handleHold}
-                disabled={items.length === 0 && heldOrdersCount === 0}
-                title={
-                  items.length > 0
-                    ? 'Hold / Park Bill for next customer'
-                    : heldOrdersCount > 0
-                    ? `Recall ${heldOrdersCount} parked bill(s)`
-                    : 'Add items to hold bill'
-                }
-                className="flex items-center justify-center rounded-xl transition-all active:scale-95 w-9 h-9 sm:w-10 sm:h-10 shrink-0 cursor-pointer border border-zinc-200 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed relative"
-              >
-                <PauseCircle className="w-4 h-4" />
-                {heldOrdersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white font-medium text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs tabular-nums">
-                    {heldOrdersCount}
-                  </span>
-                )}
-              </button>
-
-              {/* [  PRINT ] */}
-              <button
-                type="button"
-                id="btn-quickbill-print"
-                onClick={() => onPrintQuickBill(items)}
-                disabled={items.length === 0}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-all active:scale-[0.98] h-9 sm:h-10 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs text-xs tracking-wider"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print</span>
-              </button>
-
-              {/* [ Pay ₹... → ] Primary Brand CTA */}
-              <button
-                type="button"
-                id="btn-quickbill-pay"
-                onClick={() => onSaveQuickBill(items)}
-                disabled={items.length === 0}
-                className="flex-[1.5] flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium rounded-xl transition-all active:scale-[0.98] shadow-xs h-9 sm:h-10 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm tracking-wide"
-              >
-                <span>Pay ₹{grandTotal.toFixed(2)} →</span>
-              </button>
-            </div>
-          </div>
+          {/* Subtotal, Total, and Bottom Action Buttons Row */}
+          <CartSummary
+            totalItemCount={totalItemCount}
+            subtotal={subtotal}
+            taxRate={taxRate}
+            taxAmount={taxAmount}
+            total={grandTotal}
+            currencySymbol={currencySymbol}
+            heldOrdersCount={heldOrdersCount}
+            onClearBill={handleClearAll}
+            onHoldBill={handleHold}
+            onPrintBill={() => onPrintQuickBill(items)}
+            onPay={() => onSaveQuickBill(items)}
+            disabled={items.length === 0}
+          />
         </div>
 
         {/* 
@@ -479,12 +403,12 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           Tablet/Desktop (>=768px): Left Column (order-1, md:w-[62%] lg:w-[65%], centered keypad workspace)
           ======================================================================
         */}
-        <div className="order-2 md:order-1 flex-1 md:w-[62%] lg:w-[65%] min-h-0 flex flex-col justify-center bg-zinc-50 p-2 sm:p-3 md:p-5 lg:p-8 overflow-y-auto no-scrollbar">
+        <div className="order-2 md:order-1 flex-1 md:w-[62%] lg:w-[65%] min-h-0 flex flex-col justify-center bg-background p-2 sm:p-3 md:p-5 lg:p-8 overflow-y-auto no-scrollbar">
           <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-auto flex flex-col gap-1.5 sm:gap-2 md:gap-3 lg:gap-4">
             {/* INPUT DISPLAY: 3 × ₹50.00 = ₹150.00 & Optional Note */}
-            <div className="bg-white border border-zinc-200/80 rounded-2xl px-2.5 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 lg:py-3 flex flex-col gap-1 sm:gap-1.5 shadow-xs shrink-0">
+            <div className="bg-card border border-border rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 lg:py-3 flex flex-col gap-1 sm:gap-1.5 shadow-xs shrink-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Input Display
                 </span>
                 <input
@@ -492,7 +416,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   placeholder="Item note (optional)..."
                   value={itemLabel}
                   onChange={(e) => setItemLabel(e.target.value)}
-                  className="text-right text-xs sm:text-sm font-medium text-zinc-900 bg-transparent focus:outline-hidden placeholder-zinc-400 max-w-[150px] sm:max-w-[180px] md:max-w-[220px]"
+                  className="text-right text-xs sm:text-sm font-medium text-foreground bg-transparent focus:outline-hidden placeholder-muted-foreground max-w-[150px] sm:max-w-[180px] md:max-w-[220px]"
                 />
               </div>
 
@@ -502,27 +426,27 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveField('qty')}
-                    className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl font-mono font-medium text-sm sm:text-base md:text-lg lg:text-xl cursor-pointer transition-all tabular-nums tracking-tight ${
+                    className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md font-medium text-sm sm:text-base md:text-lg lg:text-xl cursor-pointer transition-all tabular-nums tracking-tight font-medium ${
                       activeField === 'qty'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-zinc-50 border border-zinc-200 text-zinc-700 hover:bg-zinc-100'
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'bg-secondary border border-border text-secondary-foreground hover:bg-secondary/80'
                     }`}
                     title="Click to edit quantity multiplier"
                   >
                     {qty}
                   </button>
 
-                  <span className="text-zinc-400 font-medium text-xs sm:text-sm md:text-base">
+                  <span className="text-muted-foreground font-medium text-xs sm:text-sm md:text-base">
                     ×
                   </span>
 
                   <button
                     type="button"
                     onClick={() => setActiveField('amount')}
-                    className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl font-mono font-medium text-sm sm:text-base md:text-lg lg:text-xl cursor-pointer transition-all tabular-nums tracking-tight ${
+                    className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md font-medium text-sm sm:text-base md:text-lg lg:text-xl cursor-pointer transition-all tabular-nums tracking-tight font-medium ${
                       activeField === 'amount'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-zinc-50 border border-zinc-200 text-zinc-700 hover:bg-zinc-100'
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'bg-secondary border border-border text-secondary-foreground hover:bg-secondary/80'
                     }`}
                     title="Click to edit unit amount"
                   >
@@ -533,8 +457,8 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
 
                 {/* Right Side: Computed = ₹150.00 */}
                 <div className="flex items-center gap-1">
-                  <span className="text-xs sm:text-sm md:text-base text-zinc-400 font-medium">=</span>
-                  <span className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-zinc-900 font-mono tabular-nums tracking-tight leading-none">
+                  <span className="text-xs sm:text-sm md:text-base text-muted-foreground font-medium">=</span>
+                  <span className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-foreground tabular-nums tracking-tight font-medium leading-none">
                     {currencySymbol}
                     {computedInputTotal.toFixed(2)}
                   </span>
@@ -549,7 +473,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   key={val}
                   type="button"
                   onClick={() => handleAddPreset(val)}
-                  className="py-1 sm:py-1.5 md:py-2 lg:py-2.5 bg-zinc-100 hover:bg-zinc-200 active:bg-zinc-300 border border-zinc-200/80 rounded-xl text-xs sm:text-sm md:text-base font-medium text-zinc-800 transition-all cursor-pointer font-mono text-center shadow-2xs active:scale-95 tabular-nums tracking-tight"
+                  className="py-1 sm:py-1.5 md:py-2 lg:py-2.5 bg-secondary hover:bg-secondary/80 border border-border rounded-md text-xs sm:text-sm md:text-base font-medium text-secondary-foreground transition-all cursor-pointer text-center shadow-xs active:scale-95 tabular-nums tracking-tight font-medium"
                 >
                   +{val}
                 </button>
@@ -583,10 +507,10 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
               <button
                 type="button"
                 onClick={handleQtyToggle}
-                className={`rounded-xl font-medium text-xs sm:text-sm md:text-base lg:text-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-2xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 ${
+                className={`rounded-md font-medium text-xs sm:text-sm md:text-base lg:text-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 ${
                   activeField === 'qty'
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200'
+                    ? 'bg-primary border-primary text-primary-foreground'
+                    : 'bg-secondary border-border text-secondary-foreground hover:bg-secondary/80'
                 }`}
                 title="Toggle or Set Quantity multiplier"
               >
@@ -618,7 +542,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
               <button
                 type="button"
                 onClick={handleBackspace}
-                className="rounded-xl font-medium transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-2xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
+                className="rounded-md font-medium transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 bg-secondary border-border text-secondary-foreground hover:bg-secondary/80"
                 title="Backspace"
               >
                 <Delete className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
@@ -649,7 +573,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="rounded-xl font-medium text-xs sm:text-sm md:text-base lg:text-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-2xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 bg-white border-rose-200 text-rose-600 hover:bg-rose-50"
+                className="rounded-md font-medium text-xs sm:text-sm md:text-base lg:text-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center border shadow-xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 bg-card border-destructive/30 text-destructive hover:bg-destructive/10"
                 title="Clear"
               >
                 C
@@ -668,10 +592,10 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                 id="btn-quickbill-add-to-bill"
                 onClick={handleAddCustomAmount}
                 disabled={parseFloat(currentInput) <= 0}
-                className={`col-span-3 rounded-xl font-medium text-xs sm:text-sm md:text-base lg:text-lg tracking-wide transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center border shadow-xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 ${
+                className={`col-span-3 rounded-md font-medium text-xs sm:text-sm md:text-base lg:text-lg tracking-wide transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center border shadow-xs h-10 sm:h-11 md:h-12 lg:h-14 xl:h-16 ${
                   parseFloat(currentInput) > 0
-                    ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white border-blue-600'
-                    : 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed opacity-60'
+                    ? 'bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground border-primary'
+                    : 'bg-muted text-muted-foreground border-border cursor-not-allowed opacity-60'
                 }`}
               >
                 <span>Add to Bill</span>

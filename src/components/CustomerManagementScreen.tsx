@@ -12,8 +12,12 @@ import {
   X,
   FileText,
   Star,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { Customer, Order } from '../types';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 interface CustomerManagementScreenProps {
   customers: Customer[];
@@ -104,42 +108,43 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-[#fcf8fb] overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 bg-background text-foreground overflow-hidden">
       {/* Top Banner: Total Khata Balance & Quick Action */}
-      <div className="bg-[#f6f2f5] border-b border-[#d4d4d8] p-3 sm:p-4 flex items-center justify-between gap-3 shrink-0">
+      <div className="bg-card border-b border-border p-3 sm:p-4 flex items-center justify-between gap-3 shrink-0">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#77767b] block">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
             Total Outstanding Khata (Accounts Receivable)
           </span>
-          <span className="text-xl sm:text-2xl font-black font-mono text-[#ba1a1a]">
+          <span className="text-xl sm:text-2xl font-bold text-destructive tabular-nums tracking-tight font-medium">
             {currencySymbol}
             {totalOutstanding.toFixed(2)}
           </span>
         </div>
 
-        <button
+        <Button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-3.5 py-2 bg-[#18181b] hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 transition-all"
+          variant="default"
+          className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+          <Plus className="w-3.5 h-3.5" />
           <span>New Customer</span>
-        </button>
+        </Button>
       </div>
 
       {/* Responsive Master-Detail Layout */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
         {/* Left Column: Customer Directory */}
-        <div className="flex-1 md:w-2/5 flex flex-col min-h-0 bg-white md:border-r border-[#d4d4d8]">
+        <div className="flex-1 md:w-2/5 flex flex-col min-h-0 bg-muted/30 md:border-r border-border">
           {/* Search Bar */}
-          <div className="p-3 bg-white border-b border-[#d4d4d8] shrink-0">
-            <div className="bg-[#f6f2f5] border border-[#d4d4d8] rounded-xl px-3 py-2 flex items-center gap-2">
-              <Search className="w-4 h-4 text-[#77767b]" />
-              <input
+          <div className="p-3 bg-card border-b border-border shrink-0">
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
                 type="text"
                 placeholder="Search by customer name or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs text-[#1c1b1d] bg-transparent focus:outline-hidden placeholder-[#77767b]"
+                className="w-full pl-9 h-8 text-xs bg-muted/40"
               />
             </div>
           </div>
@@ -147,7 +152,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
           {/* Directory List */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
             {filteredCustomers.length === 0 ? (
-              <div className="h-40 flex flex-col items-center justify-center text-[#77767b] text-xs">
+              <div className="h-40 flex flex-col items-center justify-center text-muted-foreground text-xs">
                 No customers found matching search
               </div>
             ) : (
@@ -156,42 +161,42 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                 const isSelected = activeCustomer?.id === cust.id;
 
                 return (
-                  <div
+                  <Card
                     key={cust.id}
                     onClick={() => setSelectedCustomerId(cust.id)}
-                    className={`border rounded-2xl p-3 flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                    className={`p-3 flex items-center justify-between gap-3 transition-all cursor-pointer shadow-xs ${
                       isSelected
-                        ? 'bg-[#f0edf0] border-[#18181b] ring-1 ring-[#18181b]'
-                        : 'bg-white border-[#d4d4d8] hover:border-[#18181b] shadow-2xs'
+                        ? 'bg-muted/80 border-primary ring-1 ring-primary'
+                        : 'border-border hover:border-primary/50'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-extrabold text-xs sm:text-sm text-[#1c1b1d] truncate">
+                        <h3 className="font-semibold text-xs sm:text-sm text-foreground truncate">
                           {cust.name}
                         </h3>
-                        <span className="text-[11px] font-mono text-[#77767b]">
+                        <span className="text-[11px] text-muted-foreground tabular-nums">
                           {cust.phone}
                         </span>
                       </div>
 
-                      <p className="text-[10px] text-[#77767b] mt-0.5 font-mono flex items-center gap-1.5">
+                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 tabular-nums">
                         <span>{cust.totalOrders || 0} Bills</span>
                         <span>•</span>
-                        <span className="text-amber-700 font-bold flex items-center gap-1">
+                        <span className="text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
                           <Star className="w-2.5 h-2.5 text-amber-500" />
                           {cust.loyaltyPoints || 0} pts
                         </span>
                         <span>•</span>
-                        <span>Bal: {currencySymbol}{cust.creditBalance.toFixed(2)}</span>
+                        <span className="tracking-tight font-medium">Bal: {currencySymbol}{cust.creditBalance.toFixed(2)}</span>
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-right">
                         <span
-                          className={`font-mono font-black text-xs sm:text-sm ${
-                            hasDue ? 'text-[#ba1a1a]' : 'text-emerald-700'
+                          className={`font-bold text-xs sm:text-sm tabular-nums tracking-tight font-medium ${
+                            hasDue ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400'
                           }`}
                         >
                           {currencySymbol}
@@ -200,19 +205,21 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                       </div>
 
                       {hasDue && (
-                        <button
+                        <Button
+                          size="icon-xs"
+                          variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleWhatsAppReminder(cust);
                           }}
                           title="Send WhatsApp Reminder"
-                          className="p-1.5 bg-white hover:bg-[#eae7ea] rounded-lg text-[#1c1b1d] border border-[#d4d4d8]/70 cursor-pointer"
+                          className="cursor-pointer"
                         >
                           <Send className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       )}
                     </div>
-                  </div>
+                  </Card>
                 );
               })
             )}
@@ -220,95 +227,99 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
         </div>
 
         {/* Right Column (Tablet View): Customer Detail & Khata Statement */}
-        <div className="hidden md:flex md:w-3/5 bg-[#f6f2f5] flex-col min-h-0 p-4 overflow-y-auto">
+        <div className="hidden md:flex md:w-3/5 bg-muted/20 flex-col min-h-0 p-4 overflow-y-auto">
           {activeCustomer ? (
             <div className="space-y-4">
               {/* Profile Card */}
-              <div className="bg-white border border-[#d4d4d8] rounded-2xl p-4 shadow-2xs flex justify-between items-start">
+              <Card className="p-4 shadow-xs flex justify-between items-start border-border bg-card">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base font-black text-[#1c1b1d]">
+                    <h2 className="text-base font-bold text-foreground">
                       {activeCustomer.name}
                     </h2>
-                    <span className="text-xs font-mono text-[#77767b] bg-[#f0edf0] px-2 py-0.5 rounded">
+                    <Badge variant="secondary" className="text-xs">
                       {activeCustomer.phone}
-                    </span>
-                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                    </Badge>
+                    <Badge variant="outline" className="text-xs font-medium text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950">
                       Udhar Limit: {currencySymbol}{activeCustomer.creditLimit ?? 2000}
-                    </span>
+                    </Badge>
                   </div>
-                  <p className="text-[11px] text-[#77767b]">
+                  <p className="text-[11px] text-muted-foreground">
                     Customer registered on: {new Date(activeCustomer.createdAt).toLocaleDateString()}
                   </p>
                 </div>
 
                 <div className="flex gap-2 items-center flex-wrap">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="xs"
                     onClick={() => handleWhatsAppReminder(activeCustomer)}
-                    className="px-3 py-2 bg-[#f0edf0] hover:bg-[#eae7ea] text-[#1c1b1d] rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-[#d4d4d8]"
+                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>WhatsApp</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="xs"
                     onClick={() => {
                       setSettleAmount(String(activeCustomer.creditBalance > 0 ? activeCustomer.creditBalance : ''));
                       setIsSettleModalOpen(true);
                     }}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     <CreditCard className="w-3.5 h-3.5" />
                     <span>+ Collect Cash / Settle Khata</span>
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
 
               {/* Customer Account Stats */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3 shadow-2xs">
-                  <span className="text-[10px] font-bold text-[#77767b] uppercase block">
+                <Card className="p-3 shadow-xs border-border bg-card">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">
                     Khata Due
                   </span>
                   <span
-                    className={`text-lg sm:text-xl font-black font-mono ${
-                      activeCustomer.creditBalance > 0 ? 'text-[#ba1a1a]' : 'text-emerald-700'
+                    className={`text-lg sm:text-xl font-bold tabular-nums tracking-tight font-medium ${
+                      activeCustomer.creditBalance > 0 ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400'
                     }`}
                   >
                     {currencySymbol}
                     {activeCustomer.creditBalance.toFixed(2)}
                   </span>
-                </div>
+                </Card>
 
-                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3 shadow-2xs">
-                  <span className="text-[10px] font-bold text-[#77767b] uppercase block">
+                <Card className="p-3 shadow-xs border-border bg-card">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">
                     Loyalty Points
                   </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-amber-700 flex items-center gap-1.5">
+                  <span className="text-lg sm:text-xl font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 tabular-nums">
                     <Star className="w-4 h-4 text-amber-500" />
                     <span>{activeCustomer.loyaltyPoints || 0}</span>
                   </span>
-                </div>
+                </Card>
 
-                <div className="bg-white border border-[#d4d4d8] rounded-2xl p-3 shadow-2xs">
-                  <span className="text-[10px] font-bold text-[#77767b] uppercase block">
+                <Card className="p-3 shadow-xs border-border bg-card">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">
                     Lifetime Spend
                   </span>
-                  <span className="text-lg sm:text-xl font-black font-mono text-[#1c1b1d]">
+                  <span className="text-lg sm:text-xl font-bold text-foreground tabular-nums tracking-tight font-medium">
                     {currencySymbol}
                     {customerOrders.reduce((sum, o) => sum + o.total, 0).toFixed(2)}
                   </span>
-                </div>
+                </Card>
               </div>
 
               {/* Order History Table */}
-              <div className="bg-white border border-[#d4d4d8] rounded-2xl p-4 shadow-2xs space-y-3">
-                <h3 className="font-extrabold text-xs text-[#1c1b1d] uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-[#18181b]" />
+              <Card className="p-4 shadow-xs space-y-3 border-border bg-card">
+                <h3 className="font-bold text-xs text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-primary" />
                   <span>Invoice & Payment History ({customerOrders.length})</span>
                 </h3>
 
                 {customerOrders.length === 0 ? (
-                  <p className="text-xs text-[#77767b] text-center py-6">
+                  <p className="text-xs text-muted-foreground text-center py-6">
                     No orders linked directly with this phone number yet
                   </p>
                 ) : (
@@ -316,19 +327,19 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                     {customerOrders.map((ord) => (
                       <div
                         key={ord.id}
-                        className="flex justify-between items-center p-2.5 bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl text-xs font-mono"
+                        className="flex justify-between items-center p-2.5 bg-muted/40 border border-border rounded-md text-xs "
                       >
                         <div>
-                          <span className="font-bold text-[#1c1b1d]">Bill #{ord.orderNumber}</span>
-                          <span className="text-[10px] text-[#77767b] ml-2">
+                          <span className="font-bold text-foreground tabular-nums">Bill #{ord.orderNumber}</span>
+                          <span className="text-[10px] text-muted-foreground ml-2">
                             {new Date(ord.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] bg-[#eae7ea] px-1.5 py-0.5 rounded font-sans font-bold">
+                          <Badge variant="secondary" className="text-[10px] py-0 font-sans font-medium">
                             {ord.paymentMethod}
-                          </span>
-                          <span className="font-bold text-[#1c1b1d]">
+                          </Badge>
+                          <span className="font-bold text-foreground tabular-nums tracking-tight font-medium">
                             {currencySymbol}
                             {ord.total.toFixed(2)}
                           </span>
@@ -337,13 +348,13 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center text-[#77767b]">
-              <Users className="w-8 h-8 text-[#c8c5cb] mb-2" />
-              <p className="text-xs font-bold text-[#1c1b1d]">No Customer Selected</p>
-              <p className="text-[11px] text-[#77767b] mt-0.5">
+            <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
+              <Users className="w-8 h-8 text-muted-foreground/40 mb-2" />
+              <p className="text-xs font-bold text-foreground">No Customer Selected</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Select a customer from the left list to view their ledger statement
               </p>
             </div>
@@ -354,12 +365,12 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
       {/* Add Customer Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3 text-[#1c1b1d]">
+          <Card className="w-full max-w-sm border-border shadow-2xl p-4 space-y-3 text-foreground bg-card">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-sm">Create Customer Profile</h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-[#77767b] hover:text-[#1c1b1d]"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -367,85 +378,87 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
 
             <form onSubmit={handleSaveCustomer} className="space-y-2.5">
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground block mb-1">
                   Customer Name *
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g. Ramesh Kumar"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full h-8 text-xs bg-background"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground block mb-1">
                   10-digit Phone Number *
                 </label>
-                <input
+                <Input
                   type="tel"
                   placeholder="9876543210"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full h-8 text-xs bg-background"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground block mb-1">
                   Opening Credit Due (Optional)
                 </label>
-                <input
+                <Input
                   type="number"
                   placeholder="0.00"
                   value={newInitialCredit}
                   onChange={(e) => setNewInitialCredit(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full h-8 text-xs bg-background"
                 />
               </div>
 
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-2 bg-[#f6f2f5] text-[#1c1b1d] rounded-xl text-xs font-bold border border-[#d4d4d8]"
+                  className="flex-1 h-8 text-xs font-medium cursor-pointer"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="flex-1 py-2 bg-[#18181b] text-white rounded-xl text-xs font-bold hover:bg-black"
+                  variant="default"
+                  className="flex-1 h-8 text-xs font-medium cursor-pointer"
                 >
                   Save Customer
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Settle Credit Modal */}
       {isSettleModalOpen && activeCustomer && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3 text-[#1c1b1d]">
+          <Card className="w-full max-w-sm border-border shadow-2xl p-4 space-y-3 text-foreground bg-card">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-sm">Settle Customer Khata</h3>
               <button
                 onClick={() => setIsSettleModalOpen(false)}
-                className="text-[#77767b] hover:text-[#1c1b1d]"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-[#47464b]">
+            <p className="text-xs text-muted-foreground">
               Customer:{' '}
-              <strong className="text-[#1c1b1d]">{activeCustomer.name}</strong>
+              <strong className="text-foreground">{activeCustomer.name}</strong>
               <br />
               Current Due:{' '}
-              <strong className="text-[#ba1a1a]">
+              <strong className="text-destructive tabular-nums tracking-tight font-medium">
                 {currencySymbol}
                 {activeCustomer.creditBalance.toFixed(2)}
               </strong>
@@ -453,49 +466,51 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
 
             <form onSubmit={handleConfirmSettle} className="space-y-2.5">
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground block mb-1">
                   Repayment Amount Received ({currencySymbol})
                 </label>
-                <input
+                <Input
                   type="number"
                   placeholder="0.00"
                   value={settleAmount}
                   onChange={(e) => setSettleAmount(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full h-8 text-xs bg-background"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground block mb-1">
                   Payment Note (e.g. UPI Ref # / Cash)
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder="Cash repayment at counter"
                   value={settleNote}
                   onChange={(e) => setSettleNote(e.target.value)}
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
+                  className="w-full h-8 text-xs bg-background"
                 />
               </div>
 
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsSettleModalOpen(false)}
-                  className="flex-1 py-2 bg-[#f6f2f5] text-[#1c1b1d] rounded-xl text-xs font-bold border border-[#d4d4d8]"
+                  className="flex-1 h-8 text-xs font-medium cursor-pointer"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="flex-1 py-2 bg-[#18181b] text-white rounded-xl text-xs font-bold hover:bg-black"
+                  variant="default"
+                  className="flex-1 h-8 text-xs font-medium cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   Record Payment
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
     </div>

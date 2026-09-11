@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Share2, X, Smartphone } from '../icons/faIcons';
+import { Download, Share2, X, Smartphone } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'banner' }> = ({
@@ -24,7 +24,7 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'bann
             <Download className="w-4 h-4 text-emerald-400" />
             <span>Install App (PWA)</span>
           </div>
-          <span className="text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded font-mono">
+          <span className="text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded ">
             Desktop / Mobile
           </span>
         </button>
@@ -55,7 +55,7 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'bann
               <Smartphone className="w-4 h-4 text-zinc-700" />
               <span>Install on iPad / iPhone</span>
             </div>
-            <span className="text-[10px] text-zinc-500 font-mono">PWA</span>
+            <span className="text-[10px] text-zinc-500 ">PWA</span>
           </button>
 
           {showIOSGuide && (

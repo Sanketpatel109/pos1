@@ -16,7 +16,7 @@ import {
   Upload,
   Copy,
   CheckCheck,
-} from '../icons/faIcons';
+} from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { CatalogItem, BillItem } from '../types';
 import { posSound } from '../utils/sound';
@@ -485,7 +485,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   {/* Red Laser Scan Line */}
                   <div className="absolute left-2 right-2 top-1/2 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-bounce"></div>
                 </div>
-                <span className="mt-2 bg-black/80 backdrop-blur-xs text-white text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border border-white/20">
+                <span className="mt-2 bg-black/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-white/20">
                   Align Barcode or QR Code
                 </span>
               </div>
@@ -503,7 +503,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   <button
                     type="button"
                     onClick={() => startCameraScanner(selectedCameraId)}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Retry Camera</span>
@@ -512,9 +512,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 bg-card text-foreground hover:bg-muted text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs border border-border"
                   >
-                    <Upload className="w-3.5 h-3.5 text-blue-600" />
+                    <Upload className="w-3.5 h-3.5 text-primary" />
                     <span>Upload Photo</span>
                   </button>
                 </div>
@@ -574,7 +574,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               placeholder="Enter or scan Barcode / SKU / QR text..."
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
-              className="w-full text-xs text-slate-900 placeholder-slate-400 bg-transparent focus:outline-hidden font-mono"
+              className="w-full text-xs text-slate-900 placeholder-slate-400 bg-transparent focus:outline-hidden "
             />
             <button
               type="submit"
@@ -611,7 +611,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-mono font-bold text-slate-900 truncate max-w-[200px]">
+                      <span className="text-[11px] font-bold text-slate-900 truncate max-w-[200px]">
                         {lastScannedResult.code}
                       </span>
                       <button
@@ -642,7 +642,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         <h4 className="text-xs sm:text-sm font-bold text-slate-900">
                           {lastScannedResult.item.name}
                         </h4>
-                        <span className="text-xs font-extrabold font-mono text-emerald-800">
+                        <span className="text-xs font-extrabold text-emerald-800">
                           {currencySymbol}
                           {lastScannedResult.item.price.toFixed(2)}
                         </span>
@@ -699,7 +699,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         placeholder="Price"
                         value={customPriceInput}
                         onChange={(e) => setCustomPriceInput(e.target.value)}
-                        className="w-16 text-xs font-mono font-bold text-slate-900 focus:outline-hidden ml-1"
+                        className="w-16 text-xs font-bold text-slate-900 focus:outline-hidden ml-1"
                       />
                     </div>
                     <button
@@ -740,7 +740,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     <span className="text-[11px] font-bold text-slate-900 truncate">
                       {item.name}
                     </span>
-                    <div className="flex items-center justify-between mt-0.5 text-[10px] font-mono text-slate-500">
+                    <div className="flex items-center justify-between mt-0.5 text-[10px] text-slate-500">
                       <span className="truncate max-w-[80px]">{item.barcode || item.sku || 'SKU'}</span>
                       <span className="font-bold text-slate-900">
                         {currencySymbol}
@@ -753,14 +753,14 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleCodeDetected('8901063012480')}
-                  className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 active:scale-95 border border-blue-200 text-left transition-all cursor-pointer flex flex-col justify-between"
+                  className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/15 active:scale-95 border border-primary/20 text-left transition-all cursor-pointer flex flex-col justify-between"
                   title="Simulate scanning an unrecognized barcode (Bourbon Biscuit)"
                 >
-                  <span className="text-[11px] font-bold text-blue-900 truncate flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-blue-600 shrink-0" />
+                  <span className="text-xs font-bold text-foreground truncate flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-primary shrink-0" />
                     <span>Unknown EAN Scan</span>
                   </span>
-                  <div className="flex items-center justify-between mt-0.5 text-[10px] font-mono text-blue-700">
+                  <div className="flex items-center justify-between mt-0.5 text-xs text-primary">
                     <span className="truncate">8901063012480</span>
                     <span className="font-bold">Lookup</span>
                   </div>
@@ -771,18 +771,18 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         </div>
 
         {/* Modal Bottom Action Footer */}
-        <div className="px-4 py-2.5 bg-white border-t border-slate-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-            <Keyboard className="w-3.5 h-3.5 text-slate-400" />
+        <div className="px-4 py-2.5 bg-card border-t border-border flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Keyboard className="w-3.5 h-3.5 text-muted-foreground" />
             <span>USB/Bluetooth Barcode Readers are automatically detected</span>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer transition-all active:scale-95 shadow-2xs"
+            className="px-4 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-bold text-xs cursor-pointer transition-colors"
           >
-            Done
+            Close
           </button>
         </div>
       </div>

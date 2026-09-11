@@ -1,7 +1,25 @@
 import React, { useState } from 'react';
-import { Plus, X, Tag } from '../icons/faIcons';
+import { Tag } from 'lucide-react';
 import { BillItem } from '../types';
 import { GST_SLABS, calculateItemTaxSnapshot } from '../constants/taxRates';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface CustomItemModalProps {
   isOpen: boolean;
@@ -21,8 +39,6 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
   const [quantity, setQuantity] = useState('1');
   const [gstRate, setGstRate] = useState<string>('0');
   const [customGstRate, setCustomGstRate] = useState<string>('');
-
-  if (!isOpen) return null;
 
   const isCustom = gstRate === 'custom';
 
@@ -61,83 +77,84 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-sm border border-[#d4d4d8] shadow-2xl p-4 space-y-3 text-[#1c1b1d]">
-        <div className="flex justify-between items-center border-b border-[#d4d4d8] pb-2.5">
-          <div className="flex items-center gap-2">
-            <Tag className="w-4 h-4 text-[#18181b]" />
-            <h3 className="font-bold text-sm">Add Custom Item to Bill</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-[#77767b] hover:text-[#1c1b1d]"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <Tag className="size-4 text-foreground" />
+            <span>Add Custom Item to Bill</span>
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Enter item name, pricing, and tax details to add directly to the current ticket.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-2.5">
-          <div>
-            <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-              Item Name *
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="custom-item-name" className="text-xs font-medium">
+              Item Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="custom-item-name"
               type="text"
               placeholder="e.g. Special Thali / Extra Cheese"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs text-[#1c1b1d] focus:outline-hidden"
               autoFocus
+              required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-                Unit Price ({currencySymbol}) *
-              </label>
-              <input
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="custom-item-price" className="text-xs font-medium">
+                Unit Price ({currencySymbol}) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="custom-item-price"
                 type="number"
+                step="any"
+                min="0.01"
                 placeholder="0.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
+                required
               />
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-[#77767b] block mb-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="custom-item-qty" className="text-xs font-medium">
                 Quantity
-              </label>
-              <input
+              </Label>
+              <Input
+                id="custom-item-qty"
                 type="number"
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
               />
             </div>
           </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-[#77767b] block mb-1">
-              GST Slab (%) *
-            </label>
-            <select
-              value={gstRate}
-              onChange={(e) => setGstRate(e.target.value)}
-              required
-              className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1c1b1d] focus:outline-hidden"
-            >
-              {GST_SLABS.map((slab) => (
-                <option key={slab.label} value={slab.isCustom ? 'custom' : String(slab.rate)}>
-                  {slab.label}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-1.5">
+            <Label htmlFor="custom-item-gst" className="text-xs font-medium">
+              GST Slab (%) <span className="text-destructive">*</span>
+            </Label>
+            <Select value={gstRate} onValueChange={(val) => val && setGstRate(val)}>
+              <SelectTrigger id="custom-item-gst" className="w-full">
+                <SelectValue placeholder="Select GST rate" />
+              </SelectTrigger>
+              <SelectContent>
+                {GST_SLABS.map((slab) => (
+                  <SelectItem key={slab.label} value={slab.isCustom ? 'custom' : String(slab.rate)}>
+                    {slab.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {isCustom && (
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <input
+              <div className="mt-2 flex items-center gap-2">
+                <Input
                   type="number"
                   min="0"
                   max="100"
@@ -147,31 +164,29 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
                   onChange={(e) => setCustomGstRate(e.target.value)}
                   required
                   autoFocus
-                  className="w-full bg-[#fcf8fb] border border-[#d4d4d8] rounded-xl px-3 py-1 text-xs font-mono text-[#1c1b1d] focus:outline-hidden"
                 />
-                <span className="text-xs font-bold text-[#77767b] shrink-0">%</span>
+                <span className="text-xs font-semibold text-muted-foreground shrink-0">%</span>
               </div>
             )}
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <button
+          <DialogFooter className="pt-2 gap-2 sm:gap-2">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="flex-1 py-2 bg-[#f6f2f5] text-[#1c1b1d] rounded-xl text-xs font-bold border border-[#d4d4d8]"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="flex-1 py-2 bg-[#18181b] text-white rounded-xl text-xs font-bold hover:bg-black shadow-2xs"
             >
               Add to Bill
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
