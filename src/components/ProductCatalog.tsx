@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { CatalogItem, Category } from '../types';
+import { CatalogItem, Category, PackagingOption } from '../types';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { PackageOpen } from 'lucide-react';
@@ -13,7 +13,7 @@ export interface ProductCatalogProps {
   onSearchChange: (query: string) => void;
   currencySymbol?: string;
   itemQuantities?: Record<string, number>;
-  onSelectItem: (item: CatalogItem) => void;
+  onSelectItem: (item: CatalogItem, pack?: PackagingOption | null) => void;
   className?: string;
 }
 
@@ -44,13 +44,17 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       const matchesSearch =
         !q ||
         item.name.toLowerCase().includes(q) ||
-        (item.barcode && item.barcode.toLowerCase().includes(q)) ||
+        (item.barcode && item.barcode.toLowerCase() === cleanQ(q)) ||
         (item.sku && item.sku.toLowerCase().includes(q)) ||
         (item.category && item.category.toLowerCase().includes(q));
 
       return matchesCategory && matchesSearch;
     });
   }, [catalog, selectedCategory, searchQuery]);
+
+  function cleanQ(val: string) {
+    return val.trim();
+  }
 
   return (
     <div

@@ -9,6 +9,7 @@ import {
   Clock,
   User,
   ShoppingBag,
+  ShoppingCart,
   ArrowRightLeft,
   Layers,
   AlertCircle,

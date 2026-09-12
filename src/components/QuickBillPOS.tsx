@@ -269,7 +269,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           Tablet/Desktop (>=768px): Right Column (order-2, md:w-5/12 or md:col-span-5, sticky full-height with border-l)
           ======================================================================
         */}
-        <div className="order-1 md:order-2 w-full md:w-[38%] lg:w-[35%] h-[315px] sm:h-[335px] md:h-full flex flex-col min-h-0 border-b md:border-b-0 md:border-l border-border overflow-hidden bg-card shrink-0">
+        <div className="order-1 md:order-2 w-full md:w-[38%] lg:w-[35%] h-[345px] sm:h-[365px] md:h-full flex flex-col min-h-0 border-b md:border-b-0 md:border-l border-border overflow-hidden bg-card shrink-0">
           {/* Header Row: Current Bill & Bill #{displayBillNo} */}
           <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -290,10 +290,10 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
             </div>
           </div>
 
-          {/* Scrollable Items Stack (Internal Scroll Only - at least 4 items visible) */}
+          {/* Scrollable Items Stack (Internal Scroll Only - never push CartSummary off screen) */}
           <div
             ref={itemsContainerRef}
-            className="flex-1 min-h-[160px] overflow-y-auto overscroll-contain px-3 sm:px-3.5 divide-y divide-border bg-card scrollbar-thin"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-3.5 divide-y divide-border bg-card scrollbar-thin"
           >
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-2 text-muted-foreground">

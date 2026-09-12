@@ -125,10 +125,11 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
   const canViewCosts = isCostUnlocked || canViewCostPrice(staffRole, permissions);
   const canEditInventory = canAccessScreen(staffRole, 'categories-products');
 
-  const marginPercent =
-    selectedProduct && selectedProduct.costPrice && selectedProduct.costPrice > 0
-      ? (((selectedProduct.price - selectedProduct.costPrice) / selectedProduct.price) * 100).toFixed(1)
-      : null;
+  const productCost = selectedProduct?.costPrice || 0;
+  const productPrice = selectedProduct?.price || 0;
+  const profitPerUnit = productCost > 0 ? productPrice - productCost : 0;
+  const profitMarginPercent =
+    productCost > 0 && productPrice > 0 ? ((productPrice - productCost) / productPrice) * 100 : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">

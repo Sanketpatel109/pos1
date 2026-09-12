@@ -17,7 +17,7 @@ import {
   Truck,
   Printer,
 } from 'lucide-react';
-import { Category, CatalogItem, StaffRole, StorePermissions } from '../types';
+import { Category, CatalogItem, StaffRole, StorePermissions, PackagingOption } from '../types';
 import { canViewCostPrice } from '../utils/permissions';
 import { AddProductModal } from './AddProductModal';
 import { Button } from '@/components/ui/button';
@@ -135,6 +135,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
     lowStockThreshold: number;
     unit: string;
     costPrice?: number;
+    packagingOptions?: PackagingOption[];
   }) => {
     if (editingProduct && productData.id) {
       onUpdateProduct({
@@ -154,6 +155,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         lowStockThreshold: productData.lowStockThreshold,
         unit: productData.unit,
         costPrice: productData.costPrice,
+        packagingOptions: productData.packagingOptions,
       });
     }
     setIsProductModalOpen(false);

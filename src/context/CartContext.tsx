@@ -18,6 +18,9 @@ export interface CartContextType {
           quantity?: number;
           gstRate?: number;
           note?: string;
+          selectedPackName?: string;
+          multiplier?: number;
+          barcode?: string;
         }
   ) => void;
   removeItem: (id: string) => void;
@@ -115,6 +118,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({
             quantity?: number;
             gstRate?: number;
             note?: string;
+            selectedPackName?: string;
+            multiplier?: number;
+            barcode?: string;
           }
     ) => {
       const name = item.name;
@@ -127,6 +133,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       const qtyToAdd =
         'quantity' in item && typeof item.quantity === 'number' ? item.quantity : 1;
       const note = 'note' in item ? item.note : undefined;
+      const selectedPackName = 'selectedPackName' in item ? item.selectedPackName : undefined;
+      const multiplier =
+        'multiplier' in item && typeof item.multiplier === 'number'
+          ? item.multiplier
+          : 1;
+      const barcode = 'barcode' in item ? item.barcode : undefined;
       const itemId =
         'itemId' in item
           ? item.itemId
@@ -142,7 +154,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       setCurrentBillItems((prev) => {
         const isAdHocKeypad = item.id && item.id.startsWith('qb-');
         const existingIndex = !isAdHocKeypad
-          ? prev.findIndex((i) => i.name === name && (note ? i.note === note : true))
+          ? prev.findIndex(
+              (i) =>
+                i.name === name &&
+                (i.selectedPackName || undefined) === (selectedPackName || undefined) &&
+                (note ? i.note === note : true)
+            )
           : -1;
 
         if (existingIndex > -1) {
@@ -180,6 +197,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({
           name: name,
           unitPrice: unitPrice,
           quantity: qtyToAdd,
+          selectedPackName: selectedPackName,
+          multiplier: multiplier,
+          barcode: barcode,
           note: note,
           gstRate: snapshot.gstRate,
           taxableAmount: snapshot.taxableAmount,

@@ -478,10 +478,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       */}
       <div
         id="payment-modal-container"
-        className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg bg-white sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-zinc-200"
+        className="w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-lg bg-card text-card-foreground sm:rounded-xl shadow-xl flex flex-col overflow-hidden border border-border"
       >
         {/* ================= HEADER (56px) ================= */}
-        <div className="h-14 px-4 bg-white border-b border-zinc-100 flex items-center justify-between shrink-0">
+        <div className="h-14 px-4 bg-card border-b border-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             {!isSuccess && (
               <button

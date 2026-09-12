@@ -18,7 +18,8 @@ import {
   CheckCheck,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { CatalogItem, BillItem } from '../types';
+import { CatalogItem, BillItem, PackagingOption } from '../types';
+import { resolveBarcodeMatch } from '../utils/barcodeResolver';
 import { posSound } from '../utils/sound';
 
 export type ScannerMode = 'add-to-bill' | 'price-check' | 'search';
@@ -30,13 +31,15 @@ export interface BarcodeScannerModalProps {
   initialMode?: ScannerMode;
   mode?: ScannerMode;
   onClose: () => void;
-  onItemScannedAndAdd?: (item: CatalogItem) => void;
-  onAddScannedItem?: (item: CatalogItem) => void;
+  onItemScannedAndAdd?: (item: CatalogItem, pack?: PackagingOption | null) => void;
+  onAddScannedItem?: (item: CatalogItem, pack?: PackagingOption | null) => void;
   onItemScannedAndSearch?: (item: CatalogItem) => void;
   onSearchItem?: (item: CatalogItem) => void;
   onRegisterNewBarcode?: (scannedCode: string) => void;
   onRegisterBarcode?: (scannedCode: string) => void;
   onAddCustomBillItem?: (item: BillItem) => void;
+  billItemCount?: number;
+  billTotal?: number;
 }
 
 export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
@@ -53,6 +56,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   onRegisterNewBarcode,
   onRegisterBarcode,
   onAddCustomBillItem,
+  billItemCount = 0,
+  billTotal = 0,
 }) => {
   const activeInitialMode = propMode || initialMode;
   const [currentMode, setCurrentMode] = useState<ScannerMode>(activeInitialMode);
@@ -67,6 +72,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [lastScannedResult, setLastScannedResult] = useState<{
     code: string;
     item: CatalogItem | null;
+    displayName?: string;
+    packName?: string;
+    price?: number;
     timestamp: number;
     actionTaken: string;
   } | null>(null);
@@ -95,28 +103,16 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }
   }, [isOpen, propMode, initialMode]);
 
-  // Lookup helper function
-  const findProductByCode = (code: string): CatalogItem | undefined => {
-    const clean = code.trim().toLowerCase();
-    return catalog.find(
-      (item) =>
-        (item.barcode && item.barcode.toLowerCase() === clean) ||
-        (item.sku && item.sku.toLowerCase() === clean) ||
-        item.id.toLowerCase() === clean ||
-        item.name.toLowerCase() === clean
-    );
-  };
-
   // Main Handler when a barcode/QR code is detected
   const handleCodeDetected = (decodedText: string) => {
     const cleanText = decodedText.trim();
     if (!cleanText) return;
 
     const now = Date.now();
-    // Debounce duplicate scans within 1.5 seconds if identical
+    // Debounce duplicate scans within 1.2 seconds if identical
     if (
       cleanText === lastScannedCodeRef.current &&
-      now - lastScannedTimeRef.current < 1500
+      now - lastScannedTimeRef.current < 1200
     ) {
       return;
     }
@@ -124,33 +120,46 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     lastScannedCodeRef.current = cleanText;
     lastScannedTimeRef.current = now;
 
-    const matchedItem = findProductByCode(cleanText);
+    const match = resolveBarcodeMatch(cleanText, catalog);
 
-    if (matchedItem) {
+    if (match) {
       posSound.playBeep();
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate(60);
+        } catch {}
+      }
 
       if (currentMode === 'add-to-bill') {
         if (addItemCallback) {
-          addItemCallback(matchedItem);
+          addItemCallback(match.item, match.pack);
         }
         setLastScannedResult({
           code: cleanText,
-          item: matchedItem,
+          item: match.item,
+          displayName: match.displayName,
+          packName: match.packName,
+          price: match.unitPrice,
           timestamp: now,
-          actionTaken: 'Added 1 unit to Current Bill',
+          actionTaken: match.packName
+            ? `Added 1x ${match.displayName} (${currencySymbol}${match.unitPrice}) to Bill`
+            : `Added 1 unit of ${match.item.name} (${currencySymbol}${match.unitPrice}) to Bill`,
         });
       } else if (currentMode === 'search') {
         if (searchItemCallback) {
-          searchItemCallback(matchedItem);
+          searchItemCallback(match.item);
           onClose();
         }
       } else {
         // Price check mode
         setLastScannedResult({
           code: cleanText,
-          item: matchedItem,
+          item: match.item,
+          displayName: match.displayName,
+          packName: match.packName,
+          price: match.unitPrice,
           timestamp: now,
-          actionTaken: 'Price & stock verified',
+          actionTaken: `${match.displayName} - ${currencySymbol}${match.unitPrice.toFixed(2)} (Stock: ${match.item.stock ?? 'N/A'})`,
         });
       }
     } else {
@@ -160,7 +169,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         code: cleanText,
         item: null,
         timestamp: now,
-        actionTaken: 'Code scanned (not in catalog)',
+        actionTaken: `Unrecognized Barcode: ${cleanText}`,
       });
     }
   };
@@ -211,13 +220,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       scannerRef.current = html5QrCode;
 
       const scanConfig = {
-        fps: 15,
+        fps: 20,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const edge = Math.floor(minEdge * 0.75);
+          const w = Math.min(Math.floor(viewfinderWidth * 0.88), 340);
+          const h = Math.min(Math.floor(viewfinderHeight * 0.65), 200);
           return {
-            width: Math.max(edge, 180),
-            height: Math.max(Math.floor(edge * 0.75), 140),
+            width: Math.max(w, 220),
+            height: Math.max(h, 140),
           };
         },
       };
@@ -393,8 +402,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[94vh] text-slate-900">
         {/* Modal Top Header */}
         <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2.5">
@@ -771,19 +780,32 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         </div>
 
         {/* Modal Bottom Action Footer */}
-        <div className="px-4 py-2.5 bg-card border-t border-border flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Keyboard className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>USB/Bluetooth Barcode Readers are automatically detected</span>
+        <div className="p-3 sm:px-4 sm:py-2.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+          <div className="flex items-center justify-between sm:justify-start gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <Keyboard className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
+              <span className="hidden sm:inline">Laser & Bluetooth barcode guns auto-detected</span>
+            </div>
+            {billItemCount > 0 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold text-xs">
+                <span>In Bill:</span>
+                <span className="font-extrabold">{billItemCount} items • {currencySymbol}{billTotal.toFixed(2)}</span>
+              </span>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-bold text-xs cursor-pointer transition-colors"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="btn-scanner-done"
+              onClick={onClose}
+              className="w-full sm:w-auto px-5 py-2.5 sm:py-1.5 rounded-xl sm:rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs sm:text-sm cursor-pointer shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>Done Scanning</span>
+              <span className="opacity-75">•</span>
+              <span>Back to Bill</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

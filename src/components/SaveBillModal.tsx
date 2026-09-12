@@ -349,15 +349,15 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl w-full max-w-md border border-zinc-200 shadow-xl overflow-hidden flex flex-col max-h-[92vh] text-zinc-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-card text-card-foreground rounded-xl w-full max-w-md border border-border shadow-xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="px-5 py-3.5 border-b border-zinc-200/80 flex items-center justify-between bg-white">
+        <div className="px-5 py-3.5 border-b border-border flex items-center justify-between bg-card">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
               <Receipt className="w-4 h-4" />
             </div>
-            <h2 className="font-bold text-sm text-zinc-900">Finalize & Pay Bill</h2>
+            <h2 className="font-bold text-sm text-foreground">Finalize & Pay Bill</h2>
           </div>
           <button
             onClick={onClose}
@@ -1115,10 +1115,10 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
           onClick={() => setIsQrZoomed(false)}
         >
           <div
-            className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-150"
+            className="bg-card text-card-foreground rounded-xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl border border-border animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center pb-2 border-b border-zinc-100">
+            <div className="flex justify-between items-center pb-2 border-b border-border">
               <div className="text-left">
                 <h3 className="font-black text-sm text-zinc-900">{payeeName}</h3>
                 <p className="text-[11px] text-zinc-500 ">UPI: {currentUpiId}</p>

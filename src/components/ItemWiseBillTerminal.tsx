@@ -3,7 +3,7 @@ import {
   Scale,
   X,
 } from 'lucide-react';
-import { CatalogItem, Category, BillItem } from '../types';
+import { CatalogItem, Category, BillItem, PackagingOption } from '../types';
 import { hardware } from '../utils/hardware';
 import { ProductCatalog } from './ProductCatalog';
 import { CurrentBill } from './CurrentBill';
@@ -17,7 +17,7 @@ interface ItemWiseBillTerminalProps {
   orderNumber?: number;
   heldOrdersCount?: number;
   taxRate?: number;
-  onAddItem?: (item: CatalogItem) => void;
+  onAddItem?: (item: CatalogItem, pack?: PackagingOption | null) => void;
   onUpdateQuantity?: (id: string, delta: number) => void;
   onUpdateItemRate?: (id: string, newRate: number) => void;
   canOverridePrice?: boolean;
@@ -52,6 +52,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   onOpenHeldOrders,
   onPrintBill,
   onSaveBill,
+  onOpenScanner,
   onOpenPriceCheck,
 }) => {
   const {
@@ -114,15 +115,34 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
     setScaleWeight(kg);
   };
 
-  // Enhanced onAddItem that checks for weight scale
-  const handleItemClick = (item: CatalogItem) => {
-    if (item.unit === 'kg' && scaleWeight > 0) {
-      onAddItem({
-        ...item,
-        price: item.price,
-      });
+  // Enhanced onAddItem that checks for packaging options & weight scale
+  const handleItemClick = (item: CatalogItem, pack?: PackagingOption | null) => {
+    if (pack) {
+      if (propOnAddItem) {
+        propOnAddItem(item, pack);
+      } else {
+        cartAddItem({
+          id: item.id,
+          itemId: item.id,
+          name: item.name,
+          unitPrice: pack.sellingPrice,
+          price: pack.sellingPrice,
+          quantity: 1,
+          selectedPackName: pack.packName,
+          multiplier: pack.multiplier || 1,
+          barcode: pack.barcode,
+          gstRate: item.gstRate,
+        });
+      }
     } else {
-      onAddItem(item);
+      if (item.unit === 'kg' && scaleWeight > 0) {
+        onAddItem({
+          ...item,
+          price: item.price,
+        });
+      } else {
+        onAddItem(item);
+      }
     }
   };
 

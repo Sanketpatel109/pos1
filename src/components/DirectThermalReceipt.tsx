@@ -41,6 +41,12 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
     taxSnapshotTotals.totalSgst > 0 ? taxSnapshotTotals.totalSgst : totalTax / 2;
   const taxRate = order.taxRate || 0;
 
+  const totalBaseUnitsSold = order.items.reduce(
+    (sum, item) => sum + item.quantity * (item.multiplier || 1),
+    0
+  );
+  const totalPacksSold = order.items.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <div
       id="direct-thermal-receipt"
@@ -90,9 +96,7 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-600">Customer:</span>
-          <span className="font-semibold truncate max-w-[170px]">
-            {order.customerName || 'Walk-in Customer'}
-          </span>
+          <span>{order.customerName || 'Walk-in'}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-zinc-600">Payment Mode:</span>
@@ -116,13 +120,20 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
         </div>
 
         {order.items.map((item, idx) => (
-          <div key={idx} className="grid grid-cols-12 text-[10px] py-0.5">
-            <span className="col-span-6 truncate font-medium">{item.name}</span>
-            <span className="col-span-2 text-center font-semibold">{item.quantity}</span>
-            <span className="col-span-2 text-right">{item.unitPrice.toFixed(0)}</span>
-            <span className="col-span-2 text-right font-bold">
-              {(item.unitPrice * item.quantity).toFixed(0)}
-            </span>
+          <div key={idx} className="py-0.5 border-b border-dotted border-zinc-200 last:border-0">
+            <div className="grid grid-cols-12 text-[10px]">
+              <span className="col-span-6 truncate font-medium">{item.name}</span>
+              <span className="col-span-2 text-center font-semibold">{item.quantity}</span>
+              <span className="col-span-2 text-right">{item.unitPrice.toFixed(0)}</span>
+              <span className="col-span-2 text-right font-bold">
+                {(item.unitPrice * item.quantity).toFixed(0)}
+              </span>
+            </div>
+            {item.selectedPackName && (
+              <div className="text-[8.5px] text-zinc-600 pl-1 font-mono">
+                * {item.selectedPackName} (@ {currencySymbol}{(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -170,6 +181,13 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
           <span>GRAND TOTAL:</span>
           <span>{currencySymbol}{order.total.toFixed(2)}</span>
         </div>
+
+        {totalBaseUnitsSold !== totalPacksSold && (
+          <div className="flex justify-between text-[9px] text-zinc-600 pt-0.5">
+            <span>Total Base Units:</span>
+            <span className="font-semibold">{totalBaseUnitsSold} units</span>
+          </div>
+        )}
 
         {/* Cash Tender & Change Info */}
         {order.paymentMethod === 'CASH' && order.tenderedAmount !== undefined && order.tenderedAmount > 0 && (

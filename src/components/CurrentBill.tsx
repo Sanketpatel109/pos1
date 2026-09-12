@@ -174,6 +174,11 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
                   <h3 className="text-sm font-medium text-foreground truncate">
                     {item.name}
                   </h3>
+                  {item.selectedPackName && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0 font-semibold bg-primary/10 text-primary border-primary/20">
+                      {item.selectedPackName}
+                    </Badge>
+                  )}
                   {item.note && (
                     <Badge variant="outline" className="text-xs px-1 py-0 h-4 shrink-0">
                       {item.note}

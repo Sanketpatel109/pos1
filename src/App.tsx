@@ -23,7 +23,9 @@ import {
   InwardStockEntry,
   StorePermissions,
   DEFAULT_STORE_PERMISSIONS,
+  PackagingOption,
 } from './types';
+import { resolveBarcodeMatch } from './utils/barcodeResolver';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ItemWiseBillTerminal } from './components/ItemWiseBillTerminal';
@@ -62,7 +64,7 @@ import {
   ROLE_DEFINITIONS,
 } from './utils/permissions';
 import { hardware } from './utils/hardware';
-import { Zap, PauseCircle, CheckCircle2, Printer, X } from 'lucide-react';
+import { Zap, PauseCircle, CheckCircle2, Printer, X, Camera } from 'lucide-react';
 import { posSound } from './utils/sound';
 import { auth, onAuthStateChanged, User } from './firebase';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
@@ -295,7 +297,20 @@ export default function App() {
     });
 
     const unsubCatalog = listenToLiveCatalog((items) => {
-      if (items.length > 0) setCatalog(items);
+      if (items.length > 0) {
+        const merged = items.map((rem) => {
+          const init = INITIAL_CATALOG.find(
+            (ic) => ic.id === rem.id || ic.name.toLowerCase() === rem.name.toLowerCase()
+          );
+          return {
+            ...rem,
+            packagingOptions: rem.packagingOptions || init?.packagingOptions,
+          };
+        });
+        const existingIds = new Set(items.map((i) => i.id));
+        const missingInitial = INITIAL_CATALOG.filter((ic) => !existingIds.has(ic.id));
+        setCatalog([...merged, ...missingInitial]);
+      }
     });
 
     const unsubCategories = listenToLiveCategories((cats) => {
@@ -382,8 +397,27 @@ export default function App() {
 
   // ITEM-WISE BILLING HANDLERS
   const handleAddItem = (item: CatalogItem) => {
+    handleAddItemWithPack(item, null);
+  };
+
+  const handleAddItemWithPack = (item: CatalogItem, pack?: PackagingOption | null) => {
     playSfx('add');
-    cartAddItem(item);
+    if (pack) {
+      cartAddItem({
+        id: item.id,
+        itemId: item.id,
+        name: item.name,
+        unitPrice: pack.sellingPrice,
+        price: pack.sellingPrice,
+        quantity: 1,
+        selectedPackName: pack.packName,
+        multiplier: pack.multiplier || 1,
+        barcode: pack.barcode,
+        gstRate: item.gstRate,
+      });
+    } else {
+      cartAddItem(item);
+    }
   };
 
   // Hardware Laser Barcode Scanner Gun Driver (USB / Bluetooth HID Keyboard Wedge)
@@ -391,25 +425,26 @@ export default function App() {
     const unsubscribe = hardware.onLaserScan((scannedCode) => {
       if (isPriceCheckOpen) return;
 
-      const clean = scannedCode.trim().toLowerCase();
-      const match = catalog.find(
-        (item) =>
-          (item.barcode && item.barcode.toLowerCase() === clean) ||
-          (item.sku && item.sku.toLowerCase() === clean) ||
-          item.name.toLowerCase() === clean
-      );
+      const match = resolveBarcodeMatch(scannedCode, catalog);
 
       if (match) {
         posSound.playBeep();
-        handleAddItem(match);
+        handleAddItemWithPack(match.item, match.pack);
 
-        const existingInCart = currentBillItems.find((b) => b.name === match.name);
+        const existingInCart = currentBillItems.find(
+          (b) =>
+            b.name === match.item.name &&
+            (b.selectedPackName || undefined) === (match.packName || undefined)
+        );
         const currentCartQty = existingInCart ? existingInCart.quantity + 1 : 1;
 
         setLaserScanNotification({
-          productName: match.name,
-          price: match.price,
-          stock: match.stock !== undefined ? Math.max(0, match.stock - currentCartQty) : undefined,
+          productName: match.displayName,
+          price: match.unitPrice,
+          stock:
+            match.item.stock !== undefined
+              ? Math.max(0, match.item.stock - currentCartQty * match.multiplier)
+              : undefined,
           cartQty: currentCartQty,
         });
       } else {
@@ -742,10 +777,11 @@ export default function App() {
       ]);
     }
 
-    // Auto-decrement inventory stock from catalog in real time
+    // Auto-decrement inventory stock from catalog in real time (taking multipliers into account)
     const stockDeductions = new Map<string, number>();
     newOrder.items.forEach((item) => {
-      stockDeductions.set(item.name, (stockDeductions.get(item.name) || 0) + item.quantity);
+      const unitsToDeduct = item.quantity * (item.multiplier || 1);
+      stockDeductions.set(item.name, (stockDeductions.get(item.name) || 0) + unitsToDeduct);
     });
 
     setCatalog((prevCatalog) => {
@@ -1441,7 +1477,7 @@ export default function App() {
               orderNumber={orderNumber}
               heldOrdersCount={heldOrders.length}
               taxRate={shopSettings.taxRate}
-              onAddItem={handleAddItem}
+              onAddItem={handleAddItemWithPack}
               onUpdateQuantity={handleUpdateQuantity}
               onUpdateItemRate={handleUpdateItemRate}
               canOverridePrice={canStaffOverridePrice(activeStaff?.role, shopSettings.permissions)}
@@ -1625,9 +1661,11 @@ export default function App() {
         mode={scannerMode}
         catalog={catalog}
         currencySymbol={shopSettings.currencySymbol}
+        billItemCount={currentBillItems.reduce((acc, item) => acc + item.quantity, 0)}
+        billTotal={currentBillItems.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0)}
         onClose={() => setIsScannerOpen(false)}
-        onAddScannedItem={(item) => {
-          handleAddItem(item);
+        onAddScannedItem={(item, pack) => {
+          handleAddItemWithPack(item, pack);
         }}
         onSearchItem={(item) => {
           setActiveScreen('item-wise');
@@ -2025,6 +2063,8 @@ export default function App() {
           )}
         </div>
       )}
+
+
 
       {/* Real-Time Connectivity Indicator */}
       <OfflineIndicator />

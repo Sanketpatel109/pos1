@@ -1,3 +1,12 @@
+export interface PackagingOption {
+  id: string;              // e.g., "pack_6"
+  packName: string;        // e.g., "Box of 6", "Carton of 12"
+  barcode: string;         // Dedicated manufacturer EAN/Code-128
+  multiplier: number;      // Number of base units (e.g., 6, 12)
+  sellingPrice: number;    // Pack price (e.g., ₹110 vs ₹120 standard)
+  isDefault?: boolean;     // Set true for standard single piece
+}
+
 export interface CatalogItem {
   id: string;
   name: string;
@@ -13,6 +22,7 @@ export interface CatalogItem {
   unit?: string; // 'pcs' | 'kg' | 'g' | 'pack' | 'ltr'
   costPrice?: number;
   gstRate?: number;
+  packagingOptions?: PackagingOption[];
 }
 
 export interface InwardStockItem {
@@ -64,6 +74,9 @@ export interface BillItem {
   name: string;
   unitPrice: number;
   quantity: number;
+  selectedPackName?: string; // e.g. "Box of 6"
+  multiplier?: number;        // e.g. 6 (defaults to 1)
+  barcode?: string;           // Barcode scanned or assigned
   gstRate?: number;
   taxableAmount?: number; // Snapshot of taxable value (unitPrice * quantity)
   cgst?: number;          // Snapshot of CGST amount

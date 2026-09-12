@@ -10,6 +10,7 @@ export interface CategoryBarProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   placeholder?: string;
+  onOpenScanner?: () => void;
 }
 
 export const CategoryBar: React.FC<CategoryBarProps> = ({

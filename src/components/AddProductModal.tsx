@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Upload, Trash2, RefreshCw, X, Loader2, Check } from 'lucide-react';
-import { CatalogItem, Category } from '../types';
+import { Camera, Upload, Trash2, RefreshCw, X, Loader2, Check, Layers, Plus, Sparkles, Scale, CheckCircle2, Package } from 'lucide-react';
+import { CatalogItem, Category, PackagingOption } from '../types';
 import { GST_SLABS } from '../constants/taxRates';
+import { FieldBarcodeScannerModal } from './FieldBarcodeScannerModal';
+import { lookupBarcodeDetails } from '../services/barcodeLookup';
 
 export interface AddProductModalProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ export interface AddProductModalProps {
     lowStockThreshold: number;
     unit: string;
     costPrice?: number;
+    packagingOptions?: PackagingOption[];
   }) => void;
 }
 
@@ -95,6 +98,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [productType, setProductType] = useState<'packaged' | 'loose'>('packaged');
   const [prodName, setProdName] = useState('');
   const [prodCategory, setProdCategory] = useState('Fast Food');
   const [prodPrice, setProdPrice] = useState('');
@@ -107,9 +111,113 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [prodThreshold, setProdThreshold] = useState('5');
   const [prodUnit, setProdUnit] = useState('pcs');
   const [prodCostPrice, setProdCostPrice] = useState('');
+  const [packagingOptions, setPackagingOptions] = useState<PackagingOption[]>([]);
 
   const [isCompressing, setIsCompressing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [fieldScannerTarget, setFieldScannerTarget] = useState<{
+    type: 'primary' | 'pack';
+    packId?: string;
+    label?: string;
+  } | null>(null);
+  const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
+  const [lookupFeedback, setLookupFeedback] = useState<{
+    message: string;
+    isMultiPack?: boolean;
+    packName?: string;
+  } | null>(null);
+
+  // Auto-lookup barcode details from registry
+  const handleProcessBarcodeLookup = async (barcodeToLookup: string) => {
+    const code = barcodeToLookup.trim();
+    if (!code || code.length < 4) return;
+    setLookupFeedback(null);
+    setIsLookingUpBarcode(true);
+
+    try {
+      const result = await lookupBarcodeDetails(code, categories);
+      if (result) {
+        if (!prodName || !editingProduct) {
+          setProdName(result.name);
+        }
+        if (result.category) {
+          setProdCategory(result.category);
+        }
+        if (result.imageUrl && (!prodImageUrl || !editingProduct)) {
+          setProdImageUrl(result.imageUrl);
+        }
+        if (result.unit) {
+          setProdUnit(result.unit);
+        }
+
+        // Multi-pack packaging detection
+        if (result.packaging?.isMultiPack && result.packaging.multiplier > 1) {
+          const exists = packagingOptions.some((p) => p.multiplier === result.packaging!.multiplier);
+          if (!exists) {
+            const newPack: PackagingOption = {
+              id: `pack_${Date.now()}`,
+              packName: result.packaging.packName,
+              barcode: code,
+              multiplier: result.packaging.multiplier,
+              sellingPrice: 0,
+            };
+            setPackagingOptions((prev) => [...prev, newPack]);
+          }
+
+          setLookupFeedback({
+            message: `Found "${result.name}" • Auto-created ${result.packaging.packName}!`,
+            isMultiPack: true,
+            packName: result.packaging.packName,
+          });
+        } else {
+          setLookupFeedback({
+            message: `Found "${result.name}" • Product details auto-filled!`,
+            isMultiPack: false,
+          });
+        }
+      } else {
+        setLookupFeedback({
+          message: `Barcode ${code} recorded. Enter product details below.`,
+          isMultiPack: false,
+        });
+      }
+    } catch (err) {
+      console.warn('Barcode lookup failed:', err);
+    } finally {
+      setIsLookingUpBarcode(false);
+    }
+  };
+
+  // Clean Mode Switcher: Packaged vs Loose / By Weight
+  const handleSwitchProductType = (type: 'packaged' | 'loose') => {
+    setProductType(type);
+    setLookupFeedback(null);
+    if (type === 'loose') {
+      if (prodUnit === 'pcs' || prodUnit === 'box' || prodUnit === 'pack') {
+        setProdUnit('kg');
+      }
+      setProdBarcode('');
+      setPackagingOptions([]);
+      if (!prodSku || prodSku.startsWith('EAN-') || !prodSku.startsWith('PLU-')) {
+        setProdSku(`PLU-${Math.floor(1000 + Math.random() * 9000)}`);
+      }
+      const produceCategory = categories.find((c) => /produce|veg|fruit|grocer/i.test(c.name));
+      if (produceCategory && (!editingProduct || prodCategory === 'Fast Food')) {
+        setProdCategory(produceCategory.name);
+      }
+    } else {
+      if (prodUnit === 'kg' || prodUnit === 'gm') {
+        setProdUnit('pcs');
+      }
+      if (prodSku.startsWith('PLU-') || prodSku.startsWith('LOOSE-')) {
+        setProdSku('');
+      }
+    }
+  };
+
+  const generateNewPlu = () => {
+    setProdSku(`PLU-${Math.floor(1000 + Math.random() * 9000)}`);
+  };
 
   const isCustom = prodGstRate === 'custom';
 
@@ -118,6 +226,13 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     if (!isOpen) return;
 
     if (editingProduct) {
+      const isLoose =
+        editingProduct.unit === 'kg' ||
+        editingProduct.unit === 'gm' ||
+        editingProduct.unit === 'ltr' ||
+        Boolean(editingProduct.sku && (editingProduct.sku.startsWith('PLU-') || editingProduct.sku.startsWith('LOOSE-')));
+      setProductType(isLoose ? 'loose' : 'packaged');
+
       setProdName(editingProduct.name);
       setProdCategory(editingProduct.category);
       setProdPrice(String(editingProduct.price));
@@ -137,9 +252,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       setProdImageUrl(editingProduct.image || '');
       setProdStock(String(editingProduct.stock ?? 10));
       setProdThreshold(String(editingProduct.lowStockThreshold ?? 5));
-      setProdUnit(editingProduct.unit || 'pcs');
+      setProdUnit(editingProduct.unit || (isLoose ? 'kg' : 'pcs'));
       setProdCostPrice(editingProduct.costPrice ? String(editingProduct.costPrice) : '');
+      setPackagingOptions(
+        editingProduct.packagingOptions
+          ? JSON.parse(JSON.stringify(editingProduct.packagingOptions))
+          : []
+      );
     } else {
+      setProductType('packaged');
       setProdName('');
       const defaultCategory =
         categories.find((c) => c.name !== 'ALL' && c.name !== 'All Items')?.name || 'Fast Food';
@@ -154,6 +275,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       setProdThreshold('5');
       setProdUnit('pcs');
       setProdCostPrice('');
+      setPackagingOptions([]);
     }
     setIsCompressing(false);
     setIsDragOver(false);
@@ -206,11 +328,34 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     setIsDragOver(false);
   };
 
+  const handleAddPackagingRow = () => {
+    setPackagingOptions((prev) => [
+      ...prev,
+      {
+        id: `pack_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        packName: '',
+        multiplier: 6,
+        barcode: '',
+        sellingPrice: 0,
+      },
+    ]);
+  };
+
+  const handleUpdatePackagingRow = (id: string, field: keyof PackagingOption, val: any) => {
+    setPackagingOptions((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, [field]: val } : p))
+    );
+  };
+
+  const handleRemovePackagingRow = (id: string) => {
+    setPackagingOptions((prev) => prev.filter((p) => p.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const priceNum = parseFloat(prodPrice);
-    if (!prodName.trim() || isNaN(priceNum) || priceNum < 0) return;
+    if (!prodName.trim()) return;
 
+    const priceNum = parseFloat(prodPrice) || 0;
     const stockNum = parseInt(prodStock, 10) || 0;
     const threshNum = parseInt(prodThreshold, 10) || 5;
     const costNum = parseFloat(prodCostPrice) || undefined;
@@ -218,46 +363,127 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       ? parseFloat(customGstRate) || 0
       : parseFloat(prodGstRate) || 0;
 
+    const validPackOptions = productType === 'packaged'
+      ? packagingOptions
+          .filter((p) => p.packName.trim() && p.multiplier > 0 && p.sellingPrice > 0)
+          .map((p) => ({
+            ...p,
+            packName: p.packName.trim(),
+            barcode: p.barcode ? p.barcode.trim() : '',
+          }))
+      : [];
+
     onSaveProduct({
       id: editingProduct ? editingProduct.id : undefined,
       name: prodName.trim(),
       category: prodCategory,
       price: priceNum,
       gstRate: gstRateNum,
-      barcode: prodBarcode.trim() || undefined,
-      sku: prodSku.trim() || undefined,
+      barcode: productType === 'packaged' ? (prodBarcode.trim() || undefined) : undefined,
+      sku: prodSku.trim() || (productType === 'loose' ? `PLU-${Math.floor(1000 + Math.random() * 9000)}` : undefined),
       image: prodImageUrl.trim() || undefined,
       stock: stockNum,
       lowStockThreshold: threshNum,
       unit: prodUnit,
       costPrice: costNum,
+      packagingOptions: validPackOptions.length > 0 ? validPackOptions : undefined,
     });
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-zinc-950/40 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-sm sm:max-w-md border border-zinc-200 shadow-2xl p-5 space-y-3.5 my-auto overflow-hidden">
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-          <h3 className="font-bold text-sm text-zinc-900">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-card text-card-foreground rounded-xl w-full max-w-sm sm:max-w-lg border border-border shadow-xl p-5 space-y-3.5 my-auto overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
+          <h3 className="font-bold text-sm text-foreground">
             {editingProduct ? 'Edit Product' : 'Add New Product'}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-xl hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto pr-1 flex-1">
+          {/* Segmented Mode Selector: Packaged Goods vs Loose / By Weight */}
+          <div className="p-1 bg-zinc-100 rounded-2xl border border-zinc-200/90 grid grid-cols-2 gap-1 text-xs">
+            <button
+              type="button"
+              id="tab-type-packaged"
+              onClick={() => handleSwitchProductType('packaged')}
+              className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all cursor-pointer ${
+                productType === 'packaged'
+                  ? 'bg-white text-zinc-900 shadow-xs border border-zinc-200/80'
+                  : 'text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              <Package className={`w-4 h-4 ${productType === 'packaged' ? 'text-blue-600' : 'text-zinc-400'}`} />
+              <span>Packaged Item</span>
+            </button>
+
+            <button
+              type="button"
+              id="tab-type-loose"
+              onClick={() => handleSwitchProductType('loose')}
+              className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all cursor-pointer ${
+                productType === 'loose'
+                  ? 'bg-white text-emerald-950 shadow-xs border border-emerald-200'
+                  : 'text-zinc-500 hover:text-zinc-800'
+              }`}
+            >
+              <Scale className={`w-4 h-4 ${productType === 'loose' ? 'text-emerald-600' : 'text-zinc-400'}`} />
+              <span>Loose / By Weight</span>
+            </button>
+          </div>
+
+          {/* Quick Scan Action (Only for Packaged Items) */}
+          {productType === 'packaged' && !editingProduct && (
+            <button
+              type="button"
+              id="btn-quick-scan-product"
+              onClick={() => setFieldScannerTarget({ type: 'primary', label: 'New Product' })}
+              className="w-full py-2 px-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs text-xs active:scale-[0.99]"
+            >
+              <Camera className="w-4 h-4 text-blue-600" />
+              <span>Scan Barcode to Auto-Fill Name & Details</span>
+            </button>
+          )}
+
+          {/* Loose Produce Unit Selector Bar (Only for Loose Items) */}
+          {productType === 'loose' && (
+            <div className="p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex items-center justify-between gap-2 text-xs">
+              <span className="text-[11px] font-medium text-emerald-900 flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Sold by weight/volume:</span>
+              </span>
+              <div className="flex gap-1.5">
+                {(['kg', 'gm', 'ltr', 'pcs'] as const).map((unitOpt) => (
+                  <button
+                    key={unitOpt}
+                    type="button"
+                    onClick={() => setProdUnit(unitOpt)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      prodUnit === unitOpt
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                    }`}
+                  >
+                    {unitOpt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              Product Name *
+              {productType === 'loose' ? 'Item Name *' : 'Product Name *'}
             </label>
             <input
               type="text"
-              placeholder="e.g. Paneer Tikka Burger"
+              placeholder={productType === 'loose' ? 'e.g. Fresh Red Onions, Organic Apples' : 'e.g. Coca-Cola 330ml Can, Paneer Tikka Burger'}
               value={prodName}
               onChange={(e) => setProdName(e.target.value)}
               className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all"
@@ -287,7 +513,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
           <div>
             <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              Unit Price ({currencySymbol}) *
+              {productType === 'loose' ? `Price per ${prodUnit} (${currencySymbol}) *` : `Unit Price (${currencySymbol}) *`}
             </label>
             <input
               type="number"
@@ -336,32 +562,291 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-                Barcode / EAN (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 890103001"
-                value={prodBarcode}
-                onChange={(e) => setProdBarcode(e.target.value)}
-                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
-              />
+          {/* Barcode & SKU - Differentiated by Product Type */}
+          {productType === 'packaged' ? (
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-semibold text-zinc-700">
+                    Barcode / EAN (Optional)
+                  </label>
+                  {prodBarcode.trim().length >= 6 && !isLookingUpBarcode && (
+                    <button
+                      type="button"
+                      onClick={() => handleProcessBarcodeLookup(prodBarcode)}
+                      className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Sparkles className="w-2.5 h-2.5" />
+                      <span>Auto-Fill</span>
+                    </button>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    id="input-prod-barcode"
+                    placeholder="e.g. 5449000000996"
+                    value={prodBarcode}
+                    onChange={(e) => {
+                      setProdBarcode(e.target.value);
+                      if (lookupFeedback) setLookupFeedback(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleProcessBarcodeLookup(prodBarcode);
+                      }
+                    }}
+                    className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl pl-3.5 pr-10 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight font-mono"
+                  />
+                  <button
+                    type="button"
+                    id="btn-scan-prod-barcode"
+                    onClick={() => setFieldScannerTarget({
+                      type: 'primary',
+                      label: prodName || 'Product',
+                    })}
+                    title="Scan barcode with phone camera"
+                    aria-label="Scan barcode with phone camera"
+                    className="absolute right-1.5 w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Status Feedback */}
+                {isLookingUpBarcode && (
+                  <div className="mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-blue-50 text-blue-800 border border-blue-200/80 flex items-center gap-1.5 animate-pulse">
+                    <Loader2 className="w-3 h-3 animate-spin text-blue-600 shrink-0" />
+                    <span>Looking up product in registry...</span>
+                  </div>
+                )}
+                {lookupFeedback && !isLookingUpBarcode && (
+                  <div className={`mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1.5 ${
+                    lookupFeedback.isMultiPack
+                      ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  }`}>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span className="truncate">{lookupFeedback.message}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
+                  SKU Code (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. COCA-CAN-330"
+                  value={prodSku}
+                  onChange={(e) => setProdSku(e.target.value)}
+                  className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+                />
+              </div>
             </div>
+          ) : (
+            /* Loose produce: Display Store PLU lookup code and auto-generate */
             <div>
-              <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-                SKU Code (Optional)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-zinc-700">
+                  Item PLU / Quick Lookup Code *
+                </label>
+                <button
+                  type="button"
+                  onClick={generateNewPlu}
+                  className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <RefreshCw className="w-2.5 h-2.5" />
+                  <span>Generate New PLU</span>
+                </button>
+              </div>
               <input
                 type="text"
-                placeholder="e.g. PIZZA-CH7"
+                placeholder="e.g. PLU-4011"
                 value={prodSku}
                 onChange={(e) => setProdSku(e.target.value)}
-                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+                required
+                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-semibold text-zinc-900 font-mono focus:bg-white focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 focus:outline-hidden transition-all"
               />
+              <p className="text-[10px] text-zinc-400 mt-1">
+                Loose items use store PLU codes on the register instead of factory barcodes.
+              </p>
             </div>
-          </div>
+          )}
+
+          {/* Packaging Tiers & Multi-Barcodes (Only for Packaged Items) */}
+          {productType === 'packaged' && (
+            <div className="bg-zinc-50/80 p-3.5 rounded-2xl border border-zinc-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-bold text-zinc-900">Packaging Tiers & Multi-Barcodes</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddPackagingRow}
+                  className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Tier</span>
+                </button>
+              </div>
+              <p className="text-[10px] text-zinc-500">
+                Link case/box barcodes and custom pack prices while tracking total inventory in base {prodUnit || 'units'}.
+              </p>
+
+              {packagingOptions.length === 0 ? (
+                <div className="text-center py-2.5 px-2 bg-white rounded-xl border border-dashed border-zinc-200 text-zinc-400 text-xs">
+                  No packaging tiers configured. Standard single {prodUnit || 'unit'} pricing applies.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
+                  {packagingOptions.map((pack, idx) => {
+                    const basePrice = parseFloat(prodPrice) || 0;
+                    const packPrice = pack.sellingPrice || 0;
+                    const mult = pack.multiplier || 1;
+                    const perUnitPrice = packPrice / mult;
+                    const savings =
+                      basePrice > 0 && packPrice > 0
+                        ? Math.round(((basePrice * mult - packPrice) / (basePrice * mult)) * 100)
+                        : 0;
+
+                    return (
+                      <div
+                        key={pack.id || idx}
+                        className="p-2.5 bg-white rounded-xl border border-zinc-200 shadow-2xs space-y-2"
+                      >
+                        <div className="grid grid-cols-12 gap-2 items-center">
+                          {/* Pack Name */}
+                          <div className="col-span-5">
+                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-0.5">
+                              Pack Name
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Box of 6"
+                              value={pack.packName}
+                              onChange={(e) => handleUpdatePackagingRow(pack.id, 'packName', e.target.value)}
+                              required
+                              className="w-full h-8 px-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-900 focus:bg-white focus:ring-1 focus:ring-primary focus:outline-hidden"
+                            />
+                          </div>
+
+                          {/* Multiplier */}
+                          <div className="col-span-3">
+                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-0.5">
+                              Multiplier
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                placeholder="6"
+                                value={pack.multiplier || ''}
+                                onChange={(e) =>
+                                  handleUpdatePackagingRow(
+                                    pack.id,
+                                    'multiplier',
+                                    parseInt(e.target.value, 10) || 1
+                                  )
+                                }
+                                required
+                                className="w-full h-8 px-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-semibold text-zinc-900 focus:bg-white focus:ring-1 focus:ring-primary focus:outline-hidden tabular-nums"
+                              />
+                              <span className="absolute right-1.5 top-2 text-[9px] font-semibold text-zinc-400 pointer-events-none">
+                                {prodUnit}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Selling Price */}
+                          <div className="col-span-3">
+                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-0.5">
+                              Price ({currencySymbol})
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="110"
+                              value={pack.sellingPrice || ''}
+                              onChange={(e) =>
+                                handleUpdatePackagingRow(
+                                  pack.id,
+                                  'sellingPrice',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              required
+                              className="w-full h-8 px-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-bold text-zinc-900 focus:bg-white focus:ring-1 focus:ring-primary focus:outline-hidden tabular-nums"
+                            />
+                          </div>
+
+                          {/* Remove Button */}
+                          <div className="col-span-1 flex justify-end pt-3.5">
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePackagingRow(pack.id)}
+                              title="Delete pack option"
+                              className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Barcode & Live Savings breakdown */}
+                        <div className="grid grid-cols-12 gap-2 items-center pt-1 border-t border-zinc-100">
+                          <div className="col-span-7">
+                            <div className="relative flex items-center">
+                              <input
+                                type="text"
+                                id={`input-pack-barcode-${pack.id}`}
+                                placeholder="Scan or enter pack barcode (EAN)..."
+                                value={pack.barcode || ''}
+                                onChange={(e) => handleUpdatePackagingRow(pack.id, 'barcode', e.target.value)}
+                                className="w-full h-7 pl-2 pr-7 bg-zinc-50 border border-zinc-200 rounded-md text-[11px] font-mono text-zinc-800 placeholder:text-zinc-400 focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-hidden"
+                              />
+                              <button
+                                type="button"
+                                id={`btn-scan-pack-barcode-${pack.id}`}
+                                onClick={() => setFieldScannerTarget({
+                                  type: 'pack',
+                                  packId: pack.id,
+                                  label: pack.packName || 'Packaging Tier',
+                                })}
+                                title="Scan pack barcode with phone camera"
+                                aria-label="Scan pack barcode with phone camera"
+                                className="absolute right-0.5 top-0.5 bottom-0.5 w-6 flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                              >
+                                <Camera className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="col-span-5 text-right text-[10px] text-zinc-500 font-medium">
+                            {packPrice > 0 && mult > 0 ? (
+                              <span>
+                                {currencySymbol}{perUnitPrice.toFixed(2)} / ea
+                                {savings > 0 && (
+                                  <span className="ml-1 text-emerald-600 font-bold">
+                                    ({savings}% off)
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400">Unit rate preview</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-zinc-50 p-3 rounded-2xl border border-zinc-200/80">
             <div>
@@ -540,6 +1025,24 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Phone Camera Barcode Scanner Dialog for Fields */}
+      <FieldBarcodeScannerModal
+        isOpen={Boolean(fieldScannerTarget)}
+        title={fieldScannerTarget?.label ? `Scan Barcode for ${fieldScannerTarget.label}` : 'Scan Barcode with Camera'}
+        subtitle="Point phone camera at the barcode on the packaging or product"
+        onClose={() => setFieldScannerTarget(null)}
+        onScan={(scannedCode) => {
+          if (!fieldScannerTarget) return;
+          if (fieldScannerTarget.type === 'primary') {
+            setProdBarcode(scannedCode);
+            handleProcessBarcodeLookup(scannedCode);
+          } else if (fieldScannerTarget.type === 'pack' && fieldScannerTarget.packId) {
+            handleUpdatePackagingRow(fieldScannerTarget.packId, 'barcode', scannedCode);
+          }
+          setFieldScannerTarget(null);
+        }}
+      />
     </div>
   );
 };

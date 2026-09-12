@@ -170,13 +170,13 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-3 bg-zinc-950/40 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className="bg-white rounded-3xl w-full max-w-md border border-zinc-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-zinc-900"
+        className="bg-card text-card-foreground rounded-xl w-full max-w-md border border-border shadow-xl overflow-hidden flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-3.5 bg-white border-b border-zinc-100 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-card border-b border-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-xs shrink-0">
               <Plus className="w-4 h-4 stroke-[3]" />

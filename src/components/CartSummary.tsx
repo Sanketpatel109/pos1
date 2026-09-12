@@ -34,9 +34,9 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
   disabled = false,
 }) => {
   return (
-    <div className="px-3.5 py-3 sm:px-4 sm:py-3.5 bg-card border-t border-border shrink-0 z-20 shadow-xs select-none">
+    <div className="px-3 py-2 sm:px-4 sm:py-3.5 bg-card border-t border-border shrink-0 z-20 shadow-xs select-none">
       {/* Subtotals & GST Breakdown */}
-      <div className="mb-2 text-xs text-muted-foreground">
+      <div className="mb-1.5 sm:mb-2 text-xs text-muted-foreground">
         {/* Mobile View (<640px) */}
         <div className="flex sm:hidden items-center justify-between">
           <span>Items ({totalItemCount})</span>
@@ -69,13 +69,13 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
       </div>
 
       {/* Cart Total Display */}
-      <div className="flex justify-between items-baseline mb-3 pt-2 border-t border-border">
+      <div className="flex justify-between items-baseline mb-2 sm:mb-3 pt-1.5 sm:pt-2 border-t border-border">
         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Total
         </span>
         <span
           id="cart-summary-total"
-          className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground tabular-nums font-medium"
+          className="text-xl sm:text-3xl font-extrabold tracking-tight text-foreground tabular-nums font-medium"
         >
           {currencySymbol}{total.toFixed(2)}
         </span>
@@ -93,7 +93,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
             onClick={onClearBill}
             disabled={disabled || totalItemCount === 0}
             title="Clear ticket items"
-            className="w-11 h-11 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="size-4" />
           </Button>
@@ -121,7 +121,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
                 ? `Recall ${heldOrdersCount} parked bill(s)`
                 : 'Add items to hold bill'
             }
-            className="w-11 h-11 shrink-0 relative"
+            className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 relative"
           >
             <PauseCircle className="size-4" />
             {heldOrdersCount > 0 && (
@@ -140,7 +140,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
             variant="outline"
             onClick={onPrintBill}
             disabled={disabled || totalItemCount === 0}
-            className="flex-1 h-11 text-xs font-medium gap-1.5"
+            className="flex-1 h-10 sm:h-11 text-xs font-medium gap-1.5"
           >
             <Printer className="size-4" />
             <span>Print</span>
@@ -154,7 +154,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
           variant="default"
           onClick={onPay}
           disabled={disabled || totalItemCount === 0}
-          className="flex-[1.6] h-11 text-xs sm:text-sm font-semibold tracking-wide"
+          className="flex-[1.6] h-10 sm:h-11 text-xs sm:text-sm font-semibold tracking-wide"
         >
           <span className="tabular-nums tracking-tight font-medium">
             Pay {currencySymbol}{total.toFixed(2)} →

@@ -436,18 +436,18 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-zinc-950/40 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className={`bg-white rounded-3xl w-full border border-zinc-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-zinc-900 transition-all duration-200 ${
+        className={`bg-card text-card-foreground rounded-xl w-full border border-border shadow-xl overflow-hidden flex flex-col max-h-[92vh] transition-all duration-200 ${
           activeTab === 'cloud' && activeSubView === 'diagnostics'
             ? 'max-w-2xl'
             : 'max-w-lg'
         }`}
       >
         {/* Header with Breadcrumbs */}
-        <div className="px-5 py-3.5 border-b border-zinc-200/80 flex items-center justify-between bg-white shrink-0">
+        <div className="px-5 py-3.5 border-b border-border flex items-center justify-between bg-card shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
               <Settings className="w-4 h-4" />
             </div>
             <div>
