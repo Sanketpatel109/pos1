@@ -1949,12 +1949,12 @@ export default function App() {
       {/* Floating Laser Gun Instant Scan Toast Notification */}
       {laserScanNotification && (
         <div className="fixed bottom-5 right-5 z-50 bg-zinc-900/95 text-white backdrop-blur-md px-4 py-3 rounded-2xl shadow-2xl border border-zinc-700/80 flex items-center gap-3.5 max-w-sm">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
             <Zap className="w-5 h-5 fill-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
+              <span className="text-[10px] font-black text-primary uppercase tracking-wider">
                 Laser Gun Scanned
               </span>
               <span className="text-[11px] font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded">
@@ -1980,7 +1980,7 @@ export default function App() {
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
               heldToastNotification.action === 'parked'
                 ? 'bg-amber-500 text-zinc-950'
-                : 'bg-emerald-500 text-white'
+                : 'bg-primary text-primary-foreground'
             }`}
           >
             {heldToastNotification.action === 'parked' ? (
@@ -1995,7 +1995,7 @@ export default function App() {
                 className={`text-[10px] font-black uppercase tracking-wider ${
                   heldToastNotification.action === 'parked'
                     ? 'text-amber-400'
-                    : 'text-emerald-400'
+                    : 'text-primary'
                 }`}
               >
                 {heldToastNotification.action === 'parked'

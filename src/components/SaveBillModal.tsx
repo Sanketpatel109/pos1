@@ -473,8 +473,8 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 )}
 
                 {selectedCustomer && (
-                  <div className="p-2 bg-emerald-50/70 border border-emerald-200 rounded-lg text-xs flex items-center justify-between">
-                    <span className="text-emerald-950 font-medium truncate">
+                  <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg text-xs flex items-center justify-between">
+                    <span className="text-primary font-medium truncate">
                       {selectedCustomer.name} • {selectedCustomer.phone}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
@@ -623,10 +623,10 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
             {/* CASH TENDERED & CHANGE CALCULATOR */}
             {paymentMode === 'CASH' && (
-              <div className="mt-3 bg-muted/50 border-2 border-emerald-600/30 rounded-2xl p-3.5 space-y-3 animate-in fade-in duration-150 shadow-sm">
+              <div className="mt-3 bg-muted/50 border-2 border-primary/30 rounded-2xl p-3.5 space-y-3 animate-in fade-in duration-150 shadow-sm">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-extrabold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
-                    <Banknote className="w-4 h-4 text-emerald-700" />
+                    <Banknote className="w-4 h-4 text-primary" />
                     <span>Cash Tendered (Customer Gave)</span>
                   </label>
                   <button
@@ -654,7 +654,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                         onClick={() => setTenderedAmount(preset.amount.toString())}
                         className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
                           parseFloat(tenderedAmount) === preset.amount
-                            ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm scale-105 ring-2 ring-emerald-500/30'
+                            ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm scale-105 ring-2 ring-primary/30'
                             : 'bg-white text-foreground border-border hover:bg-zinc-100 hover:border-zinc-400'
                         }`}
                       >
@@ -690,21 +690,21 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
                 {/* Live Return Change vs Short Payment Readout */}
                 {hasEnteredTender && tenderedNumeric > grandTotal ? (
-                  <div className="bg-emerald-50 border-2 border-emerald-500/40 rounded-xl p-3 flex items-center justify-between text-emerald-950 shadow-sm animate-in zoom-in-95 duration-150">
+                  <div className="bg-primary/10 border-2 border-primary/40 rounded-xl p-3 flex items-center justify-between text-primary shadow-sm animate-in zoom-in-95 duration-150">
                     <div className="space-y-0.5">
-                      <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                        <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                      <div className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                        <Check className="w-4 h-4 text-primary stroke-[3]" />
                         <span>Customer Gave {currencySymbol}{tenderedNumeric.toFixed(2)}</span>
                       </div>
-                      <p className="text-xs text-emerald-900 font-medium">
+                      <p className="text-xs text-primary font-medium">
                         Bill is {currencySymbol}{grandTotal.toFixed(2)} &middot; Return to customer:
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider block">
                         Change To Return
                       </span>
-                      <span className="text-2xl font-black text-emerald-700 tracking-tight">
+                      <span className="text-2xl font-black text-primary tracking-tight">
                         {currencySymbol}{changeDue.toFixed(2)}
                       </span>
                     </div>
@@ -742,12 +742,12 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
             {/* ONLINE / UPI PAYMENT & 3-WAY VERIFICATION SYSTEM */}
             {paymentMode === 'ONLINE' && (
-              <div className="mt-3 bg-white border-2 border-emerald-600/40 rounded-2xl p-3.5 space-y-3.5 animate-in fade-in duration-150 shadow-sm">
+              <div className="mt-3 bg-white border-2 border-primary/40 rounded-2xl p-3.5 space-y-3.5 animate-in fade-in duration-150 shadow-sm">
                 {/* Verification Status Banner */}
                 {isUpiVerified ? (
-                  <div className="bg-emerald-600 text-white rounded-xl p-3 flex items-center justify-between shadow-xs animate-in zoom-in-95 duration-150">
+                  <div className="bg-primary text-primary-foreground rounded-xl p-3 flex items-center justify-between shadow-xs animate-in zoom-in-95 duration-150">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
+                      <div className="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center shrink-0 shadow-xs">
                         <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
                       </div>
                       <div>
@@ -773,7 +773,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                 ) : (
                   <div className="flex items-center justify-between pb-1 border-b border-zinc-100">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
                       <span className="text-xs font-bold text-zinc-900 uppercase tracking-wide">
                         Dynamic UPI Payment & Verification
                       </span>
@@ -880,11 +880,11 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       onClick={() => setActiveUpiTab('auto')}
                       className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                         activeUpiTab === 'auto'
-                          ? 'bg-white text-emerald-700 shadow-2xs'
+                          ? 'bg-white text-primary shadow-2xs'
                           : 'text-zinc-600 hover:text-zinc-900'
                       }`}
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
                       <span>Option 2: Auto-Verify</span>
                     </button>
                   </div>
@@ -965,18 +965,18 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
 
                   {/* Mode 2: Auto-Verify Simulation (Gateway / Webhook) */}
                   {activeUpiTab === 'auto' && (
-                    <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 space-y-2.5 animate-in fade-in duration-100">
+                    <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 space-y-2.5 animate-in fade-in duration-100">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-emerald-950 flex items-center gap-1.5">
-                          <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                        <span className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+                          <Radio className="w-3.5 h-3.5 text-primary animate-pulse" />
                           <span>Bank Webhook & Gateway Listener</span>
                         </span>
-                        <span className="text-[10px] text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded font-bold">
+                        <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded font-bold">
                           STATUS: {isUpiVerified ? 'VERIFIED' : 'WAITING FOR PAYMENT'}
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-emerald-900 leading-snug">
+                      <p className="text-[11px] text-primary/80 leading-snug">
                         Simulate the incoming cloud webhook notification from HDFC/ICICI/Razorpay/Cashfree.
                       </p>
 
@@ -986,10 +986,10 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                         onClick={handleTriggerAutoVerify}
                         className={`w-full py-2.5 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                           isUpiVerified
-                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            ? 'bg-primary text-primary-foreground border-primary'
                             : isAutoVerifying
                             ? 'bg-zinc-800 text-white border-zinc-800 animate-pulse cursor-wait'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs active:scale-95'
+                            : 'bg-primary hover:bg-primary/90 text-primary-foreground border-primary shadow-xs active:scale-95'
                         }`}
                       >
                         {isAutoVerifying ? (
@@ -1011,7 +1011,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                       </button>
 
                       {isUpiVerified && (
-                        <div className="text-[10px] text-emerald-800 text-center">
+                        <div className="text-[10px] text-primary text-center">
                           Gateway Reference: <span className="font-bold">{upiRefNumber}</span> &middot; Confirmed via UPI
                         </div>
                       )}
@@ -1087,7 +1087,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
             <button
               type="button"
               onClick={() => handleFinalSubmit('paid-only')}
-              className="flex-[1.4] h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              className="flex-[1.4] h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs sm:text-sm shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all"
             >
               <Check className="w-4 h-4 stroke-[3]" />
               <span>PAID ONLY</span>
@@ -1099,9 +1099,9 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
             <button
               type="button"
               onClick={() => handleFinalSubmit('pay-and-whatsapp')}
-              className="w-full h-10 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 font-medium text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
+              className="w-full h-10 bg-primary/10 hover:bg-primary/15 text-primary border border-primary/30 font-medium text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95"
             >
-              <Comment className="w-3.5 h-3.5 text-emerald-600" />
+              <Comment className="w-3.5 h-3.5 text-primary" />
               <span>Complete & WhatsApp Bill to {selectedCustomer?.phone || customerSearch.trim()}</span>
             </button>
           )}
@@ -1161,7 +1161,7 @@ export const SaveBillModal: React.FC<SaveBillModalProps> = ({
                   handleConfirmSoundbox();
                   setIsQrZoomed(false);
                 }}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Confirm Soundbox Announced</span>

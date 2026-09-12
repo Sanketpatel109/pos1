@@ -196,7 +196,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                       <div className="text-right">
                         <span
                           className={`font-bold text-xs sm:text-sm tabular-nums tracking-tight font-medium ${
-                            hasDue ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400'
+                            hasDue ? 'text-destructive' : 'text-primary'
                           }`}
                         >
                           {currencySymbol}
@@ -240,7 +240,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                     <Badge variant="secondary" className="text-xs">
                       {activeCustomer.phone}
                     </Badge>
-                    <Badge variant="outline" className="text-xs font-medium text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950">
+                    <Badge variant="outline" className="text-xs font-medium text-primary bg-primary/10 border-primary/20">
                       Udhar Limit: {currencySymbol}{activeCustomer.creditLimit ?? 2000}
                     </Badge>
                   </div>
@@ -266,7 +266,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                       setSettleAmount(String(activeCustomer.creditBalance > 0 ? activeCustomer.creditBalance : ''));
                       setIsSettleModalOpen(true);
                     }}
-                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <CreditCard className="w-3.5 h-3.5" />
                     <span>+ Collect Cash / Settle Khata</span>
@@ -282,7 +282,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                   </span>
                   <span
                     className={`text-lg sm:text-xl font-bold tabular-nums tracking-tight font-medium ${
-                      activeCustomer.creditBalance > 0 ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400'
+                      activeCustomer.creditBalance > 0 ? 'text-destructive' : 'text-primary'
                     }`}
                   >
                     {currencySymbol}
@@ -504,7 +504,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                 <Button
                   type="submit"
                   variant="default"
-                  className="flex-1 h-8 text-xs font-medium cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="flex-1 h-8 text-xs font-medium cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Record Payment
                 </Button>

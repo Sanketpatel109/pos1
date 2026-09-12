@@ -211,7 +211,7 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                         <span className="bg-zinc-900 text-white font-bold text-[10px] px-1.5 py-0.5 rounded">
                           #{String(order.orderNumber).padStart(3, '0')}
                         </span>
-                        <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                        <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-1 py-0.2 rounded border border-primary/20">
                           {order.paymentMethod || 'PAID'}
                         </span>
                       </div>
@@ -356,7 +356,7 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                   >
                     <span>{settingsForm.soundEnabled ? 'Enabled' : 'Muted'}</span>
                     {settingsForm.soundEnabled ? (
-                      <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <Volume2 className="w-3.5 h-3.5 text-primary" />
                     ) : (
                       <VolumeX className="w-3.5 h-3.5 text-zinc-400" />
                     )}

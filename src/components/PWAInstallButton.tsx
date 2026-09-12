@@ -21,7 +21,7 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'bann
           className="w-full flex items-center justify-between p-2.5 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-98"
         >
           <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-emerald-400" />
+            <Download className="w-4 h-4 text-primary" />
             <span>Install App (PWA)</span>
           </div>
           <span className="text-[10px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded ">
@@ -37,7 +37,7 @@ export const PWAInstallButton: React.FC<{ variant?: 'header' | 'sidebar' | 'bann
         title="Install MonoPOS to Desktop / Home Screen"
         className="hidden sm:flex items-center gap-1.5 bg-zinc-900 hover:bg-black text-white rounded-xl px-2.5 py-1 text-xs font-semibold shadow-xs transition-colors cursor-pointer active:scale-95"
       >
-        <Download className="w-3.5 h-3.5 text-emerald-400" />
+        <Download className="w-3.5 h-3.5 text-primary" />
         <span>Install App</span>
       </button>
     );

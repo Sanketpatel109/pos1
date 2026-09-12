@@ -159,7 +159,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 MonoPOS • {shopSettings.shopName || 'Anand Supermarket'}
               </h2>
               <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                <span className="w-2 h-2 rounded-full bg-primary inline-block" />
                 <span className="text-xs font-medium text-muted-foreground">
                   {activeStaffName} ({roleMeta.label})
                 </span>
@@ -275,8 +275,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 isSyncing
                   ? 'bg-primary animate-ping'
                   : navigator.onLine !== false
-                  ? 'bg-emerald-600'
-                  : 'bg-amber-600'
+                  ? 'bg-primary'
+                  : 'bg-muted-foreground'
               }`}
             />
             <span className="font-medium text-xs text-foreground">

@@ -147,7 +147,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-5 bg-zinc-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-10 h-10 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
               <BarcodeIcon className="w-5 h-5" />
             </div>
             <div>
@@ -162,7 +162,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Print Stickers</span>
@@ -236,7 +236,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleGenerateRandomBarcode}
-                    className="text-[10px] text-emerald-700 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                    className="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3" /> Auto-Gen
                   </button>

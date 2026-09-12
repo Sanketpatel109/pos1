@@ -182,7 +182,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                       </span>
                     )}
                   </div>
-                  <span className="text-xl font-black tracking-tight text-emerald-400">
+                  <span className="text-xl font-black tracking-tight text-primary">
                     #{String(order?.tokenNumber || (typeof activeOrderNum === 'number' ? ((activeOrderNum - 1) % 99999) + 1 : 1)).padStart(2, '0')}
                   </span>
                 </div>
@@ -301,7 +301,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                       {shopSettings.currencySymbol}{order.tenderedAmount.toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex justify-between font-bold text-emerald-800">
+                  <div className="flex justify-between font-bold text-primary">
                     <span>Change Returned:</span>
                     <span className="font-black text-xs">
                       {shopSettings.currencySymbol}
@@ -317,24 +317,24 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
             {/* Payment Status & Verification Proof (No payment QR on paid receipts) */}
             {activePaymentMethod === 'ONLINE' ? (
-              <div className="text-center py-2 px-2 bg-emerald-50 rounded-xl border border-emerald-300 space-y-1 my-1">
-                <div className="text-[10px] font-black text-emerald-800 uppercase tracking-wider flex items-center justify-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+              <div className="text-center py-2 px-2 bg-primary/10 rounded-xl border border-primary/30 space-y-1 my-1">
+                <div className="text-[10px] font-black text-primary uppercase tracking-wider flex items-center justify-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-primary stroke-[2.5]" />
                   <span>Paid In Full • Verified UPI</span>
                 </div>
                 {order?.upiRefNumber && (
-                  <div className="text-[11px] font-black text-emerald-950">
+                  <div className="text-[11px] font-black text-primary">
                     UTR / Ref: {order.upiRefNumber}
                   </div>
                 )}
-                <div className="text-[9px] text-emerald-700">
+                <div className="text-[9px] text-primary/80">
                   Verification: {order?.verificationMethod?.toUpperCase() || 'CONFIRMED'} &middot; Status: SUCCESS
                 </div>
               </div>
             ) : activePaymentMethod === 'CASH' ? (
               <div className="text-center py-2 px-2 bg-zinc-50 rounded-xl border border-zinc-300 space-y-0.5 my-1">
                 <div className="text-[10px] font-black text-zinc-900 uppercase tracking-wider flex items-center justify-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                  <CheckCircle className="w-3.5 h-3.5 text-primary stroke-[2.5]" />
                   <span>Paid In Full • Cash Tender</span>
                 </div>
                 <div className="text-[9px] text-zinc-600">
@@ -373,7 +373,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             ) : (
               <div className="text-center py-2 px-2 bg-zinc-50 rounded-xl border border-zinc-300 space-y-0.5 my-1">
                 <div className="text-[10px] font-black text-zinc-900 uppercase tracking-wider flex items-center justify-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                  <CheckCircle className="w-3.5 h-3.5 text-primary stroke-[2.5]" />
                   <span>Paid In Full • {activePaymentMethod}</span>
                 </div>
                 <div className="text-[9px] text-zinc-600">

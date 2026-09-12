@@ -515,7 +515,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         onClick={handleExportSalesCSV}
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground"
                       >
-                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                        <FileSpreadsheet className="w-4 h-4 text-primary" />
                         <div>
                           <div className="leading-tight">Sales Orders Report</div>
                           <div className="text-[10px] text-muted-foreground font-normal">Detailed customer bills & taxes</div>
@@ -634,7 +634,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                           #{order.orderNumber}
                         </span>
                         {shopSettings?.enableDailyToken && order.tokenNumber && (
-                          <Badge variant="secondary" className="text-[10px] py-0 text-emerald-700 bg-emerald-50 border-emerald-200">
+                          <Badge variant="secondary" className="text-[10px] py-0 text-primary bg-primary/10 border-primary/20">
                             TOKEN #{String(order.tokenNumber).padStart(2, '0')}
                           </Badge>
                         )}
@@ -723,7 +723,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         Bill #{activeSelectedOrder.orderNumber}
                       </span>
                       {shopSettings?.enableDailyToken && activeSelectedOrder.tokenNumber && (
-                        <Badge variant="secondary" className="text-[11px] py-0 text-emerald-700 bg-emerald-50 border-emerald-200">
+                        <Badge variant="secondary" className="text-[11px] py-0 text-primary bg-primary/10 border-primary/20">
                           TOKEN #{String(activeSelectedOrder.tokenNumber).padStart(2, '0')}
                         </Badge>
                       )}

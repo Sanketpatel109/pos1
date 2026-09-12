@@ -118,7 +118,7 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-base text-foreground">{activeStaff?.name}</h3>
-                <Badge variant="outline" className="text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                <Badge variant="outline" className="text-[10px] font-bold uppercase bg-primary/10 text-primary border-primary/20">
                   {normalizeRole(activeStaff?.role)}
                 </Badge>
               </div>
@@ -127,7 +127,7 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 py-1 px-2.5">
+          <Badge variant="outline" className="gap-1.5 text-xs font-semibold text-primary bg-primary/10 border-primary/20 py-1 px-2.5">
             <Check className="w-3.5 h-3.5" />
             <span>Terminal Session Active</span>
           </Badge>
@@ -207,7 +207,7 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
                     </span>
 
                     {isActive ? (
-                      <Badge variant="outline" className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20">
+                      <Badge variant="outline" className="text-xs font-semibold text-primary bg-primary/10 border-primary/20">
                         Active Cashier
                       </Badge>
                     ) : (

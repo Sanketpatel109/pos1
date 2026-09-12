@@ -476,12 +476,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             {/* Overlaid Animated Targeting Reticle */}
             {cameraActive && isScanning && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                <div className="w-52 h-36 border-2 border-emerald-400 rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.3)] animate-pulse">
+                <div className="w-52 h-36 border-2 border-primary rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.3)] animate-pulse">
                   {/* Corner accents */}
-                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-3 border-l-3 border-emerald-400 rounded-tl"></div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-3 border-r-3 border-emerald-400 rounded-tr"></div>
-                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-3 border-l-3 border-emerald-400 rounded-bl"></div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-3 border-r-3 border-emerald-400 rounded-br"></div>
+                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-3 border-l-3 border-primary rounded-tl"></div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-3 border-r-3 border-primary rounded-tr"></div>
+                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-3 border-l-3 border-primary rounded-bl"></div>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-3 border-r-3 border-primary rounded-br"></div>
                   {/* Red Laser Scan Line */}
                   <div className="absolute left-2 right-2 top-1/2 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-bounce"></div>
                 </div>
@@ -590,7 +590,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             <div
               className={`p-3 rounded-xl border transition-all ${
                 lastScannedResult.item
-                  ? 'bg-emerald-50/80 border-emerald-300'
+                  ? 'bg-primary/10 border-primary/30'
                   : 'bg-amber-50/80 border-amber-300'
               }`}
             >
@@ -599,7 +599,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                       lastScannedResult.item
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-amber-500 text-white'
                     }`}
                   >
@@ -621,7 +621,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         title="Copy code"
                       >
                         {copiedCode ? (
-                          <CheckCheck className="w-3 h-3 text-emerald-600" />
+                          <CheckCheck className="w-3 h-3 text-primary" />
                         ) : (
                           <Copy className="w-3 h-3" />
                         )}
@@ -629,7 +629,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       <span
                         className={`text-[10px] px-2 py-0.2 rounded-full font-bold ${
                           lastScannedResult.item
-                            ? 'bg-emerald-200 text-emerald-900'
+                            ? 'bg-primary/20 text-primary'
                             : 'bg-amber-200 text-amber-900'
                         }`}
                       >
@@ -642,7 +642,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         <h4 className="text-xs sm:text-sm font-bold text-slate-900">
                           {lastScannedResult.item.name}
                         </h4>
-                        <span className="text-xs font-extrabold text-emerald-800">
+                        <span className="text-xs font-extrabold text-primary">
                           {currencySymbol}
                           {lastScannedResult.item.price.toFixed(2)}
                         </span>
@@ -706,7 +706,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       type="button"
                       onClick={handleAddAsCustomItem}
                       disabled={!customPriceInput || parseFloat(customPriceInput) <= 0}
-                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-bold rounded-lg cursor-pointer"
+                      className="px-2.5 py-1 bg-primary hover:bg-primary/90 disabled:opacity-40 text-primary-foreground text-xs font-bold rounded-lg cursor-pointer"
                     >
                       Add to Bill
                     </button>

@@ -96,7 +96,7 @@ export const CashDenominationCounter: React.FC<CashDenominationCounterProps> = (
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
           <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Banknote className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <Banknote className="w-4 h-4 text-primary" />
             <span>Physical Cash Denomination Counter</span>
           </h4>
           <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -123,10 +123,10 @@ export const CashDenominationCounter: React.FC<CashDenominationCounterProps> = (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase px-1">
             <span className="flex items-center gap-1">
-              <Banknote className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Banknote className="w-3.5 h-3.5 text-primary" />
               <span>Banknotes ({totalNotesCount} notes)</span>
             </span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+            <span className="text-primary font-bold">
               {currencySymbol}{banknoteTotal.toFixed(2)}
             </span>
           </div>
@@ -141,7 +141,7 @@ export const CashDenominationCounter: React.FC<CashDenominationCounterProps> = (
                   className="flex items-center justify-between p-2 hover:bg-muted/40 transition-colors gap-2"
                 >
                   <div className="w-16 shrink-0 flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-300 font-bold text-xs">
+                    <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-xs">
                       {currencySymbol}{denom}
                     </span>
                     <span className="text-[11px] text-muted-foreground ">×</span>
@@ -280,14 +280,14 @@ export const CashDenominationCounter: React.FC<CashDenominationCounterProps> = (
           <div
             className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 ${
               isExact
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                ? 'bg-primary/10 border-primary/20 text-primary'
                 : isShort
                 ? 'bg-destructive/10 border-destructive/20 text-destructive'
                 : 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
             }`}
           >
             {isExact ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
             ) : (
               <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
             )}

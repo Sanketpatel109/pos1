@@ -63,7 +63,7 @@ export const UPIPayment: React.FC<UPIPaymentProps> = ({
         {/* Amount & Merchant details badge below QR */}
         <div className="mt-2.5 flex items-center justify-between w-full px-1">
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-xs font-medium text-foreground">Scan via Any UPI App</span>
           </div>
           <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20 tabular-nums tracking-tight">

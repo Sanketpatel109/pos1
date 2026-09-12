@@ -121,7 +121,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
               className="h-9 px-3.5 text-xs font-medium gap-1.5 cursor-pointer"
               title="Physical Note Counter (10, 20, 50, 100, 200, 500)"
             >
-              <Calculator className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Calculator className="w-4 h-4 text-primary" />
               <span>Count Galla Notes</span>
             </Button>
 
@@ -167,7 +167,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
                 Total Cash In (Jama)
               </span>
-              <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight font-medium">
+              <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums tracking-tight font-medium">
                 +{currencySymbol}
                 {totalIn.toFixed(2)}
               </div>
@@ -175,7 +175,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                 {inEntries.length} receipts & float additions
               </span>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <ArrowDownLeft className="w-5 h-5" />
             </div>
           </div>
@@ -289,7 +289,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                 onClick={() => setEntryType('IN')}
                 className={`h-8 text-xs font-medium cursor-pointer gap-1.5 ${
                   entryType === 'IN'
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -373,7 +373,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
               className={`w-full h-9 text-xs font-semibold cursor-pointer gap-1.5 ${
                 entryType === 'OUT'
                   ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
               }`}
             >
               {entryType === 'OUT' ? (
@@ -469,7 +469,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                           entry.type === 'OPENING'
                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                             : entry.type === 'IN'
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
+                            ? 'bg-primary/10 text-primary'
                             : 'bg-destructive/10 text-destructive'
                         }`}
                       >
@@ -494,7 +494,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                             }
                             className={`text-[9px] px-1.5 py-0 uppercase font-bold shrink-0 ${
                               entry.type === 'IN'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200'
+                                ? 'bg-primary/10 text-primary border-primary/20'
                                 : ''
                             }`}
                           >
@@ -515,7 +515,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                       <span
                         className={`font-bold text-sm sm:text-base tabular-nums tracking-tight font-medium ${
                           isPositive
-                            ? 'text-emerald-600 dark:text-emerald-400'
+                            ? 'text-primary'
                             : 'text-destructive'
                         }`}
                       >
@@ -570,7 +570,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                   onClick={() => setEntryType('IN')}
                   className={`h-7 text-xs font-medium ${
                     entryType === 'IN'
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -653,7 +653,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                   className={`flex-1 h-8 text-xs font-medium cursor-pointer ${
                     entryType === 'OUT'
                       ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-primary hover:bg-primary/90 text-primary-foreground'
                   }`}
                 >
                   Save Entry

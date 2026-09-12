@@ -10,10 +10,10 @@
 - Dialogs / Modals: White cards with rounded-3xl border border-zinc-200 shadow-xl and bg-slate-900/40 backdrop-blur-xs overlay.
 
 ## 3. Button Hierarchy
-- Primary Counter Actions (Pay, Save, Add Item): bg-primary hover:opacity-90 text-white rounded-xl h-11 px-5 shadow-xs font-medium
-- Hardware & Execution (Print, Replenish, Finalize Shift): bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 px-5 shadow-xs font-medium
+- Primary Counter Actions (Pay, Save, Add Item): bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 px-5 shadow-xs font-medium
+- Hardware & Execution (Print, Replenish, Finalize Shift): bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 px-5 shadow-xs font-medium
 - Secondary & Dismiss (Cancel, Back, Done): bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl h-11 px-4 font-medium
-- Destructive (Void, Discard): bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl h-11 px-4
+- Destructive (Void, Discard): bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl h-11 px-4
 
 ## 4. Typography & Numbers
 - Font: Geist Sans for all UI text, receipts, tokens, barcodes, and numbers.

@@ -465,7 +465,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                     type="button"
                     variant="outline"
                     onClick={onOpenPurchaseInward}
-                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-400"
+                    className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer text-primary border-primary/30 hover:bg-primary/5 dark:text-primary"
                     title="Receive vendor stock & inward purchase"
                   >
                     <Truck className="w-3.5 h-3.5" />
@@ -524,7 +524,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                           }}
                           className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-foreground hover:bg-muted rounded-md flex items-center gap-2 cursor-pointer transition-colors"
                         >
-                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-primary" />
                           <span>Import CSV</span>
                         </button>
                       </div>

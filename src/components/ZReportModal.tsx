@@ -137,7 +137,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
                 <h2 className="text-base font-bold text-zinc-900 leading-tight">
                   Day-End Close & Cash Audit (Z-Report)
                 </h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
                   Dukaan Hisaab
                 </span>
               </div>
@@ -173,7 +173,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
             </div>
             <div>
               <span className="text-[10px] text-zinc-400 block uppercase font-semibold">Total Sales</span>
-              <span className="font-bold text-emerald-700 tabular-nums tracking-tight">
+              <span className="font-bold text-primary tabular-nums tracking-tight">
                 {shopSettings.currencySymbol}{totalSales.toFixed(2)}
               </span>
             </div>
@@ -194,13 +194,13 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
               </div>
               <div className="flex justify-between items-center py-1">
                 <span className="text-zinc-600 font-medium">(+) Cash Sales Collected</span>
-                <span className="font-bold text-emerald-600 tabular-nums tracking-tight">
+                <span className="font-bold text-primary tabular-nums tracking-tight">
                   +{shopSettings.currencySymbol}{cashSales.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1">
                 <span className="text-zinc-600 font-medium">(+) Cash In (Jama / Pay-ins)</span>
-                <span className="font-bold text-emerald-600 tabular-nums tracking-tight">
+                <span className="font-bold text-primary tabular-nums tracking-tight">
                   +{shopSettings.currencySymbol}{cashIn.toFixed(2)}
                 </span>
               </div>
@@ -283,7 +283,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
             <div
               className={`p-3 rounded-xl border flex items-center justify-between text-xs font-medium ${
                 isExact
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  ? 'bg-primary/10 border-primary/20 text-primary'
                   : isShort
                   ? 'bg-rose-50 border-rose-200 text-rose-900'
                   : 'bg-amber-50 border-amber-200 text-amber-900'
@@ -291,7 +291,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
             >
               <div className="flex items-center gap-2">
                 {isExact ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
                 ) : (
                   <AlertTriangle className="w-4 h-4 text-rose-600" />
                 )}
@@ -343,7 +343,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
         <div className="p-4 bg-white border-t border-zinc-200/80 flex items-center justify-between">
           <div className="text-xs text-zinc-500 font-medium">
             {isFinalized ? (
-              <span className="text-emerald-600 font-semibold flex items-center gap-1.5">
+              <span className="text-primary font-semibold flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" /> Shift Audit Logged into System
               </span>
             ) : isShortageWithoutReason ? (
@@ -368,7 +368,7 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
               type="button"
               onClick={handleFinalize}
               disabled={isFinalized || isShortageWithoutReason}
-              className="h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 transition-all"
+              className="h-11 px-5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-medium shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 transition-all"
             >
               {isFinalized ? 'Shift Closed' : 'Finalize & Close Shift'}
             </button>

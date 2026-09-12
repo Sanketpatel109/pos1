@@ -546,7 +546,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
             >
               <Cloud className="w-3.5 h-3.5" />
               <span>Cloud & Backup</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
             </button>
           </div>
         )}
@@ -555,8 +555,8 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar">
           {/* Status Alerts */}
           {syncSuccessMsg && (
-            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
               <span className="font-semibold text-xs">{syncSuccessMsg}</span>
             </div>
           )}
@@ -656,14 +656,14 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                       }
                       className={`w-full py-1.5 px-2.5 rounded-lg border text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                         formData.enableDailyToken
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                          ? 'bg-primary/10 border-primary/30 text-primary'
                           : 'bg-white border-zinc-300 text-zinc-600'
                       }`}
                     >
                       <span>{formData.enableDailyToken ? 'Enabled (1-99999)' : 'Disabled'}</span>
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          formData.enableDailyToken ? 'bg-emerald-600' : 'bg-zinc-300'
+                          formData.enableDailyToken ? 'bg-primary' : 'bg-zinc-300'
                         }`}
                       />
                     </button>
@@ -962,8 +962,8 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                       Firebase Cloud Synchronization
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                     {isSyncing ? 'Syncing...' : 'Live Connected'}
                   </span>
                 </div>
@@ -1217,7 +1217,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>Store Account & Credentials</span>
-                      {user && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                      {user && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
                     </button>
                   </div>
 
@@ -1236,7 +1236,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                             </span>
                           </div>
                           <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping" />
+                            <span className="w-2 h-2 rounded-full bg-primary inline-block animate-ping" />
                             <span>
                               {liveState?.lastEvent || 'Connected to Firestore real-time listener'}
                             </span>
@@ -1260,7 +1260,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                           <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                             Firestore Collections Status
                           </span>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
                             9 of 9 Collections Healthy
                           </span>
                         </div>
@@ -1289,8 +1289,8 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                                     <span className="text-[9.5px] text-zinc-400">
                                       /{tbl.collection}
                                     </span>
-                                    <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-0.5">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                                    <span className="text-[9px] text-primary font-bold flex items-center gap-0.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
                                       {tbl.status}
                                     </span>
                                   </div>
@@ -1341,8 +1341,8 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                             Store Owner / Admin Account
                           </span>
                           {user ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                               Google Authenticated
                             </span>
                           ) : (
@@ -1496,7 +1496,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                           </div>
                           <div className="bg-white p-2 rounded-xl border border-zinc-200">
                             <span className="text-zinc-400 block text-[9.5px]">SECURITY RULES</span>
-                            <span className="text-emerald-700 font-bold">
+                            <span className="text-primary font-bold">
                               RBAC Rules Enforced
                             </span>
                           </div>
@@ -1513,7 +1513,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
         {/* Footer */}
         <div className="px-5 py-3 border-t border-zinc-100 bg-zinc-50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-[11px] font-medium text-zinc-600">
               {activeTab === 'cloud' && activeSubView === 'diagnostics'
                 ? 'Firestore Connection Verified'

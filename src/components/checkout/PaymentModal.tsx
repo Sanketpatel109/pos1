@@ -497,7 +497,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <h2 className="text-sm sm:text-base font-bold text-zinc-900 truncate flex items-center gap-1.5">
                 {isSuccess ? (
                   <>
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary shrink-0 animate-pulse" />
                     <span>Payment Settled • Bill #{displayBillNo}</span>
                   </>
                 ) : (
@@ -529,10 +529,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center justify-start text-center">
             {/* Animated Celebration Icon */}
             <div className="relative my-2">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-xs border border-emerald-200 animate-in zoom-in-75 duration-200">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-xs border border-primary/20 animate-in zoom-in-75 duration-200">
                 <CheckCircle2 className="w-9 h-9 sm:w-11 sm:h-11 stroke-[2.5]" />
               </div>
-              <div className="absolute -top-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold tracking-wide uppercase shadow-xs">
+              <div className="absolute -top-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold tracking-wide uppercase shadow-xs">
                 PAID
               </div>
             </div>
@@ -548,7 +548,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <span className="inline-flex items-center gap-1 font-medium text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded-lg text-xs border border-zinc-200">
                 {displayMethod === 'CASH' ? (
                   <>
-                    <Banknote className="w-3.5 h-3.5 text-emerald-600" /> Cash Tender
+                    <Banknote className="w-3.5 h-3.5 text-primary" /> Cash Tender
                   </>
                 ) : displayMethod === 'UPI' ? (
                   <>
@@ -567,9 +567,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
             {/* Kirana Cash & Change Due Breakdown */}
             {displayMethod === 'CASH' && (
-              <div className="w-full max-w-sm mt-4 p-3.5 bg-emerald-50/90 border border-emerald-300 rounded-2xl flex items-center justify-between text-left shadow-xs">
+              <div className="w-full max-w-sm mt-4 p-3.5 bg-primary/10 border border-primary/30 rounded-2xl flex items-center justify-between text-left shadow-xs">
                 <div>
-                  <div className="text-[11px] font-semibold text-emerald-900/70 uppercase tracking-wide">
+                  <div className="text-[11px] font-semibold text-primary uppercase tracking-wide">
                     Cash Received
                   </div>
                   <div className="text-sm font-bold text-zinc-800 tabular-nums tracking-tight">
@@ -577,14 +577,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </div>
                 </div>
 
-                <div className="h-8 w-px bg-emerald-200" />
+                <div className="h-8 w-px bg-primary/20" />
 
                 <div className="text-right">
-                  <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wide flex items-center justify-end gap-1">
-                    <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="text-[11px] font-bold text-primary uppercase tracking-wide flex items-center justify-end gap-1">
+                    <Banknote className="w-3.5 h-3.5 text-primary" />
                     Change Due
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-emerald-700 tabular-nums tracking-tight">
+                  <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums tracking-tight">
                     {currencySymbol}{displayChangeDue.toFixed(2)}
                   </div>
                 </div>
@@ -627,11 +627,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 type="button"
                 onClick={handlePrintAndNextCustomer}
-                className="w-full h-12 sm:h-13 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-medium text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xs cursor-pointer transition-all"
+                className="w-full h-12 sm:h-13 rounded-xl bg-primary hover:bg-primary/90 active:scale-[0.98] text-primary-foreground font-medium text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xs cursor-pointer transition-all"
               >
                 <Printer className="w-5 h-5" />
                 <span>Print & Next Customer</span>
-                <span className="inline-flex items-center text-[11px] font-medium bg-emerald-700 text-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-500/30">
+                <span className="inline-flex items-center text-[11px] font-medium bg-primary/80 text-primary-foreground px-2 py-0.5 rounded-lg border border-primary/30">
                   Enter ↵
                 </span>
               </button>
@@ -653,11 +653,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <button
                   type="button"
                   onClick={handleShareWhatsApp}
-                  className="h-11 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
+                  className="h-11 rounded-xl bg-primary/80 hover:bg-primary/70 text-primary-foreground font-medium text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-xs"
                 >
-                  <Share2 className="w-4 h-4 text-white" />
+                  <Share2 className="w-4 h-4 text-primary-foreground" />
                   <span>WhatsApp Bill</span>
-                  <span className="hidden sm:inline-block text-[10px] bg-emerald-800/80 text-emerald-100 px-1 py-0.5 rounded border border-emerald-500/30">
+                  <span className="hidden sm:inline-block text-[10px] bg-primary/60 text-primary-foreground px-1 py-0.5 rounded border border-primary/30">
                     W
                   </span>
                 </button>

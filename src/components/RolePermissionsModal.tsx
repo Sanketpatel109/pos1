@@ -293,7 +293,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
 
               <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
                 {canEditPolicies ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold border border-primary/20">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                     <span>Owner Verified</span>
                   </span>
@@ -319,7 +319,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
             <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-2xs">
               <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="w-2 h-2 rounded-full bg-primary" />
                   <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
                     Staff Permissions (Cashier & Worker)
                   </h3>
@@ -353,7 +353,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       handleToggleClick('staff', 'allowKhata', currentPermissions.staff.allowKhata)
                     }
                     className={`w-12 h-6.5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      currentPermissions.staff.allowKhata ? 'bg-emerald-600' : 'bg-zinc-300'
+                      currentPermissions.staff.allowKhata ? 'bg-primary' : 'bg-zinc-300'
                     }`}
                     aria-label="Toggle allowKhata"
                   >
@@ -394,7 +394,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       )
                     }
                     className={`w-12 h-6.5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      currentPermissions.staff.allowPriceOverride ? 'bg-emerald-600' : 'bg-zinc-300'
+                      currentPermissions.staff.allowPriceOverride ? 'bg-primary' : 'bg-zinc-300'
                     }`}
                     aria-label="Toggle allowPriceOverride"
                   >
@@ -435,7 +435,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       )
                     }
                     className={`w-12 h-6.5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      currentPermissions.staff.allowStockInward ? 'bg-emerald-600' : 'bg-zinc-300'
+                      currentPermissions.staff.allowStockInward ? 'bg-primary' : 'bg-zinc-300'
                     }`}
                     aria-label="Toggle allowStockInward"
                   >
@@ -491,7 +491,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       )
                     }
                     className={`w-12 h-6.5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      currentPermissions.manager.viewCostPrice ? 'bg-emerald-600' : 'bg-zinc-300'
+                      currentPermissions.manager.viewCostPrice ? 'bg-primary' : 'bg-zinc-300'
                     }`}
                     aria-label="Toggle viewCostPrice"
                   >
@@ -532,7 +532,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       )
                     }
                     className={`w-12 h-6.5 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      currentPermissions.manager.allowBillVoid ? 'bg-emerald-600' : 'bg-zinc-300'
+                      currentPermissions.manager.allowBillVoid ? 'bg-primary' : 'bg-zinc-300'
                     }`}
                     aria-label="Toggle allowBillVoid"
                   >
@@ -554,7 +554,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
             {/* Quick Shift Switch Bar */}
             <div className="p-3 bg-zinc-50 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
               <div className="flex items-center gap-2 text-zinc-700 font-medium">
-                <UserCheck className="w-4 h-4 text-emerald-600" />
+                <UserCheck className="w-4 h-4 text-primary" />
                 <span>Switch active role on the counter:</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -582,7 +582,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                             ? 'bg-amber-400'
                             : r === 'MANAGER'
                             ? 'bg-indigo-400'
-                            : 'bg-emerald-400'
+                            : 'bg-primary'
                         }`}
                       />
                       <span>{s.name}</span>
@@ -619,7 +619,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       </td>
                       <td className="py-2.5 text-center px-2">
                         {cap.cashier ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-700">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </span>
                         ) : (
@@ -630,7 +630,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                       </td>
                       <td className="py-2.5 text-center px-2">
                         {cap.manager ? (
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-700">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary">
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </span>
                         ) : (

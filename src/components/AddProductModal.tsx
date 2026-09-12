@@ -493,7 +493,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                     <span className="text-xs font-bold text-zinc-800 truncate">
                       Photo Added
                     </span>
-                    <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+                    <span className="text-[10px] text-primary font-medium flex items-center gap-1">
                       <Check className="w-2.5 h-2.5" />
                       <span>Optimized & Ready</span>
                     </span>

@@ -185,7 +185,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
                         {meta.badgeLabel}
                       </Badge>
                       {isCurrentActive && (
-                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" title="Currently Logged In" />
+                        <span className="size-2 rounded-full bg-primary animate-pulse" title="Currently Logged In" />
                       )}
                     </div>
                     <span className="text-xs font-semibold truncate">{staff.name}</span>
@@ -234,7 +234,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
               </div>
             )}
             {successMsg && (
-              <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-primary">
                 <Check className="size-3.5 shrink-0" />
                 <span>{successMsg}</span>
               </div>
@@ -284,7 +284,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
           {/* Footer with Staff Admin Link */}
           <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1 text-[11px]">
-              <ShieldCheck className="size-3.5 text-emerald-600" />
+              <ShieldCheck className="size-3.5 text-primary" />
               <span>PIN protected terminal shift</span>
             </div>
             {onNavigateToStaffManagement && (

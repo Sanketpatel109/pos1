@@ -144,8 +144,8 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                 <h2 className="text-sm sm:text-base font-extrabold text-zinc-900">
                   Price Check & Product Info
                 </h2>
-                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
-                  <Zap className="w-2.5 h-2.5 text-emerald-600" />
+                <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full border border-primary/20 flex items-center gap-1">
+                  <Zap className="w-2.5 h-2.5 text-primary" />
                   Laser Gun Ready (HID)
                 </span>
               </div>
@@ -304,7 +304,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                         : selectedProduct.stock !== undefined &&
                           selectedProduct.stock <= (selectedProduct.lowStockThreshold ?? 5)
                         ? 'text-amber-600'
-                        : 'text-emerald-700'
+                        : 'text-primary'
                     }`}
                   >
                     {selectedProduct.stock !== undefined && selectedProduct.stock <= 0
