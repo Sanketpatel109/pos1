@@ -66,6 +66,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onClose,
   onRequestManagerOverride,
   onOpenCloudModal,
+  onOpenStaffSwitch,
 }) => {
   if (!isOpen) return null;
 
@@ -150,18 +151,21 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       <div className="relative w-80 max-w-[85vw] bg-card h-full shadow-2xl flex flex-col z-10 border-r border-border">
         {/* Header */}
         <div className="p-4 border-b border-border bg-card flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
               M
             </div>
-            <div>
-              <h2 className="font-bold text-sm text-foreground leading-none">
-                MonoPOS • {shopSettings.shopName || 'Anand Supermarket'}
+            <div className="min-w-0">
+              <h2 className="font-bold text-sm text-foreground leading-none truncate">
+                {shopSettings.shopName || 'MonoPOS Retail'}
               </h2>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-                <span className="text-xs font-medium text-muted-foreground">
-                  {activeStaffName} ({roleMeta.label})
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <span className="w-2 h-2 rounded-full bg-primary inline-block shrink-0" />
+                <span className="text-xs font-medium text-muted-foreground truncate">
+                  {activeStaffName}
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                  {roleMeta.badgeLabel || currentRole}
                 </span>
               </div>
             </div>
@@ -169,11 +173,32 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           <button
             onClick={onClose}
             aria-label="Close menu"
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Quick Shift / Operator Switcher Bar */}
+        {onOpenStaffSwitch && (
+          <div className="px-3 pt-2 pb-1 border-b border-border/60 bg-muted/30">
+            <button
+              type="button"
+              id="btn-drawer-switch-staff"
+              onClick={() => {
+                onClose();
+                onOpenStaffSwitch();
+              }}
+              className="w-full py-1.5 px-2.5 rounded-lg bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground flex items-center justify-between transition-colors shadow-2xs cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-3.5 h-3.5 text-primary" />
+                <span>Switch Shift / Lock PIN</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground font-normal">Change →</span>
+            </button>
+          </div>
+        )}
 
         {/* Menu Navigation Items grouped cleanly */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
