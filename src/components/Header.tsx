@@ -12,6 +12,8 @@ import { User } from '../firebase';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SubscriptionBadge } from './SubscriptionBadge';
+import { LicenseStatus } from '../services/subscriptionService';
 
 export interface HeaderProps {
   storeName?: string;
@@ -33,6 +35,8 @@ export interface HeaderProps {
   onOpenStaffSwitch?: () => void;
   onOpenPriceCheck?: () => void;
   onOpenHeldOrders?: () => void;
+  licenseStatus?: LicenseStatus | null;
+  onOpenSubscription?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -46,6 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenHeldOrders,
   onOpenCustomItem,
   onOpenScanner,
+  licenseStatus,
+  onOpenSubscription,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -139,8 +145,16 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* RIGHT ZONE: [+] (Custom Item), [Camera] (Scan), [Pause] (Held Bills), [Maximize] (Kiosk) */}
+      {/* RIGHT ZONE: [Sub Badge] [+] (Custom Item), [Camera] (Scan), [Pause] (Held Bills), [Maximize] (Kiosk) */}
       <div className="flex items-center gap-1 shrink-0">
+        {/* Subscription Status Badge */}
+        {licenseStatus && (
+          <SubscriptionBadge
+            licenseStatus={licenseStatus}
+            onClick={onOpenSubscription}
+          />
+        )}
+
         {/* [+] Custom Item Button */}
         {onOpenCustomItem && (
           <Button

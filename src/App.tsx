@@ -66,9 +66,18 @@ import {
 import { hardware } from './utils/hardware';
 import { Zap, PauseCircle, CheckCircle2, Printer, X, Camera } from 'lucide-react';
 import { posSound } from './utils/sound';
-import { auth, onAuthStateChanged, User } from './firebase';
+import { auth, onAuthStateChanged, signOut, User } from './firebase';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { AuthGateScreen } from './components/AuthGateScreen';
+import { TenantLicense } from './types';
+import {
+  getOrCreateLicense,
+  getCachedLicense,
+  clearCachedLicense,
+  checkLicenseStatus,
+  LicenseStatus,
+} from './services/subscriptionService';
 import { pushAllToCloud, pullAllFromCloud, pushSingleOrder } from './services/cloudSync';
 import {
   testFirestoreConnection,
@@ -110,18 +119,76 @@ export default function App() {
 
   // Firebase Auth & Cloud Sync State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud'>('hardware');
   const [settingsInitialSubView, setSettingsInitialSubView] = useState<'overview' | 'diagnostics'>('overview');
 
+  // Subscription / License State
+  const [tenantLicense, setTenantLicense] = useState<TenantLicense | null>(() => getCachedLicense());
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+
+  // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      setAuthChecked(true);
     });
     return () => unsubscribe();
   }, []);
+
+  // When user signs in, fetch or create their tenant license
+  useEffect(() => {
+    if (!currentUser) {
+      setTenantLicense(getCachedLicense()); // keep cached for offline
+      return;
+    }
+    getOrCreateLicense(currentUser).then((license) => {
+      setTenantLicense(license);
+    });
+  }, [currentUser]);
+
+  // Recompute license status every minute
+  useEffect(() => {
+    if (!tenantLicense) {
+      setLicenseStatus(null);
+      return;
+    }
+    const compute = () => setLicenseStatus(checkLicenseStatus(tenantLicense));
+    compute();
+    const interval = setInterval(compute, 60_000); // refresh every 60s
+    return () => clearInterval(interval);
+  }, [tenantLicense]);
+
+  // Handle sign-out
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      clearCachedLicense();
+      setTenantLicense(null);
+      setLicenseStatus(null);
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    }
+  };
+
+  // Show auth gate if user is not signed in (and auth has been checked)
+  if (authChecked && !currentUser) {
+    return <AuthGateScreen onAuthenticated={() => {}} />;
+  }
+
+  // Show nothing while auth is initializing (prevents flash)
+  if (!authChecked) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-background">
+        <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-black animate-pulse">
+          M
+        </div>
+      </div>
+    );
+  }
 
   // Settings & Staff State
   const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
@@ -1464,6 +1531,7 @@ export default function App() {
           onOpenStaffSwitch={() => setIsStaffSwitchModalOpen(true)}
           onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
           onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
+          licenseStatus={licenseStatus}
         />
 
         {/* Active Screen Surface */}

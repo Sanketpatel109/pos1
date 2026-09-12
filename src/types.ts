@@ -231,3 +231,79 @@ export type ActiveScreen =
   | 'training-videos'
   | 'barcode-generator'
   | 'purchase-inward';
+
+// ─── SaaS Subscription & Multi-Tenant Types ───────────────────────────────────
+
+export type SubscriptionPlan = 'TRIAL' | 'STARTER' | 'PRO' | 'ANNUAL';
+export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'GRACE' | 'EXPIRED';
+
+export interface TenantLicense {
+  tenantId: string;
+  ownerUid: string;
+  ownerEmail: string;
+  ownerName: string;
+  ownerPhotoUrl?: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  trialStartedAt: string;
+  trialEndsAt: string;
+  currentPeriodEnd: string; // When the current paid cycle ends (same as trialEndsAt for trial)
+  maxRegisters: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionPlanInfo {
+  id: SubscriptionPlan;
+  name: string;
+  price: number;          // Monthly price in INR
+  annualPrice?: number;   // Annual price in INR (for ANNUAL plan)
+  maxRegisters: number;
+  features: string[];
+  popular?: boolean;
+}
+
+export const SUBSCRIPTION_PLANS: SubscriptionPlanInfo[] = [
+  {
+    id: 'STARTER',
+    name: 'Starter',
+    price: 499,
+    maxRegisters: 1,
+    features: [
+      'Unlimited Billing & Receipts',
+      '1 Register / Device',
+      'Cloud Backup & Sync',
+      'Barcode Scanning',
+      'Cash Drawer Management',
+    ],
+  },
+  {
+    id: 'PRO',
+    name: 'Pro Retail',
+    price: 999,
+    maxRegisters: 3,
+    popular: true,
+    features: [
+      'Everything in Starter',
+      'Up to 3 Registers / Devices',
+      'GSTR-1 Tax Reports & Export',
+      'Multi-Barcode & Packaging Tiers',
+      'Staff Management & RBAC',
+      'Customer Khata / Credit Ledger',
+      'Purchase Inward & Stock Tracking',
+    ],
+  },
+  {
+    id: 'ANNUAL',
+    name: 'Annual Super Saver',
+    price: 666,
+    annualPrice: 7999,
+    maxRegisters: 3,
+    features: [
+      'Everything in Pro Retail',
+      'Save 35% vs Monthly',
+      'Priority WhatsApp Support',
+      'Early Access to New Features',
+    ],
+  },
+];
