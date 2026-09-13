@@ -154,6 +154,38 @@ export default function App() {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState<boolean>(false);
   const [isStoreOnboardingOpen, setIsStoreOnboardingOpen] = useState<boolean>(false);
 
+  // Settings State
+  const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
+    const saved =
+      localStorage.getItem('monopos_retail_settings') ||
+      localStorage.getItem('monopos_industrial_settings');
+    if (!saved) return DEFAULT_SHOP_SETTINGS;
+
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        ...DEFAULT_SHOP_SETTINGS,
+        ...parsed,
+        enableDailyToken: parsed.enableDailyToken !== undefined ? parsed.enableDailyToken : true,
+        enableLoyaltyPoints: parsed.enableLoyaltyPoints !== undefined ? parsed.enableLoyaltyPoints : true,
+        loyaltyEarnSpendAmount: parsed.loyaltyEarnSpendAmount || 100,
+        loyaltyPointValue: parsed.loyaltyPointValue || 1,
+        permissions: {
+          staff: {
+            ...DEFAULT_STORE_PERMISSIONS.staff,
+            ...(parsed.permissions?.staff || {}),
+          },
+          manager: {
+            ...DEFAULT_STORE_PERMISSIONS.manager,
+            ...(parsed.permissions?.manager || {}),
+          },
+        },
+      };
+    } catch {
+      return DEFAULT_SHOP_SETTINGS;
+    }
+  });
+
   // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -247,37 +279,7 @@ export default function App() {
     }
   };
 
-  // Settings & Staff State
-  const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
-    const saved =
-      localStorage.getItem('monopos_retail_settings') ||
-      localStorage.getItem('monopos_industrial_settings');
-    if (!saved) return DEFAULT_SHOP_SETTINGS;
-
-    try {
-      const parsed = JSON.parse(saved);
-      return {
-        ...DEFAULT_SHOP_SETTINGS,
-        ...parsed,
-        enableDailyToken: parsed.enableDailyToken !== undefined ? parsed.enableDailyToken : true,
-        enableLoyaltyPoints: parsed.enableLoyaltyPoints !== undefined ? parsed.enableLoyaltyPoints : true,
-        loyaltyEarnSpendAmount: parsed.loyaltyEarnSpendAmount || 100,
-        loyaltyPointValue: parsed.loyaltyPointValue || 1,
-        permissions: {
-          staff: {
-            ...DEFAULT_STORE_PERMISSIONS.staff,
-            ...(parsed.permissions?.staff || {}),
-          },
-          manager: {
-            ...DEFAULT_STORE_PERMISSIONS.manager,
-            ...(parsed.permissions?.manager || {}),
-          },
-        },
-      };
-    } catch {
-      return DEFAULT_SHOP_SETTINGS;
-    }
-  });
+  // Staff State
   const [staffList, setStaffList] = useState<StaffMember[]>(() => {
     const saved = localStorage.getItem('monopos_staff_list');
     if (!saved) return SAMPLE_STAFF;
