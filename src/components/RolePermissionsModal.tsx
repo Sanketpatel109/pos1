@@ -23,13 +23,16 @@ import {
 import { StaffMember, StaffRole, StorePermissions, DEFAULT_STORE_PERMISSIONS } from '../types';
 import { normalizeRole, ROLE_DEFINITIONS, verifyOwnerPin } from '../utils/permissions';
 import { posSound } from '../utils/sound';
+import { ForgotPinRecoveryModal } from './ForgotPinRecoveryModal';
 
 interface RolePermissionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   staffList: StaffMember[];
   activeStaffId: string;
+  currentUserEmail?: string;
   permissions?: StorePermissions;
+  onPinReset?: (staffId: string, newPin: string) => Promise<void> | void;
   onUpdatePermissions?: (newPermissions: StorePermissions) => void;
   onSwitchStaff: (staffId: string) => void;
   onOpenStaffSwitch: () => void;
@@ -40,7 +43,9 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
   onClose,
   staffList,
   activeStaffId,
+  currentUserEmail,
   permissions = DEFAULT_STORE_PERMISSIONS,
+  onPinReset,
   onUpdatePermissions,
   onSwitchStaff,
   onOpenStaffSwitch,
@@ -48,6 +53,7 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'STORE_POLICIES' | 'ROLE_MATRIX'>('STORE_POLICIES');
   const [isOwnerUnlocked, setIsOwnerUnlocked] = useState<boolean>(false);
   const [showOwnerPinDialog, setShowOwnerPinDialog] = useState<boolean>(false);
+  const [isRecoveryOpen, setIsRecoveryOpen] = useState<boolean>(false);
   const [ownerPinInput, setOwnerPinInput] = useState<string>('');
   const [ownerPinError, setOwnerPinError] = useState<string>('');
   const [pendingToggle, setPendingToggle] = useState<{
@@ -773,6 +779,18 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
                 </button>
               </div>
 
+              {/* Forgot PIN Recovery Link */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRecoveryOpen(true)}
+                  className="text-xs text-zinc-500 hover:text-zinc-800 underline underline-offset-2 flex items-center gap-1 cursor-pointer font-medium"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  Forgot PIN? Reset with Store Account
+                </button>
+              </div>
+
               <div className="flex gap-2 w-full mt-4">
                 <button
                   type="button"
@@ -802,6 +820,30 @@ export const RolePermissionsModal: React.FC<RolePermissionsModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Forgot PIN Recovery Modal */}
+      <ForgotPinRecoveryModal
+        isOpen={isRecoveryOpen}
+        onClose={() => setIsRecoveryOpen(false)}
+        staffList={staffList}
+        currentUserEmail={currentUserEmail}
+        targetRole="OWNER"
+        onPinReset={async (staffId, newPin) => {
+          if (onPinReset) {
+            await onPinReset(staffId, newPin);
+          }
+        }}
+        onSuccess={() => {
+          setIsRecoveryOpen(false);
+          setIsOwnerUnlocked(true);
+          setShowOwnerPinDialog(false);
+          setOwnerPinError('');
+          if (pendingToggle) {
+            applyPermissionToggle(pendingToggle.section, pendingToggle.key, pendingToggle.nextVal);
+            setPendingToggle(null);
+          }
+        }}
+      />
     </div>
   );
 };

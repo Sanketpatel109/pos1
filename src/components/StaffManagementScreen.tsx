@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ForgotPinRecoveryModal } from './ForgotPinRecoveryModal';
 
 interface StaffManagementScreenProps {
   staffList: StaffMember[];
@@ -33,7 +34,6 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
 
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [selectedStaffForPin, setSelectedStaffForPin] = useState<StaffMember | null>(null);
-  const [newPin, setNewPin] = useState('');
 
   const activeStaff = staffList.find((s) => s.id === activeStaffId) || staffList[0];
 
@@ -54,15 +54,6 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
     setRole('CASHIER');
   };
 
-  const handleSavePin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStaffForPin || newPin.length < 4) return;
-
-    onUpdatePin(selectedStaffForPin.id, newPin);
-    setIsPinModalOpen(false);
-    setNewPin('');
-    setSelectedStaffForPin(null);
-  };
 
   const handleTogglePermission = (group: 'staff' | 'manager', key: string) => {
     if (!onUpdatePermissions) return;
@@ -474,60 +465,18 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
       )}
 
       {/* Change PIN Modal */}
-      {isPinModalOpen && selectedStaffForPin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
-          <Card className="w-full max-w-sm shadow-xl p-4 space-y-3">
-            <div className="flex justify-between items-center border-b border-border pb-2">
-              <h3 className="font-bold text-sm text-foreground">
-                Change PIN: {selectedStaffForPin.name}
-              </h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsPinModalOpen(false)}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <form onSubmit={handleSavePin} className="space-y-3">
-              <div>
-                <label className="text-[10px] font-semibold text-muted-foreground block mb-1">
-                  Enter New 4-Digit PIN
-                </label>
-                <Input
-                  type="password"
-                  required
-                  maxLength={4}
-                  placeholder="••••"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                  className="text-sm text-center tracking-widest"
-                  autoFocus
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsPinModalOpen(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1"
-                >
-                  Update PIN
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
+      <ForgotPinRecoveryModal
+        isOpen={isPinModalOpen && Boolean(selectedStaffForPin)}
+        onClose={() => {
+          setIsPinModalOpen(false);
+          setSelectedStaffForPin(null);
+        }}
+        staffList={staffList}
+        targetStaffId={selectedStaffForPin?.id}
+        onPinReset={(staffId, newPinVal) => {
+          onUpdatePin(staffId, newPinVal);
+        }}
+      />
     </div>
   );
 };

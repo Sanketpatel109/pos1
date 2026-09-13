@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, Check, Lock, Delete } from 'lucide-react';
+import { ShieldAlert, Check, Lock, Delete, KeyRound } from 'lucide-react';
 import { StaffMember } from '../types';
 import { verifyManagerOrOwnerPin, verifyOwnerPin, normalizeRole } from '../utils/permissions';
 import { posSound } from '../utils/sound';
@@ -13,11 +13,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ForgotPinRecoveryModal } from './ForgotPinRecoveryModal';
 
 interface ManagerPinModalProps {
   isOpen: boolean;
   onClose: () => void;
   staffList: StaffMember[];
+  currentUserEmail?: string;
   activeStaffName?: string;
   activeStaffRole?: string;
   actionTitle?: string;
@@ -26,6 +28,7 @@ interface ManagerPinModalProps {
   description?: string;
   requiredRole?: 'MANAGER' | 'OWNER';
   requiredRoleLabel?: string;
+  onPinReset?: (staffId: string, newPin: string) => Promise<void> | void;
   onAuthorized?: (authorizingStaff: StaffMember) => void;
   onSuccess?: (authorizingStaff: StaffMember) => void;
 }
@@ -34,6 +37,7 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
   isOpen,
   onClose,
   staffList,
+  currentUserEmail,
   activeStaffName,
   activeStaffRole,
   actionTitle,
@@ -42,6 +46,7 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
   description,
   requiredRole = 'MANAGER',
   requiredRoleLabel,
+  onPinReset,
   onAuthorized,
   onSuccess,
 }) => {
@@ -49,6 +54,7 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
   const displayDesc = description || actionDescription || 'This area contains confidential business data or privileged controls.';
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isRecoveryOpen, setIsRecoveryOpen] = useState(false);
 
   const isOwnerOnly = requiredRole === 'OWNER';
   const managers = staffList.filter(
@@ -199,6 +205,20 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
               <Delete className="size-4" />
             </Button>
           </div>
+
+          {/* Forgot PIN Recovery Link */}
+          <div className="pt-2">
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              onClick={() => setIsRecoveryOpen(true)}
+              className="text-xs text-muted-foreground hover:text-foreground h-auto p-0 flex items-center gap-1 cursor-pointer"
+            >
+              <KeyRound className="size-3" />
+              Forgot PIN? Reset with Store Account
+            </Button>
+          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2 pt-2">
@@ -218,6 +238,26 @@ export const ManagerPinModal: React.FC<ManagerPinModalProps> = ({
             Authorize
           </Button>
         </DialogFooter>
+
+        {/* PIN Recovery Modal */}
+        <ForgotPinRecoveryModal
+          isOpen={isRecoveryOpen}
+          onClose={() => setIsRecoveryOpen(false)}
+          staffList={staffList}
+          currentUserEmail={currentUserEmail}
+          targetRole={isOwnerOnly ? 'OWNER' : 'ALL'}
+          onPinReset={async (staffId, newPinVal) => {
+            if (onPinReset) {
+              await onPinReset(staffId, newPinVal);
+            }
+          }}
+          onSuccess={(staff) => {
+            setIsRecoveryOpen(false);
+            if (onSuccess) onSuccess(staff);
+            if (onAuthorized) onAuthorized(staff);
+            onClose();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

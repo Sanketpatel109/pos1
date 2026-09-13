@@ -13,12 +13,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+import { ForgotPinRecoveryModal } from './ForgotPinRecoveryModal';
+
 interface QuickStaffSwitchModalProps {
   isOpen: boolean;
   staffList: StaffMember[];
   activeStaffId: string;
+  currentUserEmail?: string;
   onClose: () => void;
   onSwitchStaff: (staffId: string) => void;
+  onPinReset?: (staffId: string, newPin: string) => Promise<void> | void;
   onNavigateToStaffManagement?: () => void;
 }
 
@@ -26,8 +30,10 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
   isOpen,
   staffList,
   activeStaffId,
+  currentUserEmail,
   onClose,
   onSwitchStaff,
+  onPinReset,
   onNavigateToStaffManagement,
 }) => {
   const activeStaff = staffList.find((s) => s.id === activeStaffId) || staffList[0];
@@ -39,6 +45,7 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [isRecoveryOpen, setIsRecoveryOpen] = useState<boolean>(false);
 
   // When modal opens or activeStaff changes, reset state
   useEffect(() => {
@@ -281,6 +288,20 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
             </Button>
           </div>
 
+          {/* Forgot PIN Recovery Link */}
+          <div className="pt-1 flex justify-center">
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              onClick={() => setIsRecoveryOpen(true)}
+              className="text-xs text-muted-foreground hover:text-foreground h-auto p-0 flex items-center gap-1 cursor-pointer"
+            >
+              <KeyRound className="size-3" />
+              Forgot PIN? Reset with Store Account
+            </Button>
+          </div>
+
           {/* Footer with Staff Admin Link */}
           <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1 text-[11px]">
@@ -301,6 +322,25 @@ export const QuickStaffSwitchModal: React.FC<QuickStaffSwitchModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* Forgot PIN Recovery Modal */}
+        <ForgotPinRecoveryModal
+          isOpen={isRecoveryOpen}
+          onClose={() => setIsRecoveryOpen(false)}
+          staffList={staffList}
+          currentUserEmail={currentUserEmail}
+          targetStaffId={selectedStaff.id}
+          onPinReset={async (staffId, newPinVal) => {
+            if (onPinReset) {
+              await onPinReset(staffId, newPinVal);
+            }
+          }}
+          onSuccess={(staff) => {
+            setIsRecoveryOpen(false);
+            onSwitchStaff(staff.id);
+            onClose();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -1481,12 +1481,20 @@ export default function App() {
     liveSaveStaff(newMember).catch((err) => console.warn('Live staff save:', err));
   };
 
-  const handleUpdatePin = (staffId: string, newPin: string) => {
+  const handleUpdatePin = async (staffId: string, newPin: string) => {
     playSfx('tap');
-    setStaffList((prev) =>
-      prev.map((s) => (s.id === staffId ? { ...s, pin: newPin } : s))
-    );
-    liveUpdateStaffPin(staffId, newPin).catch((err) => console.warn('Live staff PIN update:', err));
+    setStaffList((prev) => {
+      const updated = prev.map((s) => (s.id === staffId ? { ...s, pin: newPin } : s));
+      try {
+        localStorage.setItem('monopos_staff_list', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    try {
+      await liveUpdateStaffPin(staffId, newPin);
+    } catch (err) {
+      console.warn('Live staff PIN update:', err);
+    }
   };
 
   const handleUpdatePermissions = (newPermissions: StorePermissions) => {
@@ -2166,8 +2174,10 @@ export default function App() {
         isOpen={isStaffSwitchModalOpen}
         staffList={staffList}
         activeStaffId={activeStaffId}
+        currentUserEmail={currentUser?.email || undefined}
         onClose={() => setIsStaffSwitchModalOpen(false)}
         onSwitchStaff={handleSwitchStaff}
+        onPinReset={handleUpdatePin}
         onNavigateToStaffManagement={() => setActiveScreen('staff-management')}
       />
 
@@ -2251,12 +2261,14 @@ export default function App() {
       <ManagerPinModal
         isOpen={isManagerPinModalOpen}
         staffList={staffList}
+        currentUserEmail={currentUser?.email || undefined}
         activeStaffName={activeStaff.name}
         activeStaffRole={activeStaff.role}
         title={pendingRestrictedAction?.title || 'Manager Authorization'}
         description={pendingRestrictedAction?.description}
         requiredRoleLabel={pendingRestrictedAction?.requiredRoleLabel || 'MANAGER / OWNER'}
         requiredRole={pendingRestrictedAction?.requiredRole || 'MANAGER'}
+        onPinReset={handleUpdatePin}
         onClose={() => {
           setIsManagerPinModalOpen(false);
           setPendingRestrictedAction(null);
@@ -2276,7 +2288,9 @@ export default function App() {
         isOpen={isRolePermissionsOpen}
         staffList={staffList}
         activeStaffId={activeStaffId}
+        currentUserEmail={currentUser?.email || undefined}
         permissions={shopSettings.permissions || DEFAULT_STORE_PERMISSIONS}
+        onPinReset={handleUpdatePin}
         onUpdatePermissions={handleUpdatePermissions}
         onClose={() => setIsRolePermissionsOpen(false)}
         onSwitchStaff={(staffId) => {
