@@ -15,7 +15,6 @@ import { User } from '../firebase';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SubscriptionBadge } from './SubscriptionBadge';
 import { LicenseStatus } from '../services/subscriptionService';
 
 export interface HeaderProps {
@@ -185,16 +184,8 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      {/* RIGHT ZONE: [Sub Badge] [+] (Custom Item), [Camera] (Scan), [Pause] (Held Bills), [Maximize] (Kiosk) */}
+      {/* RIGHT ZONE: [+] (Custom Item), [Camera] (Scan), [Pause] (Held Bills), [Maximize] (Kiosk) */}
       <div className="flex items-center gap-1 shrink-0">
-
-        {/* Subscription Status Badge */}
-        {licenseStatus && (
-          <SubscriptionBadge
-            licenseStatus={licenseStatus}
-            onClick={onOpenSubscription}
-          />
-        )}
 
         {/* [+] Custom Item Button */}
         {onOpenCustomItem && (
