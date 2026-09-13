@@ -31,6 +31,10 @@ export interface CartContextType {
   subtotal: number;
   gst: number;
   taxAmount: number; // Alias for gst
+  discount: number;
+  discountType: 'percentage' | 'flat';
+  discountAmount: number;
+  setDiscount: (amount: number, type?: 'percentage' | 'flat') => void;
   grandTotal: number;
   itemCount: number;
   taxRate: number;
@@ -103,6 +107,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({
 }) => {
   const [currentBillItems, setCurrentBillItems] = useState<BillItem[]>(initialItems);
   const [taxRate, setTaxRate] = useState<number>(defaultTaxRate);
+  const [discount, setDiscountValue] = useState<number>(0);
+  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>('percentage');
+
+  const setDiscount = useCallback((amount: number, type: 'percentage' | 'flat' = 'percentage') => {
+    setDiscountValue(Math.max(0, amount));
+    setDiscountType(type);
+  }, []);
 
   const addItem = useCallback(
     (
@@ -121,10 +132,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({
             selectedPackName?: string;
             multiplier?: number;
             barcode?: string;
+            stock?: number;
           }
     ) => {
       const name = item.name;
+      const stock = 'stock' in item && typeof item.stock === 'number' ? item.stock : undefined;
       const unitPrice =
+
         'unitPrice' in item && typeof item.unitPrice === 'number'
           ? item.unitPrice
           : 'price' in item && typeof item.price === 'number'
@@ -207,8 +221,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({
           sgst: snapshot.sgst,
           totalTax: snapshot.totalTax,
           itemTotal: snapshot.itemTotal,
+          stock: stock,
         };
         return [...prev, newItem];
+
       });
     },
     [taxRate]
@@ -266,6 +282,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({
 
   const clearCart = useCallback(() => {
     setCurrentBillItems([]);
+    setDiscountValue(0);
   }, []);
 
   const taxTotals = useMemo(() => {
@@ -283,9 +300,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({
     return taxTotals.totalTax;
   }, [taxTotals]);
 
+  const discountAmount = useMemo(() => {
+    if (discount <= 0) return 0;
+    if (discountType === 'percentage') {
+      return Number(((subtotal * discount) / 100).toFixed(2));
+    }
+    return Math.min(subtotal, discount);
+  }, [subtotal, discount, discountType]);
+
   const grandTotal = useMemo(() => {
-    return subtotal + gst;
-  }, [subtotal, gst]);
+    return Math.max(0, subtotal - discountAmount) + gst;
+  }, [subtotal, discountAmount, gst]);
 
   const itemCount = useMemo(() => {
     return currentBillItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -304,6 +329,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       subtotal,
       gst,
       taxAmount: gst,
+      discount,
+      discountType,
+      discountAmount,
+      setDiscount,
       grandTotal,
       itemCount,
       taxRate,
@@ -318,11 +347,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       clearCart,
       subtotal,
       gst,
+      discount,
+      discountType,
+      discountAmount,
+      setDiscount,
       grandTotal,
       itemCount,
       taxRate,
     ]
   );
+
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

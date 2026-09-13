@@ -12,6 +12,9 @@ import {
   ChevronRight,
   Lock,
   Settings,
+  Crown,
+  LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { ActiveScreen, ShopSettings, StaffRole } from '../types';
 import { User } from '../firebase';
@@ -22,6 +25,7 @@ import {
   canAccessScreen,
   getRequiredRoleForScreen,
 } from '../utils/permissions';
+import { LicenseStatus } from '../services/subscriptionService';
 
 export interface NavigationDrawerProps {
   isOpen: boolean;
@@ -41,6 +45,9 @@ export interface NavigationDrawerProps {
   onRequestManagerOverride?: (screen: ActiveScreen) => void;
   onOpenPermissionsModal?: () => void;
   onOpenZReport?: () => void;
+  onOpenSubscription?: () => void;
+  onSignOut?: () => void;
+  licenseStatus?: LicenseStatus | null;
 }
 
 interface MenuItem {
@@ -61,12 +68,15 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   shopSettings,
   activeStaffName,
   activeStaffRole = 'CASHIER',
+  user = null,
   isSyncing = false,
   onSelectScreen,
   onClose,
   onRequestManagerOverride,
-  onOpenCloudModal,
   onOpenStaffSwitch,
+  onOpenSubscription,
+  onSignOut,
+  licenseStatus,
 }) => {
   if (!isOpen) return null;
 
@@ -79,14 +89,14 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       items: [
         {
           id: 'item-wise',
-          label: 'Items Register',
-          description: 'Barcode & Menu billing',
+          label: 'Catalog & Barcode Billing',
+          description: 'Product catalog & laser barcode billing',
           icon: Layers,
         },
         {
           id: 'quick-bill',
-          label: 'Keypad Register',
-          description: 'Fast Calculator billing',
+          label: 'Quick Numpad Register',
+          description: 'Fast calculator & custom amount billing',
           icon: Zap,
         },
       ],
@@ -96,20 +106,20 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       items: [
         {
           id: 'cash-management',
-          label: 'Galla / Cash Drawer',
-          description: 'Cash In, Cash Out & daily balance',
+          label: 'Cash Drawer (Till / Galla)',
+          description: 'Cash In, Cash Out & denomination count',
           icon: Wallet,
         },
         {
           id: 'credit-ledger',
-          label: 'Customer Khata (Udhar)',
-          description: 'Customer balance & credit limits',
+          label: 'Customer Credit & Khata',
+          description: 'Khata ledger, credit limits & WhatsApp',
           icon: CreditCard,
         },
         {
           id: 'categories-products',
-          label: 'Products & Stock',
-          description: 'Manage items & inventory',
+          label: 'Products & Stock Inventory',
+          description: 'Manage items, barcodes & stock levels',
           icon: Package,
         },
       ],
@@ -120,19 +130,19 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         {
           id: 'reports',
           label: 'Sales & Tax Reports (GSTR-1)',
-          description: 'Daily sales summary & GST export',
+          description: 'Daily sales summary & GST tax export',
           icon: FileSpreadsheet,
         },
         {
           id: 'staff-management',
-          label: 'Staff & Store Policy',
+          label: 'Staff & Store Policies',
           description: 'Terminal operators & security policies',
           icon: UserCheck,
         },
         {
           id: 'print-settings',
-          label: 'Store & Admin Settings',
-          description: 'Printer, UPI, Cloud & Advanced Diagnostics',
+          label: 'Store & Hardware Settings',
+          description: 'Printer, UPI, Cloud & Hardware Config',
           icon: Settings,
         },
       ],
@@ -148,8 +158,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       />
 
       {/* Drawer */}
-      <div className="relative w-80 max-w-[85vw] bg-card h-full shadow-2xl flex flex-col z-10 border-r border-border">
-        {/* Header */}
+      <div className="relative w-84 max-w-[85vw] bg-card h-full shadow-2xl flex flex-col z-10 border-r border-border">
+        {/* Store Brand Header */}
         <div className="p-4 border-b border-border bg-card flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
@@ -179,9 +189,29 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           </button>
         </div>
 
+        {/* Subscription / Plan Quick Pill */}
+        {onOpenSubscription && (
+          <div className="px-3 pt-2 pb-1 bg-muted/20 border-b border-border/50">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenSubscription();
+              }}
+              className="w-full py-1.5 px-2.5 rounded-lg bg-primary/10 hover:bg-primary/15 border border-primary/20 text-xs font-semibold text-primary flex items-center justify-between transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Crown className="w-3.5 h-3.5 shrink-0" />
+                <span>Plan: {licenseStatus?.displayLabel || 'Free Trial'}</span>
+              </div>
+              <span className="text-[11px] font-bold opacity-80">Manage →</span>
+            </button>
+          </div>
+        )}
+
         {/* Quick Shift / Operator Switcher Bar */}
         {onOpenStaffSwitch && (
-          <div className="px-3 pt-2 pb-1 border-b border-border/60 bg-muted/30">
+          <div className="px-3 pt-1.5 pb-1.5 border-b border-border/60 bg-muted/30">
             <button
               type="button"
               id="btn-drawer-switch-staff"
@@ -204,7 +234,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
           {menuGroups.map((group) => (
             <div key={group.groupTitle} className="space-y-1">
-              <div className="px-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="px-2 pb-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 {group.groupTitle}
               </div>
               <div className="space-y-1">
@@ -263,7 +293,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                           )}
                         </div>
                         <p
-                          className={`text-xs truncate mt-0.5 ${
+                          className={`text-[11px] truncate mt-0.5 ${
                             isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'
                           }`}
                         >
@@ -292,24 +322,63 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           <PWAInstallButton variant="sidebar" />
         </div>
 
-        {/* Store Information & Cloud Sync Footer */}
-        <div className="p-3 border-t border-border bg-muted/40 flex items-center justify-between text-xs text-muted-foreground">
+        {/* User Account / Sign Out Section */}
+        {user && onSignOut && (
+          <div className="p-3 border-t border-border bg-card flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || 'Owner'}
+                  className="w-7 h-7 rounded-full object-cover shrink-0 border border-border"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'O'}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-foreground truncate">
+                  {user.displayName || 'Store Owner'}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onSignOut();
+              }}
+              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer shrink-0"
+              title="Sign Out of Store Account"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Cloud Sync & Thermal Paper Format Footer */}
+        <div className="p-2.5 border-t border-border bg-muted/40 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
                 isSyncing
                   ? 'bg-primary animate-ping'
                   : navigator.onLine !== false
-                  ? 'bg-primary'
+                  ? 'bg-emerald-500'
                   : 'bg-muted-foreground'
               }`}
             />
-            <span className="font-medium text-xs text-foreground">
-              Cloud Status: {isSyncing ? 'Syncing...' : navigator.onLine !== false ? 'Live (Protected)' : 'Offline'}
+            <span className="font-medium text-[11px] text-foreground">
+              {isSyncing ? 'Syncing...' : navigator.onLine !== false ? 'Cloud Live' : 'Offline Mode'}
             </span>
           </div>
-          <span className="text-xs font-medium bg-card text-foreground px-2 py-0.5 rounded-md border border-border shadow-xs">
-            58mm POS
+          <span className="text-[10px] font-semibold bg-card text-foreground px-2 py-0.5 rounded border border-border shadow-2xs">
+            {shopSettings.thermalPrinterPaperWidth || '58mm'} Thermal
           </span>
         </div>
       </div>

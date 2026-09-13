@@ -37,7 +37,7 @@ const FEATURES = [
   { icon: ShieldCheck, label: '14-Day Free Trial', desc: 'No credit card required' },
 ];
 
-export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated }) => {
+export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated, onDemoLogin }) => {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -89,6 +89,8 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
         setError('Invalid email or password. Please check your credentials.');
       } else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Try signing in instead.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Email sign-in is disabled in Firebase. Please use "Continue with Google" or "Explore Interactive Demo" below.');
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait a moment and try again.');
       } else {
@@ -134,6 +136,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
 
           {/* Google 1-Tap Button */}
           <Button
+            id="btn-google-sign-in"
             type="button"
             variant="outline"
             size="lg"
@@ -199,6 +202,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
               </div>
 
               <Button
+                id="btn-submit-auth"
                 type="submit"
                 size="lg"
                 className="w-full h-11 gap-2 text-sm font-semibold"
@@ -213,6 +217,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
               </Button>
 
               <button
+                id="btn-toggle-sign-up"
                 type="button"
                 onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
                 className="w-full text-xs text-primary hover:underline font-medium cursor-pointer text-center py-1"
@@ -222,6 +227,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
             </form>
           ) : (
             <Button
+              id="btn-sign-in-email"
               type="button"
               variant="ghost"
               size="lg"
@@ -242,11 +248,24 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
           )}
         </div>
 
-        {/* Trial Guarantee */}
-        <p className="text-[11px] text-muted-foreground text-center leading-relaxed max-w-xs">
-          Start your <span className="font-bold text-primary">14-day free trial</span> instantly.
-          No credit card required. Full access to all features.
-        </p>
+        {/* Trial Guarantee & Demo Link */}
+        <div className="text-center space-y-2 max-w-xs">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Start your <span className="font-bold text-primary">14-day free trial</span> instantly.
+            No credit card required. Full access to all features.
+          </p>
+
+          {onDemoLogin && (
+            <button
+              id="btn-explore-demo"
+              type="button"
+              onClick={onDemoLogin}
+              className="text-xs text-muted-foreground hover:text-primary font-semibold underline underline-offset-4 cursor-pointer transition-colors py-1"
+            >
+              ⚡ Explore Interactive Demo (No Sign-In Required)
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

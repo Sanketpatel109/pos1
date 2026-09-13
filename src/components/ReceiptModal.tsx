@@ -387,10 +387,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <div className="h-9 bg-repeating-linear-gradient flex items-center justify-center text-[10px] tracking-[0.25em] text-foreground border-y border-border py-1">
                 *ORD-{activeOrderNum}-2026*
               </div>
-              <p className="text-[10px] text-muted-foreground pt-1">
-                *** THANK YOU, VISIT AGAIN ***
+              {shopSettings.returnPolicyNote && (
+                <p className="text-[9px] text-muted-foreground pt-1 leading-tight italic">
+                  {shopSettings.returnPolicyNote}
+                </p>
+              )}
+              <p className="text-[10px] text-muted-foreground font-bold pt-0.5">
+                {shopSettings.receiptFooterNote || '*** THANK YOU, VISIT AGAIN ***'}
               </p>
             </div>
+
           </div>
         </div>
 

@@ -100,6 +100,35 @@ function updateSyncState(patch: Partial<LiveSyncState>) {
   syncStateListeners.forEach((fn) => fn(currentSyncState));
 }
 
+// ============================================================================
+// MULTI-TENANT ISOLATION HELPERS
+// ============================================================================
+let activeTenantId: string | null = null;
+
+export function setActiveTenantId(tenantId: string | null): void {
+  activeTenantId = tenantId;
+}
+
+export function getActiveTenantId(): string | null {
+  return activeTenantId;
+}
+
+export function getTenantCollection(colName: string, overrideTenantId?: string) {
+  const tId = overrideTenantId || activeTenantId;
+  if (tId) {
+    return collection(db, 'tenants', tId, colName);
+  }
+  return collection(db, colName);
+}
+
+export function getTenantDoc(colName: string, docId: string, overrideTenantId?: string) {
+  const tId = overrideTenantId || activeTenantId;
+  if (tId) {
+    return doc(db, 'tenants', tId, colName, docId);
+  }
+  return doc(db, colName, docId);
+}
+
 /**
  * Validate Connection to Firestore on Boot
  */
@@ -137,7 +166,7 @@ export function listenToLiveCatalog(
   callback: (items: CatalogItem[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'catalog');
+  const colRef = getTenantCollection('catalog');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -170,7 +199,7 @@ export function listenToLiveCategories(
   callback: (categories: Category[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'categories');
+  const colRef = getTenantCollection('categories');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -200,7 +229,7 @@ export function listenToLiveOrders(
   callback: (orders: Order[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'orders');
+  const colRef = getTenantCollection('orders');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -232,7 +261,7 @@ export function listenToLiveCustomers(
   callback: (customers: Customer[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'customers');
+  const colRef = getTenantCollection('customers');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -264,7 +293,7 @@ export function listenToLiveCashEntries(
   callback: (entries: CashEntry[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'cashEntries');
+  const colRef = getTenantCollection('cashEntries');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -296,7 +325,7 @@ export function listenToLiveSettings(
   callback: (settings: ShopSettings) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const docRef = doc(db, 'settings', 'store_config');
+  const docRef = getTenantDoc('settings', 'store_config');
   return onSnapshot(
     docRef,
     (snapshot) => {
@@ -325,7 +354,7 @@ export function listenToLiveStaff(
   callback: (staff: StaffMember[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'staff');
+  const colRef = getTenantCollection('staff');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -355,7 +384,7 @@ export function listenToLiveHeldOrders(
   callback: (held: Order[]) => void,
   onError?: (err: FirestoreErrorInfo) => void
 ): () => void {
-  const colRef = collection(db, 'heldOrders');
+  const colRef = getTenantCollection('heldOrders');
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -393,7 +422,7 @@ export async function liveSaveOrder(order: Order): Promise<void> {
     const batch = writeBatch(db);
 
     // 1. Order document in /orders
-    const orderRef = doc(db, 'orders', order.id);
+    const orderRef = getTenantDoc('orders', order.id);
     batch.set(
       orderRef,
       {
@@ -404,7 +433,7 @@ export async function liveSaveOrder(order: Order): Promise<void> {
     );
 
     // 2. Bill tender snapshot in /bills
-    const billRef = doc(db, 'bills', order.id);
+    const billRef = getTenantDoc('bills', order.id);
     batch.set(
       billRef,
       {
@@ -425,11 +454,11 @@ export async function liveSaveOrder(order: Order): Promise<void> {
     // 3. Customer khata update if order had credit payment mode
     if (order.customerId && (order.paymentMethod === 'CREDIT' || order.splitDetails?.credit)) {
       const creditToAdd = order.splitDetails?.credit || order.total;
-      const custDoc = await getDoc(doc(db, 'customers', order.customerId));
+      const custDoc = await getDoc(getTenantDoc('customers', order.customerId));
       if (custDoc.exists()) {
         const curBal = Number(custDoc.data().creditBalance || 0);
         const curOrders = Number(custDoc.data().totalOrders || 0);
-        batch.update(doc(db, 'customers', order.customerId), {
+        batch.update(getTenantDoc('customers', order.customerId), {
           creditBalance: curBal + creditToAdd,
           totalOrders: curOrders + 1,
           updatedAt: new Date().toISOString(),
@@ -455,9 +484,9 @@ export async function liveSaveOrder(order: Order): Promise<void> {
  */
 export async function liveDeleteOrder(orderId: string): Promise<void> {
   try {
-    await deleteDoc(doc(db, 'orders', orderId));
+    await deleteDoc(getTenantDoc('orders', orderId));
     try {
-      await deleteDoc(doc(db, 'bills', orderId));
+      await deleteDoc(getTenantDoc('bills', orderId));
     } catch {
       // Ignore if bill doc didn't exist
     }
@@ -477,7 +506,7 @@ export async function liveDeleteOrder(orderId: string): Promise<void> {
 export async function liveDeleteAllOrders(): Promise<void> {
   updateSyncState({ isSyncing: true });
   try {
-    const snap = await getDocs(collection(db, 'orders'));
+    const snap = await getDocs(getTenantCollection('orders'));
     const batch = writeBatch(db);
     snap.forEach((d) => batch.delete(d.ref));
     await batch.commit();
@@ -497,7 +526,7 @@ export async function liveDeleteAllOrders(): Promise<void> {
  */
 export async function liveSaveProduct(item: CatalogItem): Promise<void> {
   try {
-    const itemRef = doc(db, 'catalog', item.id);
+    const itemRef = getTenantDoc('catalog', item.id);
     await setDoc(
       itemRef,
       {
@@ -521,7 +550,7 @@ export async function liveSaveProduct(item: CatalogItem): Promise<void> {
  */
 export async function liveDeleteProduct(itemId: string): Promise<void> {
   try {
-    await deleteDoc(doc(db, 'catalog', itemId));
+    await deleteDoc(getTenantDoc('catalog', itemId));
     updateSyncState({
       lastSyncAt: new Date(),
       lastEvent: `Deleted product from catalog`,
@@ -538,7 +567,7 @@ export async function liveDeleteProduct(itemId: string): Promise<void> {
 export async function liveUpdateProductStock(itemId: string, newStock: number): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'catalog', itemId),
+      getTenantDoc('catalog', itemId),
       {
         stock: newStock,
         updatedAt: new Date().toISOString(),
@@ -566,7 +595,7 @@ export async function liveBatchDeductStock(
       if (deductQty !== undefined && item.stock !== undefined) {
         const updatedStock = Math.max(0, item.stock - deductQty);
         batch.set(
-          doc(db, 'catalog', item.id),
+          getTenantDoc('catalog', item.id),
           { stock: updatedStock, updatedAt: new Date().toISOString() },
           { merge: true }
         );
@@ -584,7 +613,7 @@ export async function liveBatchDeductStock(
 export async function liveSaveCategory(category: Category): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'categories', category.id),
+      getTenantDoc('categories', category.id),
       {
         ...category,
         updatedAt: new Date().toISOString(),
@@ -606,7 +635,7 @@ export async function liveSaveCategory(category: Category): Promise<void> {
  */
 export async function liveDeleteCategory(categoryId: string): Promise<void> {
   try {
-    await deleteDoc(doc(db, 'categories', categoryId));
+    await deleteDoc(getTenantDoc('categories', categoryId));
   } catch (err) {
     handleFirestoreError(err, 'delete', `categories/${categoryId}`);
     throw err;
@@ -619,7 +648,7 @@ export async function liveDeleteCategory(categoryId: string): Promise<void> {
 export async function liveSaveCustomer(customer: Customer): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'customers', customer.id),
+      getTenantDoc('customers', customer.id),
       {
         ...customer,
         updatedAt: new Date().toISOString(),
@@ -645,7 +674,7 @@ export async function liveSettleCustomerCredit(
 ): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'customers', customerId),
+      getTenantDoc('customers', customerId),
       {
         creditBalance: newBalance,
         updatedAt: new Date().toISOString(),
@@ -664,7 +693,7 @@ export async function liveSettleCustomerCredit(
 export async function liveSaveCashEntry(entry: CashEntry): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'cashEntries', entry.id),
+      getTenantDoc('cashEntries', entry.id),
       {
         ...entry,
         createdAt: entry.createdAt || new Date().toISOString(),
@@ -687,7 +716,7 @@ export async function liveSaveCashEntry(entry: CashEntry): Promise<void> {
 export async function liveSaveSettings(settings: ShopSettings): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'settings', 'store_config'),
+      getTenantDoc('settings', 'store_config'),
       {
         ...settings,
         updatedAt: new Date().toISOString(),
@@ -710,7 +739,7 @@ export async function liveSaveSettings(settings: ShopSettings): Promise<void> {
 export async function liveSaveStaff(member: StaffMember): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'staff', member.id),
+      getTenantDoc('staff', member.id),
       {
         ...member,
         updatedAt: new Date().toISOString(),
@@ -733,7 +762,7 @@ export async function liveSaveStaff(member: StaffMember): Promise<void> {
 export async function liveUpdateStaffPin(staffId: string, newPin: string): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'staff', staffId),
+      getTenantDoc('staff', staffId),
       {
         pin: newPin,
         updatedAt: new Date().toISOString(),
@@ -752,7 +781,7 @@ export async function liveUpdateStaffPin(staffId: string, newPin: string): Promi
 export async function liveSaveHeldOrder(order: Order): Promise<void> {
   try {
     await setDoc(
-      doc(db, 'heldOrders', order.id),
+      getTenantDoc('heldOrders', order.id),
       {
         ...order,
         parkedAt: new Date().toISOString(),
@@ -774,7 +803,7 @@ export async function liveSaveHeldOrder(order: Order): Promise<void> {
  */
 export async function liveDeleteHeldOrder(orderId: string): Promise<void> {
   try {
-    await deleteDoc(doc(db, 'heldOrders', orderId));
+    await deleteDoc(getTenantDoc('heldOrders', orderId));
     updateSyncState({
       lastSyncAt: new Date(),
       lastEvent: `Resumed parked ticket ${orderId}`,
@@ -790,7 +819,7 @@ export async function liveDeleteHeldOrder(orderId: string): Promise<void> {
  */
 export async function liveClearAllHeldOrders(): Promise<void> {
   try {
-    const snap = await getDocs(collection(db, 'heldOrders'));
+    const snap = await getDocs(getTenantCollection('heldOrders'));
     const batch = writeBatch(db);
     snap.forEach((d) => batch.delete(d.ref));
     await batch.commit();

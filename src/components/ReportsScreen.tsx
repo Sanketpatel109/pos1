@@ -15,6 +15,7 @@ import {
   ChevronDown,
   BarChart3,
   Layers,
+  RotateCcw,
 } from 'lucide-react';
 import { Order, PaymentMethod, CatalogItem, ShopSettings } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ProcessReturnModal, RefundResult } from './ProcessReturnModal';
 
 interface ReportsScreenProps {
   orders: Order[];
@@ -34,7 +36,9 @@ interface ReportsScreenProps {
   onDeleteOrder: (orderId: string) => void;
   onDeleteAllOrders: () => void;
   onOpenZReport?: () => void;
+  onProcessRefund?: (refund: RefundResult) => void;
 }
+
 
 export const ReportsScreen: React.FC<ReportsScreenProps> = ({
   orders,
@@ -47,13 +51,17 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
   onDeleteOrder,
   onDeleteAllOrders,
   onOpenZReport,
+  onProcessRefund,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | PaymentMethod>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState<boolean>(false);
+  const [returnTargetOrder, setReturnTargetOrder] = useState<Order | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string>(
     orders.length > 0 ? orders[0].id : ''
   );
+
   const [gstMonth, setGstMonth] = useState<string>(() => {
     if (orders.length > 0 && orders[0].createdAt) {
       return orders[0].createdAt.slice(0, 7);
@@ -638,10 +646,17 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                             TOKEN #{String(order.tokenNumber).padStart(2, '0')}
                           </Badge>
                         )}
-                        <Badge variant="outline" className="text-[10px] py-0">
-                          {paymentModeLabel}
-                        </Badge>
+                        {order.status === 'refunded' ? (
+                          <Badge variant="destructive" className="text-[10px] py-0 font-bold">
+                            REFUNDED
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] py-0">
+                            {paymentModeLabel}
+                          </Badge>
+                        )}
                         <span className="text-[11px] text-muted-foreground">
+
                           {formattedDate}, {formattedTime}
                         </span>
                       </div>
@@ -740,10 +755,17 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                       )}
                     </p>
                   </div>
-                  <Badge variant="default" className="text-[10px] font-bold uppercase tracking-wider shrink-0">
-                    {paymentBadgeLabel}
-                  </Badge>
+                  {activeSelectedOrder.status === 'refunded' ? (
+                    <Badge variant="destructive" className="text-[10px] font-bold uppercase tracking-wider shrink-0">
+                      REFUNDED
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="text-[10px] font-bold uppercase tracking-wider shrink-0">
+                      {paymentBadgeLabel}
+                    </Badge>
+                  )}
                 </div>
+
 
                 {/* Items Section */}
                 <div className="border-t border-b border-dashed border-border py-2.5 space-y-1.5">
@@ -820,27 +842,44 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="flex flex-col gap-2 pt-2">
                   <Button
                     type="button"
-                    onClick={() => onPrintOrder(activeSelectedOrder)}
-                    variant="default"
-                    className="h-9 text-xs font-medium cursor-pointer"
-                    title="Print Duplicate Receipt"
+                    onClick={() => {
+                      setReturnTargetOrder(activeSelectedOrder);
+                      setIsReturnModalOpen(true);
+                    }}
+                    disabled={activeSelectedOrder.status === 'refunded'}
+                    variant="outline"
+                    className="w-full h-9 text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40"
+                    title={activeSelectedOrder.status === 'refunded' ? 'Bill already refunded' : 'Process item return & refund'}
                   >
-                    <Printer className="w-3.5 h-3.5 shrink-0" />
-                    <span>Print Duplicate</span>
+                    <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                    <span>{activeSelectedOrder.status === 'refunded' ? 'Already Refunded' : 'Process Return / Refund'}</span>
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={() => onDeleteOrder(activeSelectedOrder.id)}
-                    variant="destructive"
-                    className="h-9 text-xs font-medium cursor-pointer"
-                    title="Cancel / Void Bill"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                    <span>Void Bill</span>
-                  </Button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => onPrintOrder(activeSelectedOrder)}
+                      variant="default"
+                      className="h-9 text-xs font-medium cursor-pointer"
+                      title="Print Duplicate Receipt"
+                    >
+                      <Printer className="w-3.5 h-3.5 shrink-0" />
+                      <span>Print Duplicate</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => onDeleteOrder(activeSelectedOrder.id)}
+                      variant="destructive"
+                      className="h-9 text-xs font-medium cursor-pointer"
+                      title="Cancel / Void Bill"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Void Bill</span>
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );
@@ -855,6 +894,23 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
           )}
         </div>
       </div>
+
+      {/* Process Return / Refund Modal */}
+      <ProcessReturnModal
+        isOpen={isReturnModalOpen}
+        order={returnTargetOrder}
+        currencySymbol={currencySymbol}
+        onClose={() => {
+          setIsReturnModalOpen(false);
+          setReturnTargetOrder(null);
+        }}
+        onConfirmRefund={(refund) => {
+          if (onProcessRefund) {
+            onProcessRefund(refund);
+          }
+        }}
+      />
     </div>
   );
 };
+

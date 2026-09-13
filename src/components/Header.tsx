@@ -6,7 +6,10 @@ import {
   Minimize2,
   Plus,
   Camera,
+  Layers,
+  Zap,
 } from 'lucide-react';
+
 import { ActiveScreen, StaffRole } from '../types';
 import { User } from '../firebase';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
@@ -40,12 +43,14 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  storeName = 'Anand Supermarket',
+  storeName = 'MonoPOS Retail',
   storeLogoUrl = '',
+  activeScreen = 'item-wise',
   heldOrdersCount = 0,
-  activeStaffName = 'Anand',
+  activeStaffName = 'Store Owner',
   activeStaffRole = 'OWNER',
   onOpenMenu,
+  onNavigate,
   onOpenStaffSwitch,
   onOpenHeldOrders,
   onOpenCustomItem,
@@ -53,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   licenseStatus,
   onOpenSubscription,
 }) => {
+
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Sync fullscreen state with document and F11 keyboard shortcut
@@ -145,8 +151,43 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
+      {/* CENTER ZONE: 1-Tap Dual Register Switcher: [Catalog & Barcode] | [Quick Numpad] */}
+      {onNavigate && (activeScreen === 'item-wise' || activeScreen === 'quick-bill') && (
+        <div className="hidden sm:flex items-center p-0.5 bg-muted/80 rounded-xl border border-border/80 text-xs font-semibold shrink-0 shadow-2xs">
+          <button
+            type="button"
+            id="header-tab-catalog"
+            onClick={() => onNavigate('item-wise')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeScreen === 'item-wise'
+                ? 'bg-background text-foreground shadow-xs font-bold'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Switch to Item Catalog & Barcode Scanner billing"
+          >
+            <Layers className="size-3.5" />
+            <span>Catalog & Barcode</span>
+          </button>
+          <button
+            type="button"
+            id="header-tab-numpad"
+            onClick={() => onNavigate('quick-bill')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeScreen === 'quick-bill'
+                ? 'bg-background text-foreground shadow-xs font-bold'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Switch to Quick Calculator & Numpad register"
+          >
+            <Zap className="size-3.5" />
+            <span>Quick Numpad</span>
+          </button>
+        </div>
+      )}
+
       {/* RIGHT ZONE: [Sub Badge] [+] (Custom Item), [Camera] (Scan), [Pause] (Held Bills), [Maximize] (Kiosk) */}
       <div className="flex items-center gap-1 shrink-0">
+
         {/* Subscription Status Badge */}
         {licenseStatus && (
           <SubscriptionBadge

@@ -84,9 +84,11 @@ export interface BillItem {
   totalTax?: number;      // Snapshot of combined tax amount
   itemTotal?: number;     // Snapshot of total amount (taxable + tax)
   note?: string;
+  stock?: number;
 }
 
-export type OrderStatus = 'active' | 'held' | 'completed' | 'cancelled';
+
+export type OrderStatus = 'active' | 'held' | 'completed' | 'cancelled' | 'refunded' | 'partially_refunded';
 export type PaymentMethod = 'NONE' | 'CASH' | 'ONLINE' | 'CREDIT' | 'SPLIT';
 
 export interface SplitPaymentDetail {
@@ -159,7 +161,13 @@ export interface Order {
   upiRefNumber?: string;
   isVerified?: boolean;
   verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
+  refundAmount?: number;
+  refundReason?: string;
+  refundedAt?: string;
+  refundMethod?: 'CASH' | 'KHATA' | 'ONLINE';
+  refundedItems?: { id: string; name: string; quantity: number; amount: number }[];
 }
+
 
 export type MarketRegion = 'IN';
 
@@ -216,7 +224,10 @@ export interface ShopSettings {
   permissions?: StorePermissions;
   logoUrl?: string;
   printLogoOnReceipt?: boolean;
+  receiptFooterNote?: string;
+  returnPolicyNote?: string;
 }
+
 
 export type ActiveScreen =
   | 'item-wise'
@@ -249,6 +260,9 @@ export interface TenantLicense {
   trialEndsAt: string;
   currentPeriodEnd: string; // When the current paid cycle ends (same as trialEndsAt for trial)
   maxRegisters: number;
+  lastPaymentId?: string;
+  lastPaymentGateway?: 'RAZORPAY' | 'STRIPE' | 'MANUAL' | 'SIMULATED';
+  lastPaymentAmount?: number;
   createdAt: string;
   updatedAt: string;
 }

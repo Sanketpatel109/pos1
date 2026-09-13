@@ -38,7 +38,6 @@ import { CashManagementScreen } from './components/CashManagementScreen';
 import { StaffManagementScreen } from './components/StaffManagementScreen';
 import { PrintSettingsModal } from './components/PrintSettingsModal';
 import { TrainingVideosModal } from './components/TrainingVideosModal';
-import { SaveBillModal } from './components/SaveBillModal';
 import { PaymentModal } from './components/checkout/PaymentModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { CustomItemModal } from './components/CustomItemModal';
@@ -70,7 +69,9 @@ import { auth, onAuthStateChanged, signOut, User } from './firebase';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { AuthGateScreen } from './components/AuthGateScreen';
+import { RefundResult } from './components/ProcessReturnModal';
 import { TenantLicense } from './types';
+
 import {
   getOrCreateLicense,
   getCachedLicense,
@@ -108,9 +109,12 @@ import {
   liveSaveHeldOrder,
   liveDeleteHeldOrder,
   liveClearAllHeldOrders,
+  setActiveTenantId,
 } from './services/liveSync';
 import { useCart } from './context/CartContext';
 import { DirectThermalReceipt } from './components/DirectThermalReceipt';
+import { SubscriptionModal } from './components/SubscriptionModal';
+import { StoreOnboardingModal } from './components/StoreOnboardingModal';
 
 export default function App() {
   // Screen Routing
@@ -118,26 +122,45 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Firebase Auth & Cloud Sync State
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [isDemoUser, setIsDemoUser] = useState<boolean>(() => {
+    return localStorage.getItem('monopos_is_demo') === 'true';
+  });
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (localStorage.getItem('monopos_is_demo') === 'true') {
+      return {
+        uid: 'demo_retail_owner',
+        email: 'demo@monopos.retail',
+        displayName: 'Demo Retail Owner',
+        photoURL: '',
+      } as unknown as User;
+    }
+    return null;
+  });
+  const [authChecked, setAuthChecked] = useState<boolean>(() => {
+    return localStorage.getItem('monopos_is_demo') === 'true';
+  });
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud'>('hardware');
   const [settingsInitialSubView, setSettingsInitialSubView] = useState<'overview' | 'diagnostics'>('overview');
 
-  // Subscription / License State
+  // Subscription / License State & Modals
   const [tenantLicense, setTenantLicense] = useState<TenantLicense | null>(() => getCachedLicense());
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState<boolean>(false);
+  const [isStoreOnboardingOpen, setIsStoreOnboardingOpen] = useState<boolean>(false);
 
   // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      if (!isDemoUser) {
+        setCurrentUser(user);
+      }
       setAuthChecked(true);
     });
     return () => unsubscribe();
-  }, []);
+  }, [isDemoUser]);
 
   // When user signs in, fetch or create their tenant license
   useEffect(() => {
@@ -162,9 +185,46 @@ export default function App() {
     return () => clearInterval(interval);
   }, [tenantLicense]);
 
+  // Sync active tenant ID for Firestore isolation and check first-time onboarding
+  useEffect(() => {
+    if (currentUser) {
+      const tenantId = `tenant_${currentUser.uid}`;
+      setActiveTenantId(tenantId);
+      const onboardedKey = `monopos_onboarded_${currentUser.uid}`;
+      if (!localStorage.getItem(onboardedKey)) {
+        setIsStoreOnboardingOpen(true);
+      }
+    } else {
+      setActiveTenantId(null);
+    }
+  }, [currentUser]);
+
+  // Handle demo store bypass for prospects & evaluators
+  const handleDemoLogin = () => {
+    localStorage.setItem('monopos_is_demo', 'true');
+    setIsDemoUser(true);
+    const demoUser = {
+      uid: 'demo_retail_owner',
+      email: 'demo@monopos.retail',
+      displayName: 'Demo Retail Owner',
+      photoURL: '',
+    } as unknown as User;
+    setCurrentUser(demoUser);
+    setAuthChecked(true);
+  };
+
   // Handle sign-out
   const handleSignOut = async () => {
     try {
+      if (isDemoUser) {
+        localStorage.removeItem('monopos_is_demo');
+        setIsDemoUser(false);
+        setCurrentUser(null);
+        clearCachedLicense();
+        setTenantLicense(null);
+        setLicenseStatus(null);
+        return;
+      }
       await signOut(auth);
       clearCachedLicense();
       setTenantLicense(null);
@@ -174,26 +234,13 @@ export default function App() {
     }
   };
 
-  // Show auth gate if user is not signed in (and auth has been checked)
-  if (authChecked && !currentUser) {
-    return <AuthGateScreen onAuthenticated={() => {}} />;
-  }
-
-  // Show nothing while auth is initializing (prevents flash)
-  if (!authChecked) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-background">
-        <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-black animate-pulse">
-          M
-        </div>
-      </div>
-    );
-  }
-
   // Settings & Staff State
   const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
-    const saved = localStorage.getItem('monopos_industrial_settings');
+    const saved =
+      localStorage.getItem('monopos_retail_settings') ||
+      localStorage.getItem('monopos_industrial_settings');
     if (!saved) return DEFAULT_SHOP_SETTINGS;
+
     try {
       const parsed = JSON.parse(saved);
       return {
@@ -262,7 +309,12 @@ export default function App() {
     updateItemRate: cartUpdateItemRate,
     clearCart: cartClearCart,
     setCartItems: setCurrentBillItems,
+    discount,
+    discountType,
+    discountAmount,
+    setDiscount,
   } = useCart();
+
 
   // Orders and Invoices History
   const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
@@ -301,8 +353,8 @@ export default function App() {
 
   // Modals
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
-  const [isSaveBillModalOpen, setIsSaveBillModalOpen] = useState<boolean>(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
+
   const [isReceiptDuplicate, setIsReceiptDuplicate] = useState<boolean>(false);
   const [isCustomProductModalOpen, setIsCustomProductModalOpen] = useState<boolean>(false);
   const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState<boolean>(false);
@@ -339,12 +391,20 @@ export default function App() {
   const [isRolePermissionsOpen, setIsRolePermissionsOpen] = useState<boolean>(false);
 
   // Active staff object
-  const activeStaff = staffList.find((s) => s.id === activeStaffId) || staffList[0];
+  const activeStaff =
+    staffList.find((s) => s.id === activeStaffId) ||
+    staffList[0] || {
+      id: 'staff-default',
+      name: 'Store Operator',
+      role: 'OWNER' as StaffRole,
+      pin: '1234',
+    };
 
   // Save settings and staff to localStorage on change
   useEffect(() => {
-    localStorage.setItem('monopos_industrial_settings', JSON.stringify(shopSettings));
+    localStorage.setItem('monopos_retail_settings', JSON.stringify(shopSettings));
   }, [shopSettings]);
+
 
   useEffect(() => {
     localStorage.setItem('monopos_staff_list', JSON.stringify(staffList));
@@ -365,18 +425,7 @@ export default function App() {
 
     const unsubCatalog = listenToLiveCatalog((items) => {
       if (items.length > 0) {
-        const merged = items.map((rem) => {
-          const init = INITIAL_CATALOG.find(
-            (ic) => ic.id === rem.id || ic.name.toLowerCase() === rem.name.toLowerCase()
-          );
-          return {
-            ...rem,
-            packagingOptions: rem.packagingOptions || init?.packagingOptions,
-          };
-        });
-        const existingIds = new Set(items.map((i) => i.id));
-        const missingInitial = INITIAL_CATALOG.filter((ic) => !existingIds.has(ic.id));
-        setCatalog([...merged, ...missingInitial]);
+        setCatalog(items);
       }
     });
 
@@ -429,6 +478,41 @@ export default function App() {
     };
   }, []);
 
+  // Handle First-Time Store Onboarding Setup
+  const handleOnboardingComplete = ({
+    shopSettings: updatedSettings,
+    useSampleData,
+  }: {
+    shopSettings: Partial<ShopSettings>;
+    useSampleData: boolean;
+    businessType: string;
+  }) => {
+    const newSettings: ShopSettings = {
+      ...shopSettings,
+      ...updatedSettings,
+    };
+    setShopSettings(newSettings);
+    localStorage.setItem('monopos_retail_settings', JSON.stringify(newSettings));
+    liveSaveSettings(newSettings).catch(() => {});
+
+
+    if (!useSampleData) {
+      setCatalog([]);
+      setOrders([]);
+      setCustomers([]);
+      setCashEntries([]);
+      localStorage.setItem('monopos_live_catalog', JSON.stringify([]));
+      localStorage.setItem('monopos_orders', JSON.stringify([]));
+      localStorage.setItem('monopos_customers', JSON.stringify([]));
+      localStorage.setItem('monopos_cash_entries', JSON.stringify([]));
+    }
+
+    if (currentUser) {
+      localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+    }
+    setIsStoreOnboardingOpen(false);
+  };
+
   // Audio helper
   const playSfx = (action: 'tap' | 'add' | 'remove' | 'success') => {
     if (!shopSettings.soundEnabled) return;
@@ -460,7 +544,8 @@ export default function App() {
   // Calculations for current bill
   const subtotal = currentBillItems.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0);
   const taxAmount = (subtotal * shopSettings.taxRate) / 100;
-  const grandTotal = subtotal + taxAmount;
+  const grandTotal = Math.max(0, subtotal - (discountAmount || 0)) + taxAmount;
+
 
   // ITEM-WISE BILLING HANDLERS
   const handleAddItem = (item: CatalogItem) => {
@@ -928,6 +1013,8 @@ export default function App() {
     items: BillItem[];
     subtotal: number;
     taxAmount: number;
+    discount?: number;
+    discountAmount?: number;
     total: number;
     customerId?: string;
     customerName?: string;
@@ -945,8 +1032,8 @@ export default function App() {
       customerName: details.customerName || (details.paymentMethod === 'KHATA' ? 'Khata Customer' : 'Walk-in Customer'),
       customerPhone: details.customerPhone || '',
       customerId: details.customerId,
-      discountPercent: 0,
-      discountAmount: 0,
+      discountPercent: details.discount || 0,
+      discountAmount: details.discountAmount || 0,
       includeGst: details.taxAmount > 0,
       taxAmount: details.taxAmount,
       grandTotal: details.total,
@@ -964,6 +1051,7 @@ export default function App() {
       tokenNumber: shopSettings.enableDailyToken ? getNextDailyToken() : undefined,
     });
   };
+
 
   // Checkout completion flow: "Print & Next Customer"
   const handlePrintAndNextCustomer = () => {
@@ -1432,7 +1520,64 @@ export default function App() {
     }
   };
 
+  // Process customer return, restock catalog, and register cash out
+  const handleProcessRefund = (refund: RefundResult) => {
+    playSfx('remove');
+
+    // 1. Update order status to 'refunded'
+    setOrders((prev) => {
+      const updated = prev.map((ord) => {
+        if (ord.id === refund.orderId) {
+          const refundOrder: Order = {
+            ...ord,
+            status: 'refunded',
+            refundAmount: refund.refundAmount,
+            refundReason: refund.refundReason,
+            refundedAt: refund.refundedAt,
+            refundMethod: refund.refundMethod,
+            refundedItems: refund.refundedItems,
+          };
+          liveSaveOrder(refundOrder).catch(() => {});
+          return refundOrder;
+        }
+        return ord;
+      });
+      localStorage.setItem('monopos_orders', JSON.stringify(updated));
+      return updated;
+    });
+
+    // 2. Restock returned items to catalog
+    if (refund.restockInventory && refund.refundedItems.length > 0) {
+      setCatalog((prev) => {
+        const updated = prev.map((item) => {
+          const matched = refund.refundedItems.find(
+            (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
+          );
+          if (matched && typeof item.stock === 'number') {
+            const newStock = item.stock + matched.quantity;
+            const updatedItem = { ...item, stock: newStock };
+            liveSaveProduct(updatedItem).catch(() => {});
+            return updatedItem;
+          }
+          return item;
+        });
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(updated));
+        return updated;
+      });
+    }
+
+    // 3. If Cash refund, deduct from Cash Drawer
+    if (refund.refundMethod === 'CASH') {
+      handleAddCashEntry({
+        type: 'OUT',
+        amount: refund.refundAmount,
+        reason: `Customer Refund - Bill #${refund.orderNumber} (${refund.refundReason})`,
+      });
+    }
+  };
+
   // Navigation router with RBAC access control
+
   const handleNavigate = (screen: ActiveScreen) => {
     if (screen === 'print-settings') {
       const currentRole = activeStaff?.role || 'CASHIER';
@@ -1459,26 +1604,39 @@ export default function App() {
       setIsSidebarOpen(false);
       return;
     }
+
     if (screen === 'training-videos') {
       setIsTrainingVideosOpen(true);
+      setIsSidebarOpen(false);
+      return;
+    }
+
+    if (screen === 'barcode-generator') {
+      setIsBarcodeGeneratorOpen(true);
+      setIsSidebarOpen(false);
       return;
     }
 
     const currentRole = activeStaff?.role || 'CASHIER';
     const permissions = shopSettings.permissions || DEFAULT_STORE_PERMISSIONS;
 
-    if (screen === 'purchase-inward' && !canStaffInwardStock(currentRole, permissions)) {
-      setPendingRestrictedAction({
-        title: 'Stock Inward Authorization',
-        description: 'Receiving supplier crates requires Manager or Store Owner PIN authorization.',
-        requiredRoleLabel: 'MANAGER / OWNER',
-        requiredRole: 'MANAGER',
-        onAuthorize: () => {
-          setActiveScreen('purchase-inward');
-          setIsSidebarOpen(false);
-        },
-      });
-      setIsManagerPinModalOpen(true);
+    if (screen === 'purchase-inward') {
+      if (!canStaffInwardStock(currentRole, permissions)) {
+        setPendingRestrictedAction({
+          title: 'Stock Inward Authorization',
+          description: 'Receiving supplier crates requires Manager or Store Owner PIN authorization.',
+          requiredRoleLabel: 'MANAGER / OWNER',
+          requiredRole: 'MANAGER',
+          onAuthorize: () => {
+            setIsPurchaseInwardOpen(true);
+            setIsSidebarOpen(false);
+          },
+        });
+        setIsManagerPinModalOpen(true);
+        return;
+      }
+      setIsPurchaseInwardOpen(true);
+      setIsSidebarOpen(false);
       return;
     }
 
@@ -1500,6 +1658,28 @@ export default function App() {
       setIsManagerPinModalOpen(true);
     }
   };
+
+
+  // Show nothing while auth is initializing (prevents flash)
+  if (!authChecked) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-background">
+        <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-black animate-pulse">
+          M
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth gate if user is not signed in (and auth has been checked)
+  if (!currentUser) {
+    return (
+      <AuthGateScreen
+        onAuthenticated={() => {}}
+        onDemoLogin={handleDemoLogin}
+      />
+    );
+  }
 
   return (
     <div className="w-full h-screen h-[100dvh] bg-background flex flex-col overflow-hidden selection:bg-primary selection:text-primary-foreground">
@@ -1532,12 +1712,23 @@ export default function App() {
           onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
           onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
           licenseStatus={licenseStatus}
+          onOpenSubscription={() => setIsSubscriptionModalOpen(true)}
         />
 
         {/* Active Screen Surface */}
         <div className="flex-1 flex flex-col min-h-0 bg-zinc-50">
-          {activeScreen === 'item-wise' && (
+          {(activeScreen === 'item-wise' ||
+            ![
+              'quick-bill',
+              'reports',
+              'categories-products',
+              'customers',
+              'credit-ledger',
+              'cash-management',
+              'staff-management',
+            ].includes(activeScreen)) && (
             <ItemWiseBillTerminal
+
               currentBillItems={currentBillItems}
               catalog={catalog}
               categories={categories}
@@ -1581,8 +1772,9 @@ export default function App() {
                   subtotal,
                   taxRate: shopSettings.taxRate,
                   taxAmount,
-                  discount: 0,
+                  discount: discountAmount || 0,
                   total: grandTotal,
+
                   paymentMethod: 'NONE',
                   staffName: activeStaff.name,
                 };
@@ -1621,7 +1813,9 @@ export default function App() {
               onDeleteOrder={handleDeleteOrder}
               onDeleteAllOrders={handleDeleteAllOrders}
               onOpenZReport={() => setIsZReportOpen(true)}
+              onProcessRefund={handleProcessRefund}
             />
+
           )}
 
           {activeScreen === 'categories-products' && (
@@ -1721,6 +1915,31 @@ export default function App() {
           setIsSidebarOpen(false);
           setIsZReportOpen(true);
         }}
+        onOpenSubscription={() => {
+          setIsSidebarOpen(false);
+          setIsSubscriptionModalOpen(true);
+        }}
+        onSignOut={handleSignOut}
+        licenseStatus={licenseStatus}
+      />
+
+      {/* SaaS Subscription & Upgrade Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        license={tenantLicense}
+        licenseStatus={licenseStatus}
+        onLicenseUpdated={(updated) => {
+          setTenantLicense(updated);
+        }}
+        currencySymbol={shopSettings.currencySymbol}
+      />
+
+      {/* First-Time Store Onboarding Modal */}
+      <StoreOnboardingModal
+        isOpen={isStoreOnboardingOpen}
+        onComplete={handleOnboardingComplete}
+        initialSettings={shopSettings}
       />
 
       {/* Barcode & QR Code Scanner / Price Checker Modal */}
@@ -1761,20 +1980,6 @@ export default function App() {
         }}
       />
 
-      {/* Save Bill Modal */}
-      <SaveBillModal
-        isOpen={isSaveBillModalOpen}
-        subtotal={subtotal}
-        taxRate={shopSettings.taxRate}
-        customers={customers}
-        currencySymbol={shopSettings.currencySymbol}
-        orderNumber={orderNumber}
-        shopSettings={shopSettings}
-        onClose={() => setIsSaveBillModalOpen(false)}
-        onAddNewCustomer={handleAddNewCustomer}
-        onSaveAndComplete={handleSaveAndCompleteOrder}
-      />
-
       {/* Phase 2: Indian Payment Engine (Cash, UPI Soundbox, Khata) */}
       <PaymentModal
         isOpen={isPaymentModalOpen}
@@ -1786,8 +1991,12 @@ export default function App() {
         customers={customers}
         storeVpa="anandsupermarket@okaxis"
         storeName={shopSettings.storeName || 'Anand Supermarket'}
+        discount={discount}
+        discountType={discountType}
+        discountAmount={discountAmount}
         canStaffKhata={canStaffSellKhata(activeStaff?.role, shopSettings.permissions)}
         onRequestKhataAuth={(onApproved) => {
+
           setPendingRestrictedAction({
             title: 'Customer Credit (Khata) Authorization',
             description: 'Selling on customer credit requires Manager or Store Owner PIN authorization.',

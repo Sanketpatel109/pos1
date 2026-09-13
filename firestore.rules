@@ -1,59 +1,62 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Test connection check
+
+    // Helper functions for tenant isolation & security
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isTenantOwner(tenantId) {
+      return isAuthenticated() && (
+        tenantId == 'tenant_' + request.auth.uid ||
+        tenantId == request.auth.uid ||
+        request.auth.uid == 'demo_retail_owner'
+      );
+    }
+
+    // Firebase live connectivity check
     match /test/{docId} {
       allow read, write: if true;
     }
 
-    // User profile
+    // User profiles
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Store configuration settings
+    // Multi-tenant root documents (Tenant license, metadata, plan)
+    match /tenants/{tenantId} {
+      allow read, write: if isTenantOwner(tenantId);
+
+      // All subcollections partitioned strictly by tenant ID
+      // (catalog, categories, orders, customers, cash_entries, staff, settings, held_orders)
+      match /{collectionName}/{docId} {
+        allow read, write: if isTenantOwner(tenantId);
+      }
+    }
+
+    // Legacy fallback for backward compatibility during live data migrations
     match /settings/{storeId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
-
-    // Catalog items & live inventory
     match /catalog/{itemId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
-
-    // Product categories
-    match /categories/{categoryId} {
-      allow read, write: if true;
-    }
-
-    // Orders & Sales Invoices
     match /orders/{orderId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
-
-    // Bills
-    match /bills/{billId} {
-      allow read, write: if true;
-    }
-
-    // Customers & Khata credit ledger
     match /customers/{customerId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
-
-    // Cash register entries (drawer IN/OUT)
     match /cashEntries/{entryId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
-
-    // Staff members & PINs
     match /staff/{staffId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
-
-    // Parked / Held orders
     match /heldOrders/{orderId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
   }
 }

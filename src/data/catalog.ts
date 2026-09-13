@@ -332,7 +332,7 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   taxRate: 5,
   taxLabel: 'GST (2.5% CGST + 2.5% SGST)',
   soundEnabled: true,
-  enableDailyToken: true,
+  enableDailyToken: false,
   paperWidth: '58mm',
   printerPaperWidth: '58mm',
   connectedBluetoothDevice: 'MonoPOS Thermal-58',
@@ -341,7 +341,10 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   permissions: DEFAULT_STORE_PERMISSIONS,
   logoUrl: '',
   printLogoOnReceipt: true,
+  returnPolicyNote: 'Goods once sold can be exchanged within 7 days with original bill.',
+  receiptFooterNote: '*** THANK YOU, VISIT AGAIN ***',
 };
+
 
 export const SAMPLE_ORDERS: Order[] = [
   {

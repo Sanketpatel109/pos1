@@ -47,6 +47,9 @@ export interface PaymentModalProps {
   customers?: Customer[];
   storeVpa?: string;
   storeName?: string;
+  discount?: number;
+  discountType?: 'percentage' | 'flat';
+  discountAmount?: number;
   onClose: () => void;
   onCompleteSale: (details: {
     billNo: number;
@@ -56,6 +59,8 @@ export interface PaymentModalProps {
     items: BillItem[];
     subtotal: number;
     taxAmount: number;
+    discount?: number;
+    discountAmount?: number;
     total: number;
     customerId?: string;
     customerName?: string;
@@ -84,6 +89,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   customers = [],
   storeVpa = 'anandsupermarket@okaxis',
   storeName = 'Anand Supermarket',
+  discount = 0,
+  discountType = 'percentage',
+  discountAmount = 0,
   onClose,
   onCompleteSale,
   onResetAndNewBill,
@@ -106,13 +114,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const totalItemCount = items.reduce((acc, it) => acc + it.quantity, 0);
   const taxAmount = (subtotal * taxRate) / 100;
-  const netTotal = Math.round((subtotal + taxAmount) * 100) / 100;
+  const netTotal = Math.max(0, Math.round((subtotal - discountAmount + taxAmount) * 100) / 100);
 
   const prevIsOpenRef = useRef(false);
 
   // Whenever modal opens, initialize default tender to exact total
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
+
       setIsSuccess(false);
       setCompletedSnapshot(null);
       setIsSubmitting(false);
@@ -262,10 +271,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       items,
       subtotal,
       taxAmount,
+      discount,
+      discountAmount,
       total: netTotal,
       ...extraDetails,
     });
   };
+
 
   // 1. CASH COMPLETION
   const handleCompleteCashSale = async () => {
@@ -683,12 +695,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </div>
               <div className="text-right">
+                {discountAmount > 0 && (
+                  <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    Disc: -{currencySymbol}{discountAmount.toFixed(2)}
+                  </div>
+                )}
                 <span className="text-[11px] text-zinc-400 font-medium">GST Included</span>
                 <div className="text-xs font-semibold text-zinc-600 tabular-nums tracking-tight">
                   {currencySymbol}
                   {taxAmount.toFixed(2)} ({taxRate}%)
                 </div>
               </div>
+
             </div>
 
             {/* 3-Tab Mode Switcher */}

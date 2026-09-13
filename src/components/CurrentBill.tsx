@@ -6,6 +6,7 @@ import { PaymentModal } from './checkout/PaymentModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useCart } from '../context/CartContext';
 
 export interface CurrentBillProps {
   orderNumber: number;
@@ -98,10 +99,12 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
     prevItemsLengthRef.current = items.length;
   }, [items.length]);
 
+  const { discount = 0, discountType = 'percentage', discountAmount = 0 } = useCart();
   const totalItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
   const subtotal = items.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0);
   const taxAmount = (subtotal * taxRate) / 100;
-  const totalDue = subtotal + taxAmount;
+  const totalDue = Math.max(0, subtotal - discountAmount) + taxAmount;
+
 
   return (
     <div className="flex flex-col bg-card border-t md:border-t-0 border-border z-10 min-h-0 h-full overflow-hidden select-none">
@@ -179,12 +182,24 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
                       {item.selectedPackName}
                     </Badge>
                   )}
+                  {item.stock !== undefined && item.stock <= 5 && (
+                    <span
+                      className={`text-[9px] px-1 py-0.2 rounded font-bold shrink-0 border tabular-nums ${
+                        item.stock <= 0
+                          ? 'bg-destructive/10 text-destructive border-destructive/20'
+                          : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      }`}
+                    >
+                      {item.stock <= 0 ? '0 left' : `${item.stock} left`}
+                    </span>
+                  )}
                   {item.note && (
                     <Badge variant="outline" className="text-xs px-1 py-0 h-4 shrink-0">
                       {item.note}
                     </Badge>
                   )}
                 </div>
+
                 {/* Unit price with Price Override trigger */}
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {editingItemId === item.id ? (
@@ -343,7 +358,11 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
         subtotal={subtotal}
         taxRate={taxRate}
         currencySymbol={currencySymbol}
+        discount={discount}
+        discountType={discountType}
+        discountAmount={discountAmount}
         onClose={() => setIsPaymentModalOpen(false)}
+
         onCompleteSale={(details) => {
           if (onCompleteSale) {
             onCompleteSale(details);

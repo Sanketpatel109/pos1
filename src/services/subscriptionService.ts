@@ -84,6 +84,12 @@ export function clearCachedLicense(): void {
  * - Always caches the result locally for offline access.
  */
 export async function getOrCreateLicense(user: User): Promise<TenantLicense> {
+  if (user.uid === 'demo_retail_owner') {
+    const localTrial = createTrialLicense(user);
+    cacheLicense(localTrial);
+    return localTrial;
+  }
+
   const docRef = doc(db, TENANT_COLLECTION, user.uid);
 
   try {
@@ -182,13 +188,63 @@ export function checkLicenseStatus(license: TenantLicense): LicenseStatus {
 }
 
 /**
- * Simulate upgrading the plan (for demo/testing — in production this would be
- * triggered by a Stripe/Razorpay webhook).
+ * Dynamically load Razorpay Checkout JS SDK into the document if not present.
+ */
+export function loadRazorpayCheckoutScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && (window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+/**
+ * Upgrade or activate the tenant plan license in Firestore and local cache.
+ * Accepts optional live payment details from Razorpay/Stripe or runs in sandbox mode.
  */
 export async function simulatePlanUpgrade(
   ownerUid: string,
-  plan: SubscriptionPlan
+  plan: SubscriptionPlan,
+  paymentDetails?: {
+    paymentId?: string;
+    gateway?: 'RAZORPAY' | 'STRIPE' | 'MANUAL' | 'SIMULATED';
+    amount?: number;
+  }
 ): Promise<TenantLicense | null> {
+  const gateway = paymentDetails?.gateway || (paymentDetails?.paymentId ? 'RAZORPAY' : 'SIMULATED');
+
+  if (ownerUid === 'demo_retail_owner') {
+    const cached = getCachedLicense();
+    const now = new Date();
+    const periodEnd = plan === 'ANNUAL' ? addDays(now, 365) : addDays(now, 30);
+    const updated: TenantLicense = {
+      ...(cached || {
+        tenantId: 'tenant_demo_retail_owner',
+        ownerUid: 'demo_retail_owner',
+        ownerEmail: 'demo@monopos.retail',
+        ownerName: 'Demo Retail Owner',
+        createdAt: now.toISOString(),
+      }),
+      plan,
+      status: 'ACTIVE',
+      currentPeriodEnd: periodEnd.toISOString(),
+      maxRegisters: plan === 'STARTER' ? 1 : 3,
+      lastPaymentId: paymentDetails?.paymentId,
+      lastPaymentGateway: gateway,
+      lastPaymentAmount: paymentDetails?.amount,
+      updatedAt: now.toISOString(),
+    };
+    cacheLicense(updated);
+    return updated;
+  }
+
   const docRef = doc(db, TENANT_COLLECTION, ownerUid);
   try {
     const snapshot = await getDoc(docRef);
@@ -206,6 +262,9 @@ export async function simulatePlanUpgrade(
       status: 'ACTIVE',
       currentPeriodEnd: periodEnd.toISOString(),
       maxRegisters: plan === 'STARTER' ? 1 : 3,
+      lastPaymentId: paymentDetails?.paymentId,
+      lastPaymentGateway: gateway,
+      lastPaymentAmount: paymentDetails?.amount,
       updatedAt: now.toISOString(),
     };
 

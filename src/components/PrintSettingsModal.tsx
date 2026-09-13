@@ -931,6 +931,32 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                 </div>
               </div>
 
+              <div>
+                <label className="text-[10px] font-bold text-zinc-600 block mb-1">
+                  Receipt Return Policy Note
+                </label>
+                <input
+                  type="text"
+                  value={formData.returnPolicyNote || ''}
+                  onChange={(e) => setFormData({ ...formData, returnPolicyNote: e.target.value })}
+                  placeholder="e.g. Items can be exchanged within 7 days with original invoice"
+                  className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-zinc-600 block mb-1">
+                  Receipt Footer Note / Greeting
+                </label>
+                <input
+                  type="text"
+                  value={formData.receiptFooterNote || ''}
+                  onChange={(e) => setFormData({ ...formData, receiptFooterNote: e.target.value })}
+                  placeholder="e.g. Thank you for shopping with us! Visit again."
+                  className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden"
+                />
+              </div>
+
               {/* Save Footer */}
               <div className="pt-2 flex gap-2">
                 <button
