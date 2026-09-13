@@ -12,9 +12,6 @@ import {
   Coffee,
   Shirt,
   Pill,
-  Layers,
-  Trash2,
-  PackagePlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +41,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
   onComplete,
   initialSettings,
 }) => {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
 
   // Clean slate for new merchants so they see clean fields with helpful placeholders instead of mock demo text
   const isDefaultMockData =
@@ -59,7 +56,6 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
   const [gstin, setGstin] = useState(isDefaultMockData ? '' : (initialSettings.gstin || ''));
   const [currencySymbol, setCurrencySymbol] = useState(initialSettings.currencySymbol || '₹');
   const [businessType, setBusinessType] = useState<string>('grocery');
-  const [useSampleData, setUseSampleData] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -68,9 +64,8 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
     if (step === 1) {
       if (!shopName.trim()) return;
       setStep(2);
-    } else if (step === 2) {
-      setStep(3);
     } else {
+      // Production: Always launch 100% clean fresh store with zero fake sample items
       onComplete({
         shopSettings: {
           shopName: shopName.trim(),
@@ -81,7 +76,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
           currencySymbol,
           enableDailyToken: businessType === 'cafe',
         },
-        useSampleData,
+        useSampleData: false,
         businessType,
       });
     }
@@ -103,21 +98,21 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
                 Welcome to MonoPOS Retail
               </h2>
               <p className="text-xs text-muted-foreground">
-                Step {step} of 3 — Let's configure your store
+                Step {step} of 2 — {step === 1 ? 'Store Details' : 'Store Type'}
               </p>
             </div>
           </div>
-          {/* Step Pill */}
-          <div className="flex items-center gap-1">
-            {[1, 2, 3].map((s) => (
+          {/* Step Indicator */}
+          <div className="flex items-center gap-1.5">
+            {[1, 2].map((s) => (
               <div
                 key={s}
                 className={`h-1.5 rounded-full transition-all ${
                   s === step
-                    ? 'w-6 bg-primary'
+                    ? 'w-7 bg-primary'
                     : s < step
-                    ? 'w-3 bg-primary/40'
-                    : 'w-3 bg-muted'
+                    ? 'w-3.5 bg-primary/40'
+                    : 'w-3.5 bg-muted'
                 }`}
               />
             ))}
@@ -212,7 +207,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
           {step === 2 && (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Select your store type so we can customize your default categories and receipt format:
+                Select your business type so we can tailor your categories and receipt layouts:
               </p>
 
               <div className="space-y-2">
@@ -251,94 +246,25 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
                   );
                 })}
               </div>
-            </div>
-          )}
 
-          {/* STEP 3: Catalog Setup (Clean vs Sample) */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                How would you like to initialize your inventory catalog?
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Option 1: Clean Slate (Recommended) */}
-                <div
-                  onClick={() => setUseSampleData(false)}
-                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 cursor-pointer transition-all ${
-                    !useSampleData
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-xs'
-                      : 'border-border bg-card hover:bg-muted/50'
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-emerald-600 tracking-wider">
-                        Recommended
-                      </span>
-                      <h4 className="text-xs font-bold text-foreground">Clean Fresh Store</h4>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-                        Start with a 100% empty catalog, ready to add your own real products and barcodes.
-                      </p>
-                    </div>
-                  </div>
-                  {!useSampleData && (
-                    <div className="flex items-center gap-1 text-xs font-semibold text-primary">
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Selected</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Option 2: Demo Sample Data */}
-                <div
-                  onClick={() => setUseSampleData(true)}
-                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 cursor-pointer transition-all ${
-                    useSampleData
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary/30 shadow-xs'
-                      : 'border-border bg-card hover:bg-muted/50'
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                      <PackagePlus className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">
-                        Demo Testing
-                      </span>
-                      <h4 className="text-xs font-bold text-foreground">Import Demo Items</h4>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-                        Preloads common sample grocery items, categories, and test orders to experiment with billing.
-                      </p>
-                    </div>
-                  </div>
-                  {useSampleData && (
-                    <div className="flex items-center gap-1 text-xs font-semibold text-primary">
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Selected</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-muted/40 border border-border text-[11px] text-muted-foreground">
-                💡 You can always import products, categories, or clear records anytime from Store Settings.
+              {/* Clean store guarantee pill */}
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium">
+                  <strong>Clean Fresh Store:</strong> Initializes with ₹0 balance and 0 dummy data, ready for your real products and barcodes.
+                </p>
               </div>
             </div>
           )}
 
           {/* Navigation Controls */}
           <div className="pt-3 border-t border-border flex items-center justify-between">
-            {step > 1 ? (
+            {step === 2 ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
+                onClick={() => setStep(1)}
               >
                 ← Back
               </Button>
@@ -347,7 +273,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
             )}
 
             <Button type="submit" size="default" className="font-semibold gap-1.5">
-              {step === 3 ? (
+              {step === 2 ? (
                 <>
                   <Check className="w-4 h-4" />
                   Launch Store
