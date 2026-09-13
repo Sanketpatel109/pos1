@@ -343,6 +343,9 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   printLogoOnReceipt: true,
   returnPolicyNote: 'Goods once sold can be exchanged within 7 days with original bill.',
   receiptFooterNote: '*** THANK YOU, VISIT AGAIN ***',
+  enableLoyaltyPoints: true,
+  loyaltyEarnSpendAmount: 100,
+  loyaltyPointValue: 1,
 };
 
 

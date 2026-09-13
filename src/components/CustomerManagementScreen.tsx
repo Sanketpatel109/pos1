@@ -32,6 +32,7 @@ interface CustomerManagementScreenProps {
   customers: Customer[];
   orders: Order[];
   currencySymbol: string;
+  enableLoyaltyPoints?: boolean;
   onAddCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => void;
   onSettleCredit: (customerId: string, amount: number, note: string) => void;
 }
@@ -40,6 +41,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
   customers,
   orders,
   currencySymbol,
+  enableLoyaltyPoints = true,
   onAddCustomer,
   onSettleCredit,
 }) => {
@@ -191,11 +193,15 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
 
                       <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 tabular-nums">
                         <span>{cust.totalOrders || 0} Bills</span>
-                        <span>•</span>
-                        <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-                          <Star className="w-2.5 h-2.5 text-amber-500" />
-                          {cust.loyaltyPoints || 0} pts
-                        </span>
+                        {enableLoyaltyPoints !== false && (
+                          <>
+                            <span>•</span>
+                            <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5 text-amber-500" />
+                              {cust.loyaltyPoints || 0} pts
+                            </span>
+                          </>
+                        )}
                         <span>•</span>
                         <span className="tracking-tight font-medium">Bal: {currencySymbol}{cust.creditBalance.toFixed(2)}</span>
                       </p>
@@ -284,7 +290,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
               </Card>
 
               {/* Customer Account Stats */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className={`grid ${enableLoyaltyPoints !== false ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
                 <Card className="p-3 shadow-xs border-border bg-card">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase block">
                     Khata Due
@@ -299,15 +305,17 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                   </span>
                 </Card>
 
-                <Card className="p-3 shadow-xs border-border bg-card">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase block">
-                    Loyalty Points
-                  </span>
-                  <span className="text-lg sm:text-xl font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 tabular-nums">
-                    <Star className="w-4 h-4 text-amber-500" />
-                    <span>{activeCustomer.loyaltyPoints || 0}</span>
-                  </span>
-                </Card>
+                {enableLoyaltyPoints !== false && (
+                  <Card className="p-3 shadow-xs border-border bg-card">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase block">
+                      Loyalty Points
+                    </span>
+                    <span className="text-lg sm:text-xl font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 tabular-nums">
+                      <Star className="w-4 h-4 text-amber-500" />
+                      <span>{activeCustomer.loyaltyPoints || 0}</span>
+                    </span>
+                  </Card>
+                )}
 
                 <Card className="p-3 shadow-xs border-border bg-card">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase block">

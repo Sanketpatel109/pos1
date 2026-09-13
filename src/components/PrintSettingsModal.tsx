@@ -31,7 +31,13 @@ import {
   Image as ImageIcon,
   Trash2,
   UploadCloud,
+  Star,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   ShopSettings,
   StaffRole,
@@ -956,6 +962,126 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                   className="w-full bg-zinc-50 border border-zinc-300 rounded-xl px-3 py-2 text-xs text-zinc-900 focus:outline-hidden"
                 />
               </div>
+
+              {/* Customer Loyalty & Reward Points Configuration */}
+              <Card className="p-3.5 border-border bg-card shadow-2xs space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                      <Star className="size-4 fill-amber-500" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs font-bold text-foreground">
+                          Customer Loyalty Points
+                        </Label>
+                        <Badge
+                          variant={formData.enableLoyaltyPoints !== false ? 'default' : 'secondary'}
+                          className="text-[10px] px-1.5 py-0 h-4"
+                        >
+                          {formData.enableLoyaltyPoints !== false ? 'Active' : 'Disabled'}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Reward repeat customers with points redeemable as bill discounts
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Switch Toggle */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.enableLoyaltyPoints !== false ? 'default' : 'outline'}
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        enableLoyaltyPoints: formData.enableLoyaltyPoints === false ? true : false,
+                      })
+                    }
+                    className="h-8 text-xs font-semibold px-3 shrink-0"
+                  >
+                    {formData.enableLoyaltyPoints !== false ? 'Enabled' : 'Turn On'}
+                  </Button>
+                </div>
+
+                {formData.enableLoyaltyPoints !== false && (
+                  <div className="space-y-3 pt-2.5 border-t border-border">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Earning Rule */}
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-semibold text-foreground flex items-center justify-between">
+                          <span>Spend to Earn 1 Point</span>
+                          <span className="text-[10px] text-muted-foreground">How 1 pt is earned</span>
+                        </Label>
+                        <div className="relative flex items-center">
+                          <span className="absolute left-3 text-xs text-muted-foreground font-medium pointer-events-none">
+                            {formData.currencySymbol || '₹'}
+                          </span>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={formData.loyaltyEarnSpendAmount ?? 100}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                loyaltyEarnSpendAmount: Math.max(1, parseInt(e.target.value) || 1),
+                              })
+                            }
+                            className="pl-7 text-xs font-medium h-9"
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Spend {formData.currencySymbol || '₹'}{formData.loyaltyEarnSpendAmount ?? 100} = 1 Point
+                        </p>
+                      </div>
+
+                      {/* Redemption Value */}
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-semibold text-foreground flex items-center justify-between">
+                          <span>Point Redemption Value</span>
+                          <span className="text-[10px] text-muted-foreground">Discount per point</span>
+                        </Label>
+                        <div className="relative flex items-center">
+                          <span className="absolute left-3 text-xs text-muted-foreground font-medium pointer-events-none">
+                            {formData.currencySymbol || '₹'}
+                          </span>
+                          <Input
+                            type="number"
+                            min="0.01"
+                            step="0.1"
+                            value={formData.loyaltyPointValue ?? 1}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                loyaltyPointValue: Math.max(0.01, parseFloat(e.target.value) || 1),
+                              })
+                            }
+                            className="pl-7 text-xs font-medium h-9"
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          1 Point = {formData.currencySymbol || '₹'}{(formData.loyaltyPointValue ?? 1).toFixed(2)} off
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Live Adjustment Summary Banner */}
+                    <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px] text-foreground flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Star className="size-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                        <span>
+                          <strong>Rule Preview:</strong> Spend {formData.currencySymbol || '₹'}
+                          {((formData.loyaltyEarnSpendAmount ?? 100) * 5)} → earns <strong>5 pts</strong>.
+                          50 pts gives <strong>{formData.currencySymbol || '₹'}
+                          {((formData.loyaltyPointValue ?? 1) * 50).toFixed(2)}</strong> discount.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Card>
 
               {/* Save Footer */}
               <div className="pt-2 flex gap-2">

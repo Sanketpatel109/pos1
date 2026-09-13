@@ -11,7 +11,12 @@ import {
   Share2,
   ShieldCheck,
   ShoppingBag,
+  Star,
+  Users,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { BillItem, Customer } from '../../types';
 import { db, doc, setDoc } from '../../firebase';
 import { posSound } from '../../utils/sound';
@@ -51,6 +56,8 @@ export interface PaymentModalProps {
   discount?: number;
   discountType?: 'percentage' | 'flat';
   discountAmount?: number;
+  enableLoyaltyPoints?: boolean;
+  loyaltyPointValue?: number;
   onClose: () => void;
   onCompleteSale: (details: {
     billNo: number;
@@ -69,6 +76,8 @@ export interface PaymentModalProps {
     upiRefNumber?: string;
     isVerified?: boolean;
     verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
+    redeemedPoints?: number;
+    pointsDiscount?: number;
   }) => void;
   onResetAndNewBill: () => void;
   onPrintAndNextCustomer?: (snapshot: CompletedSnapshot) => void;
@@ -93,6 +102,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   discount = 0,
   discountType = 'percentage',
   discountAmount = 0,
+  enableLoyaltyPoints = true,
+  loyaltyPointValue = 1,
   onClose,
   onCompleteSale,
   onResetAndNewBill,
@@ -112,23 +123,41 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [completedMethod, setCompletedMethod] = useState<'CASH' | 'UPI' | 'KHATA'>('CASH');
   const [completedCustomerName, setCompletedCustomerName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [redeemedPoints, setRedeemedPoints] = useState<number>(0);
+  const [isCustomerSearchOpen, setIsCustomerSearchOpen] = useState<boolean>(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState<string>('');
 
   const totalItemCount = items.reduce((acc, it) => acc + it.quantity, 0);
   const taxAmount = (subtotal * taxRate) / 100;
-  const netTotal = Math.max(0, Math.round((subtotal - discountAmount + taxAmount) * 100) / 100);
+
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null;
+  const pointValue = loyaltyPointValue || 1;
+  const pointsDiscountAmount =
+    enableLoyaltyPoints !== false && redeemedPoints > 0
+      ? Math.round(redeemedPoints * pointValue * 100) / 100
+      : 0;
+
+  const netTotal = Math.max(
+    0,
+    Math.round((subtotal - discountAmount - pointsDiscountAmount + taxAmount) * 100) / 100
+  );
 
   const prevIsOpenRef = useRef(false);
 
   // Whenever modal opens, initialize default tender to exact total
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
-
       setIsSuccess(false);
       setCompletedSnapshot(null);
       setIsSubmitting(false);
       setCompletedBillNo(orderNumber);
       setCompletedMethod('CASH');
       setCompletedCustomerName('');
+      setRedeemedPoints(0);
+      setSelectedCustomerId('');
+      setIsCustomerSearchOpen(false);
+      setCustomerSearchQuery('');
       setTenderedInput(netTotal > 0 ? netTotal.toString() : '');
       setActiveTab('CASH');
     }
@@ -275,6 +304,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       discount,
       discountAmount,
       total: netTotal,
+      customerId: extraDetails?.customerId || selectedCustomer?.id,
+      customerName: extraDetails?.customerName || selectedCustomer?.name,
+      customerPhone: extraDetails?.customerPhone || selectedCustomer?.phone,
+      redeemedPoints: redeemedPoints > 0 ? redeemedPoints : undefined,
+      pointsDiscount: pointsDiscountAmount > 0 ? pointsDiscountAmount : undefined,
       ...extraDetails,
     });
   };
@@ -701,6 +735,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     Disc: -{currencySymbol}{discountAmount.toFixed(2)}
                   </div>
                 )}
+                {pointsDiscountAmount > 0 && (
+                  <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                    Points: -{currencySymbol}{pointsDiscountAmount.toFixed(2)} ({redeemedPoints} pts)
+                  </div>
+                )}
                 <span className="text-[11px] text-zinc-400 font-medium">GST Included</span>
                 <div className="text-xs font-semibold text-zinc-600 tabular-nums tracking-tight">
                   {currencySymbol}
@@ -709,6 +748,156 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
             </div>
+
+            {/* Customer Loyalty & Points Redemption Section */}
+            {enableLoyaltyPoints !== false && (
+              <div className="px-4 py-2.5 bg-card border-b border-border text-xs">
+                {!selectedCustomer ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <Star className="size-3.5 fill-amber-500" />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Customer Loyalty & Rewards
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="xs"
+                      onClick={() => setIsCustomerSearchOpen(!isCustomerSearchOpen)}
+                      className="text-xs h-7 px-2.5 gap-1"
+                    >
+                      <Users className="size-3" />
+                      <span>{isCustomerSearchOpen ? 'Cancel' : 'Link Customer'}</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="p-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                          <Star className="size-3.5 fill-amber-500" />
+                        </div>
+                        <div className="truncate">
+                          <span className="font-semibold text-foreground mr-1.5">
+                            {selectedCustomer.name}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                            {selectedCustomer.phone}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-semibold text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700">
+                          <Star className="size-2.5 fill-amber-500 mr-1" />
+                          {selectedCustomer.loyaltyPoints || 0} pts
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => {
+                            setSelectedCustomerId('');
+                            setRedeemedPoints(0);
+                          }}
+                          className="size-6 text-muted-foreground hover:text-foreground"
+                          title="Unlink Customer"
+                        >
+                          <X className="size-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Points Redemption Action */}
+                    {(selectedCustomer.loyaltyPoints || 0) > 0 ? (
+                      <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-lg p-2 text-xs">
+                        <div>
+                          {redeemedPoints > 0 ? (
+                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                              ✓ Redeemed {redeemedPoints} pts (-{currencySymbol}{pointsDiscountAmount.toFixed(2)})
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Available: <strong className="text-foreground">{selectedCustomer.loyaltyPoints} pts</strong> ({currencySymbol}{((selectedCustomer.loyaltyPoints || 0) * pointValue).toFixed(2)})
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant={redeemedPoints > 0 ? 'outline' : 'default'}
+                          onClick={() => {
+                            if (redeemedPoints > 0) {
+                              setRedeemedPoints(0);
+                            } else {
+                              const maxPossiblePoints = Math.min(
+                                selectedCustomer.loyaltyPoints || 0,
+                                Math.floor(subtotal / pointValue)
+                              );
+                              setRedeemedPoints(maxPossiblePoints);
+                            }
+                          }}
+                          className="h-7 px-2.5 text-xs font-semibold"
+                        >
+                          {redeemedPoints > 0 ? 'Remove' : `Redeem -${currencySymbol}${((selectedCustomer.loyaltyPoints || 0) * pointValue).toFixed(2)}`}
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">
+                        Customer will automatically earn loyalty points on this order.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Customer Search Dropdown */}
+                {isCustomerSearchOpen && !selectedCustomer && (
+                  <div className="mt-2 pt-2 border-t border-border space-y-1.5">
+                    <Input
+                      type="text"
+                      placeholder="Search customer by name or phone..."
+                      value={customerSearchQuery}
+                      onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                      className="h-8 text-xs"
+                      autoFocus
+                    />
+                    <div className="max-h-36 overflow-y-auto divide-y divide-border border border-border rounded-lg bg-background">
+                      {customers
+                        .filter(
+                          (c) =>
+                            c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                            c.phone.includes(customerSearchQuery)
+                        )
+                        .slice(0, 5)
+                        .map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomerId(c.id);
+                              setIsCustomerSearchOpen(false);
+                              setCustomerSearchQuery('');
+                            }}
+                            className="w-full text-left p-2 hover:bg-muted text-xs flex items-center justify-between cursor-pointer"
+                          >
+                            <div>
+                              <p className="font-semibold text-foreground">{c.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{c.phone}</p>
+                            </div>
+                            <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400">
+                              <Star className="size-2.5 fill-amber-500 mr-1" />
+                              {c.loyaltyPoints || 0} pts
+                            </Badge>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 3-Tab Mode Switcher */}
             <div className="p-3 bg-card border-b border-border">

@@ -228,6 +228,9 @@ export interface ShopSettings {
   printLogoOnReceipt?: boolean;
   receiptFooterNote?: string;
   returnPolicyNote?: string;
+  enableLoyaltyPoints?: boolean;
+  loyaltyEarnSpendAmount?: number;
+  loyaltyPointValue?: number;
 }
 
 

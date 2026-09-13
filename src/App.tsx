@@ -248,6 +248,9 @@ export default function App() {
         ...DEFAULT_SHOP_SETTINGS,
         ...parsed,
         enableDailyToken: parsed.enableDailyToken !== undefined ? parsed.enableDailyToken : true,
+        enableLoyaltyPoints: parsed.enableLoyaltyPoints !== undefined ? parsed.enableLoyaltyPoints : true,
+        loyaltyEarnSpendAmount: parsed.loyaltyEarnSpendAmount || 100,
+        loyaltyPointValue: parsed.loyaltyPointValue || 1,
         permissions: {
           staff: {
             ...DEFAULT_STORE_PERMISSIONS.staff,
@@ -840,6 +843,7 @@ export default function App() {
     fromPaymentModal?: boolean;
     tokenNumber?: number;
     tableOrToken?: string;
+    redeemedPoints?: number;
   }) => {
     playSfx('success');
 
@@ -878,7 +882,7 @@ export default function App() {
       verificationMethod: data.verificationMethod,
     };
 
-    // If payment was CREDIT or SPLIT with credit, update customer khata balance
+    // If payment was CREDIT or SPLIT with credit, update customer khata balance & loyalty points
     if (data.customerId) {
       let creditToAdd = 0;
       if (data.paymentMode === 'CREDIT') {
@@ -886,20 +890,32 @@ export default function App() {
       } else if (data.paymentMode === 'SPLIT' && data.splitDetails?.credit) {
         creditToAdd = data.splitDetails.credit;
       }
-      // Calculate loyalty points: 1 point per 100 spent
-      const earnedPoints = Math.floor(data.grandTotal / 100);
+
+      // Calculate loyalty points if enabled
+      let earnedPoints = 0;
+      const isLoyaltyOn = shopSettings.enableLoyaltyPoints !== false;
+      const earnSpendRate = shopSettings.loyaltyEarnSpendAmount || 100;
+      if (isLoyaltyOn) {
+        earnedPoints = Math.floor(data.grandTotal / earnSpendRate);
+      }
+      const redeemed = data.redeemedPoints || 0;
 
       setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === data.customerId
-            ? {
-                ...c,
-                creditBalance: (c.creditBalance || 0) + creditToAdd,
-                loyaltyPoints: (c.loyaltyPoints || 0) + earnedPoints,
-                totalOrders: (c.totalOrders || 0) + 1,
-              }
-            : c
-        )
+        prev.map((c) => {
+          if (c.id === data.customerId) {
+            const updated = {
+              ...c,
+              creditBalance: (c.creditBalance || 0) + creditToAdd,
+              loyaltyPoints: Math.max(0, (c.loyaltyPoints || 0) - redeemed + earnedPoints),
+              totalOrders: (c.totalOrders || 0) + 1,
+            };
+            liveSaveCustomer(updated).catch((err) =>
+              console.warn('Live save customer on sale:', err)
+            );
+            return updated;
+          }
+          return c;
+        })
       );
     }
 
@@ -1022,6 +1038,8 @@ export default function App() {
     upiRefNumber?: string;
     isVerified?: boolean;
     verificationMethod?: 'soundbox' | 'utr' | 'gateway' | 'cash_tender';
+    redeemedPoints?: number;
+    pointsDiscount?: number;
   }) => {
     // Map Phase 2 method to PaymentMethod enum
     let mappedMode: PaymentMethod = 'CASH';
@@ -1033,7 +1051,7 @@ export default function App() {
       customerPhone: details.customerPhone || '',
       customerId: details.customerId,
       discountPercent: details.discount || 0,
-      discountAmount: details.discountAmount || 0,
+      discountAmount: (details.discountAmount || 0) + (details.pointsDiscount || 0),
       includeGst: details.taxAmount > 0,
       taxAmount: details.taxAmount,
       grandTotal: details.total,
@@ -1049,6 +1067,7 @@ export default function App() {
       items: details.items,
       fromPaymentModal: true,
       tokenNumber: shopSettings.enableDailyToken ? getNextDailyToken() : undefined,
+      redeemedPoints: details.redeemedPoints,
     });
   };
 
@@ -1868,6 +1887,7 @@ export default function App() {
               customers={customers}
               orders={orders}
               currencySymbol={shopSettings.currencySymbol}
+              enableLoyaltyPoints={shopSettings.enableLoyaltyPoints !== false}
               onAddCustomer={handleAddFullCustomer}
               onSettleCredit={handleSettleCredit}
             />
@@ -2000,6 +2020,8 @@ export default function App() {
         discount={discount}
         discountType={discountType}
         discountAmount={discountAmount}
+        enableLoyaltyPoints={shopSettings.enableLoyaltyPoints !== false}
+        loyaltyPointValue={shopSettings.loyaltyPointValue || 1}
         canStaffKhata={canStaffSellKhata(activeStaff?.role, shopSettings.permissions)}
         onRequestKhataAuth={(onApproved) => {
 
