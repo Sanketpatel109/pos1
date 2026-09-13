@@ -45,11 +45,18 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
   initialSettings,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [shopName, setShopName] = useState(initialSettings.shopName || '');
-  const [tagline, setTagline] = useState(initialSettings.tagline || 'Fresh Goods & Fast Service');
-  const [phone, setPhone] = useState(initialSettings.phone || '');
-  const [address, setAddress] = useState(initialSettings.address || '');
-  const [gstin, setGstin] = useState(initialSettings.gstin || '');
+
+  // Clean slate for new merchants so they see clean fields with helpful placeholders instead of mock demo text
+  const isDefaultMockData =
+    !initialSettings.shopName ||
+    initialSettings.shopName === 'MonoPOS Express' ||
+    initialSettings.shopName === 'Anand Supermarket';
+
+  const [shopName, setShopName] = useState(isDefaultMockData ? '' : initialSettings.shopName);
+  const [tagline, setTagline] = useState(isDefaultMockData ? '' : (initialSettings.tagline || ''));
+  const [phone, setPhone] = useState(isDefaultMockData ? '' : (initialSettings.phone || ''));
+  const [address, setAddress] = useState(isDefaultMockData ? '' : (initialSettings.address || ''));
+  const [gstin, setGstin] = useState(isDefaultMockData ? '' : (initialSettings.gstin || ''));
   const [currencySymbol, setCurrencySymbol] = useState(initialSettings.currencySymbol || '₹');
   const [businessType, setBusinessType] = useState<string>('grocery');
   const [useSampleData, setUseSampleData] = useState<boolean>(false);
