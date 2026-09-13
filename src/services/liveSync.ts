@@ -423,12 +423,13 @@ export async function liveSaveOrder(order: Order): Promise<void> {
 
     // 1. Order document in /orders
     const orderRef = getTenantDoc('orders', order.id);
+    const sanitizedOrder = JSON.parse(JSON.stringify({
+      ...order,
+      syncedAt: new Date().toISOString(),
+    }));
     batch.set(
       orderRef,
-      {
-        ...order,
-        syncedAt: new Date().toISOString(),
-      },
+      sanitizedOrder,
       { merge: true }
     );
 

@@ -115,10 +115,11 @@ export async function pushAllToCloud(data: CloudStoreData, ownerEmail?: string):
 export async function pushSingleOrder(order: Order): Promise<void> {
   try {
     const orderRef = getTenantDoc('orders', order.id);
-    await setDoc(orderRef, {
+    const sanitizedData = JSON.parse(JSON.stringify({
       ...order,
       syncedAt: new Date().toISOString(),
-    }, { merge: true });
+    }));
+    await setDoc(orderRef, sanitizedData, { merge: true });
   } catch (err) {
     console.warn('Background order cloud backup deferred:', err);
   }
