@@ -159,9 +159,6 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
             M
           </div>
           <span className="font-bold text-base sm:text-lg tracking-tight">MonoPOS</span>
-          <Badge variant="outline" className="ml-1 text-[10px] font-semibold py-0.5 px-2">
-            Retail v2.4
-          </Badge>
         </div>
 
         {/* Center Form Area */}
