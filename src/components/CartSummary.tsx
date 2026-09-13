@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check } from 'lucide-react';
+import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '../context/CartContext';
 
@@ -17,6 +17,8 @@ export interface CartSummaryProps {
   heldOrdersCount?: number;
   onOpenHeldOrders?: () => void;
   disabled?: boolean;
+  onSwitchMode?: () => void;
+  currentMode?: 'item-wise' | 'quick-bill' | 'catalog';
 }
 
 export const CartSummary: React.FC<CartSummaryProps> = ({
@@ -33,6 +35,8 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
   heldOrdersCount = 0,
   onOpenHeldOrders,
   disabled = false,
+  onSwitchMode,
+  currentMode = 'item-wise',
 }) => {
   const {
     discount = 0,
@@ -198,6 +202,30 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
                 {heldOrdersCount}
               </span>
             )}
+          </Button>
+        )}
+
+        {/* Switch Register Mode Button - beside Print Button */}
+        {onSwitchMode && (
+          <Button
+            type="button"
+            id="btn-cart-switch-mode"
+            variant="outline"
+            onClick={onSwitchMode}
+            disabled={disabled}
+            className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 text-muted-foreground hover:text-foreground"
+            title={
+              currentMode === 'quick-bill'
+                ? 'Switch to Catalog & Barcode Billing (Product catalog & laser barcode billing)'
+                : 'Switch to Quick Numpad Register (Fast calculator & custom amount billing)'
+            }
+            aria-label={
+              currentMode === 'quick-bill'
+                ? 'Switch to Catalog & Barcode Billing'
+                : 'Switch to Quick Numpad Register'
+            }
+          >
+            <ArrowLeftRight className="size-4" />
           </Button>
         )}
 

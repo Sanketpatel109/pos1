@@ -31,6 +31,7 @@ interface ItemWiseBillTerminalProps {
   onSaveBill: () => void;
   onOpenScanner?: (mode?: 'add-to-bill' | 'price-check' | 'search') => void;
   onOpenPriceCheck?: () => void;
+  onSwitchMode?: () => void;
 }
 
 export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
@@ -54,6 +55,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   onSaveBill,
   onOpenScanner,
   onOpenPriceCheck,
+  onSwitchMode,
 }) => {
   const {
     currentBillItems: cartItems,
@@ -185,6 +187,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
           onPrintBill={onPrintBill}
           onPay={onSaveBill}
           onOpenHeldOrders={onOpenHeldOrders}
+          onSwitchMode={onSwitchMode}
         />
       </div>
 

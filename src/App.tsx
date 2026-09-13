@@ -1783,6 +1783,10 @@ export default function App() {
                 }, 50);
               }}
               onSaveBill={() => setIsPaymentModalOpen(true)}
+              onSwitchMode={() => {
+                playSfx('tap');
+                setActiveScreen('quick-bill');
+              }}
             />
           )}
 
@@ -1798,6 +1802,10 @@ export default function App() {
               onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
               onSaveQuickBill={handleSaveQuickBill}
               onPrintQuickBill={handlePrintQuickBill}
+              onSwitchMode={() => {
+                playSfx('tap');
+                setActiveScreen('item-wise');
+              }}
             />
           )}
 

@@ -37,6 +37,7 @@ export interface CurrentBillProps {
   onResetAndNewBill?: () => void;
   onOpenHeldOrders?: () => void;
   onCloseMobile?: () => void;
+  onSwitchMode?: () => void;
 }
 
 export const CurrentBill: React.FC<CurrentBillProps> = ({
@@ -59,6 +60,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
   onResetAndNewBill,
   onOpenHeldOrders,
   onCloseMobile,
+  onSwitchMode,
 }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -347,6 +349,8 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
         }}
         onOpenHeldOrders={onOpenHeldOrders}
         disabled={items.length === 0}
+        onSwitchMode={onSwitchMode}
+        currentMode="item-wise"
       />
 
       {/* Phase 2: Indian Payment Engine Modal */}
