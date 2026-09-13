@@ -11,18 +11,20 @@ import {
 } from '../firebase';
 import {
   ShieldCheck,
-  CloudUpload,
-  BarChart3,
-  Scan,
-  Users,
   Zap,
   ArrowRight,
   Mail,
+  Lock,
   Eye,
   EyeOff,
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Sparkles,
+  ShoppingBag,
+  TrendingUp,
+  Check,
+  Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,17 +35,7 @@ interface AuthGateScreenProps {
   onDemoLogin?: () => void;
 }
 
-const FEATURES = [
-  { icon: Zap, label: 'Instant Billing', desc: 'Keypad & barcode register' },
-  { icon: CloudUpload, label: 'Cloud Backup', desc: 'Auto-sync to Firebase' },
-  { icon: BarChart3, label: 'GSTR-1 Reports', desc: 'GST-ready tax export' },
-  { icon: Scan, label: 'Barcode Scanning', desc: 'Camera & laser support' },
-  { icon: Users, label: 'Staff & RBAC', desc: 'PIN-based operator shifts' },
-  { icon: ShieldCheck, label: '14-Day Free Trial', desc: 'No credit card required' },
-];
-
 export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated, onDemoLogin }) => {
-  const [showEmailForm, setShowEmailForm] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -83,7 +75,6 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
         err.code === 'auth/cancelled-popup-request' ||
         err.code === 'auth/internal-error'
       ) {
-        // Automatic seamless redirect fallback if popup is blocked by browser
         try {
           await signInWithRedirect(auth, googleProvider);
           return;
@@ -91,9 +82,9 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
           setError(redirectErr.message || 'Redirect sign-in failed.');
         }
       } else if (err.code === 'auth/popup-closed-by-user') {
-        setError(null); // User closed popup
+        setError(null);
       } else {
-        setError(err.message || 'Google sign-in failed. Try the direct redirect below.');
+        setError(err.message || 'Google sign-in failed. Try again or use email below.');
       }
     } finally {
       setLoading(false);
@@ -138,7 +129,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
       } else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Try signing in instead.');
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Email sign-in is disabled in Firebase. Please use "Continue with Google" or "Explore Interactive Demo" below.');
+        setError('Email sign-in is disabled in Firebase. Please use Google sign-in.');
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait a moment and try again.');
       } else {
@@ -176,260 +167,389 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm sm:max-w-md flex flex-col items-center gap-6 sm:gap-8">
+    <div className="fixed inset-0 z-[100] bg-slate-950 text-slate-100 flex items-center justify-center p-4 lg:p-8 overflow-y-auto selection:bg-indigo-500 selection:text-white">
+      {/* Background Ambient Glows */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none translate-y-1/2" />
 
-        {/* Logo & Branding */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mx-auto shadow-lg text-2xl sm:text-3xl font-black tracking-tighter">
-            M
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            MonoPOS
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
-            India's smartest retail POS — billing, inventory, GST reports, and cloud backup in one app.
-          </p>
-        </div>
+      {/* Main Split Grid */}
+      <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 bg-slate-900/90 border border-slate-800/80 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl my-auto">
+        
+        {/* LEFT COLUMN: Modern Retail Hero Showcase (Visible on Large Screens) */}
+        <div className="hidden lg:flex lg:col-span-6 flex-col justify-between p-10 bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border-r border-slate-800/80 relative overflow-hidden">
+          {/* Subtle grid pattern background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-        {/* Feature Pills */}
-        <div className="grid grid-cols-3 gap-2 w-full">
-          {FEATURES.map((f) => (
-            <div
-              key={f.label}
-              className="flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl bg-muted/50 border border-border/50 text-center"
-            >
-              <f.icon className="w-4 h-4 text-primary" />
-              <span className="text-[10px] sm:text-[11px] font-semibold text-foreground leading-tight">{f.label}</span>
+          {/* Top Brand Header */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 font-black text-xl tracking-tight">
+              M
             </div>
-          ))}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-xl tracking-tight text-white">MonoPOS</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Retail Cloud
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">Next-Gen Intelligent Billing & Inventory</p>
+            </div>
+          </div>
+
+          {/* Center: Live Terminal Cart Simulation */}
+          <div className="relative z-10 my-8 space-y-4">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-white tracking-tight leading-tight">
+                Billing fast as lightning. <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-400 to-emerald-400">
+                  Zero delays at checkout.
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+                Engineered for Indian retail — supermarkets, apparel, pharmacy, and cafes with instant GST invoices and offline sync.
+              </p>
+            </div>
+
+            {/* Simulated Live POS Register Card */}
+            <div className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-4 shadow-xl space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-semibold text-slate-300">Terminal 01 • Active Order</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-400">#INV-1082</span>
+              </div>
+
+              {/* Sample Cart Items */}
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 font-mono">1x</span>
+                    <span>Amul Butter Pasteurised (500g)</span>
+                  </div>
+                  <span className="font-semibold font-mono text-white">₹275.00</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 font-mono">2x</span>
+                    <span>Tata Tea Gold Leaf (250g)</span>
+                  </div>
+                  <span className="font-semibold font-mono text-white">₹320.00</span>
+                </div>
+              </div>
+
+              {/* Total & UPI Badge */}
+              <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-slate-400">Total Payable</p>
+                  <p className="text-lg font-black font-mono text-emerald-400">₹595.00</p>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                  <Check className="w-3.5 h-3.5" />
+                  UPI QR Ready
+                </div>
+              </div>
+            </div>
+
+            {/* Micro Feature Badges */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-[11px] font-medium text-slate-300">0.3s Scan</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-sky-400 shrink-0" />
+                <span className="text-[11px] font-medium text-slate-300">GST Ready</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-[11px] font-medium text-slate-300">Auto Backup</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Trust Quote */}
+          <div className="relative z-10 pt-4 border-t border-slate-800/70 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-indigo-300 shrink-0">
+              KP
+            </div>
+            <p className="text-[11px] text-slate-400 leading-snug">
+              <span className="text-slate-200 font-medium">"Cut checkout lines in half during peak hours."</span> — Kirana Mart, Ahmedabad
+            </p>
+          </div>
         </div>
 
-        {/* Auth Card */}
-        <div className="w-full bg-card rounded-xl border border-border shadow-lg p-5 space-y-4">
-
-          {/* Google 1-Tap Button */}
-          <Button
-            id="btn-google-sign-in"
-            type="button"
-            variant="outline"
-            size="lg"
-            className="w-full h-12 gap-3 text-sm font-semibold"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-          >
-            {loading && !showEmailForm ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-            )}
-            Continue with Google
-          </Button>
-
-          <div className="text-center -mt-2">
-            <button
-              type="button"
-              onClick={handleGoogleRedirectSignIn}
-              className="text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-            >
-              Popup blank or blocked? <span className="underline font-medium text-primary">Sign in directly without popup →</span>
-            </button>
+        {/* RIGHT COLUMN: Streamlined, Frictionless Auth Container */}
+        <div className="col-span-1 lg:col-span-6 p-6 sm:p-10 flex flex-col justify-center">
+          
+          {/* Mobile Brand Header */}
+          <div className="lg:hidden flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25 font-black text-lg">
+              M
+            </div>
+            <div>
+              <span className="font-extrabold text-lg tracking-tight text-white">MonoPOS Retail</span>
+              <p className="text-xs text-slate-400">Intelligent Cloud POS</p>
+            </div>
           </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-border" />
+          {/* Form Header */}
+          <div className="space-y-1.5 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {isForgotPassword
+                ? 'Reset Password'
+                : isSignUp
+                ? 'Get started with MonoPOS'
+                : 'Welcome back'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400">
+              {isForgotPassword
+                ? 'Enter your registered email to receive a recovery link'
+                : isSignUp
+                ? 'Create your store account. 14-day full trial, no card needed.'
+                : 'Sign in to access your billing registers, inventory & reports.'}
+            </p>
           </div>
 
-          {/* Email/Password / Forgot Password Flow */}
-          {showEmailForm ? (
-            isForgotPassword ? (
-              /* Forgot Password Form */
-              <form onSubmit={handleForgotPassword} className="space-y-3">
-                <div className="text-center space-y-1 pb-1">
-                  <h3 className="text-sm font-bold text-foreground">Reset your password</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Enter your email address and we'll send you a password reset link.
-                  </p>
-                </div>
+          {/* Mode Switcher Pill Tabs (Sign In vs Create Account) */}
+          {!isForgotPassword && (
+            <div className="flex p-1 rounded-xl bg-slate-950 border border-slate-800 mb-6">
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(false); setError(null); setSuccessMessage(null); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  !isSignUp
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(true); setError(null); setSuccessMessage(null); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  isSignUp
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
+          )}
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="auth-email-reset" className="text-xs font-medium">Email Address</Label>
+          {/* Google 1-Tap Auth Button */}
+          {!isForgotPassword && (
+            <>
+              <Button
+                id="btn-google-sign-in"
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full h-12 gap-3 text-sm font-semibold bg-slate-950 border-slate-700 hover:bg-slate-800 hover:text-white text-slate-200 transition-all rounded-xl"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                )}
+                <span>Continue with Google</span>
+              </Button>
+
+              {/* Minimalist divider */}
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-slate-800" />
+                <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                  or with email
+                </span>
+                <div className="flex-1 h-px bg-slate-800" />
+              </div>
+            </>
+          )}
+
+          {/* FORGOT PASSWORD FORM */}
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-email-reset" className="text-xs font-semibold text-slate-300">
+                  Registered Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <Input
                     id="auth-email-reset"
                     type="email"
-                    placeholder="owner@example.com"
+                    placeholder="owner@yourstore.com"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                    autoComplete="email"
+                    className="pl-10 h-11 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-400 focus-visible:ring-indigo-500 rounded-xl"
                     autoFocus
                     required
                   />
                 </div>
+              </div>
 
-                <Button
-                  id="btn-submit-reset"
-                  type="submit"
-                  size="lg"
-                  className="w-full h-11 gap-2 text-sm font-semibold"
-                  disabled={loading || resetSent}
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : resetSent ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  ) : (
-                    <Mail className="w-4 h-4" />
-                  )}
-                  {resetSent ? 'Reset Link Sent!' : 'Send Password Reset Link'}
-                </Button>
+              <Button
+                id="btn-submit-reset"
+                type="submit"
+                size="lg"
+                className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl gap-2 transition-all shadow-lg shadow-indigo-600/20"
+                disabled={loading || resetSent}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : resetSent ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
+                {resetSent ? 'Reset Email Sent!' : 'Send Reset Link'}
+              </Button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsForgotPassword(false);
-                    setResetSent(false);
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
-                  className="w-full text-xs text-primary hover:underline font-medium cursor-pointer text-center py-1"
-                >
-                  ← Back to Sign In
-                </button>
-              </form>
-            ) : (
-              /* Standard Sign In / Sign Up Form */
-              <form onSubmit={handleEmailAuth} className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="auth-email" className="text-xs font-medium">Email</Label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setResetSent(false);
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                className="w-full text-xs text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer text-center py-2"
+              >
+                ← Back to Sign In
+              </button>
+            </form>
+          ) : (
+            /* EMAIL / PASSWORD FORM */
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="auth-email" className="text-xs font-semibold text-slate-300">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <Input
                     id="auth-email"
                     type="email"
-                    placeholder="owner@example.com"
+                    placeholder="owner@yourstore.com"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(null); }}
                     autoComplete="email"
-                    autoFocus
+                    className="pl-10 h-11 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-400 focus-visible:ring-indigo-500 rounded-xl"
+                    required
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auth-password" className="text-xs font-medium">Password</Label>
-                    {!isSignUp && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsForgotPassword(true);
-                          setError(null);
-                          setSuccessMessage(null);
-                        }}
-                        className="text-[11px] text-primary hover:underline cursor-pointer"
-                      >
-                        Forgot password?
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="auth-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Min 6 characters"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                      autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                      className="pr-10"
-                    />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="auth-password" className="text-xs font-semibold text-slate-300">
+                    Password
+                  </Label>
+                  {!isSignUp && (
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        setError(null);
+                        setSuccessMessage(null);
+                      }}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium cursor-pointer"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      Forgot password?
                     </button>
-                  </div>
-                </div>
-
-                <Button
-                  id="btn-submit-auth"
-                  type="submit"
-                  size="lg"
-                  className="w-full h-11 gap-2 text-sm font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="w-4 h-4" />
                   )}
-                  {isSignUp ? 'Create Account & Start Trial' : 'Sign In'}
-                </Button>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Input
+                    id="auth-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="At least 6 characters"
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                    className="pl-10 pr-10 h-11 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-400 focus-visible:ring-indigo-500 rounded-xl"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-                <button
-                  id="btn-toggle-sign-up"
-                  type="button"
-                  onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-                  className="w-full text-xs text-primary hover:underline font-medium cursor-pointer text-center py-1"
-                >
-                  {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
-                </button>
-              </form>
-            )
-          ) : (
-            <Button
-              id="btn-sign-in-email"
-              type="button"
-              variant="ghost"
-              size="lg"
-              className="w-full h-11 gap-2 text-sm font-medium text-muted-foreground"
-              onClick={() => setShowEmailForm(true)}
-            >
-              <Mail className="w-4 h-4" />
-              Sign in with Email
-            </Button>
+              <Button
+                id="btn-submit-auth"
+                type="submit"
+                size="lg"
+                className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl gap-2 transition-all shadow-lg shadow-indigo-600/20"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-4 h-4" />
+                )}
+                {isSignUp ? 'Create Free Store Account' : 'Sign In to Terminal'}
+              </Button>
+            </form>
           )}
 
-          {/* Success Message */}
+          {/* Feedback alerts */}
           {successMessage && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
-              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="mt-4 flex items-start gap-2.5 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-medium">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
               <span>{successMessage}</span>
             </div>
           )}
 
-          {/* Error Message */}
           {error && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="mt-4 flex items-start gap-2.5 p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
               <span>{error}</span>
             </div>
           )}
-        </div>
 
-        {/* Trial Guarantee & Demo Link */}
-        <div className="text-center space-y-2 max-w-xs">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Start your <span className="font-bold text-primary">14-day free trial</span> instantly.
-            No credit card required. Full access to all features.
-          </p>
-
+          {/* Interactive Demo Bypass Link */}
           {onDemoLogin && (
-            <button
-              id="btn-explore-demo"
-              type="button"
-              onClick={onDemoLogin}
-              className="text-xs text-muted-foreground hover:text-primary font-semibold underline underline-offset-4 cursor-pointer transition-colors py-1"
-            >
-              ⚡ Explore Interactive Demo (No Sign-In Required)
-            </button>
+            <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+              <button
+                id="btn-explore-demo"
+                type="button"
+                onClick={onDemoLogin}
+                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-amber-300 font-semibold cursor-pointer transition-colors py-1"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Explore Interactive Demo (No Sign-In Required) →</span>
+              </button>
+            </div>
           )}
+
+          {/* Subtle Security Footnote */}
+          <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-slate-400">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" /> 256-bit Encrypted
+            </span>
+            <span>•</span>
+            <span>GST Ready</span>
+            <span>•</span>
+            <span>Cloud Backup</span>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
