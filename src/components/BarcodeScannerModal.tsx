@@ -70,6 +70,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [customPriceInput, setCustomPriceInput] = useState<string>('');
+  const [unrecognizedPromptCode, setUnrecognizedPromptCode] = useState<string | null>(null);
 
   const [lastScannedResult, setLastScannedResult] = useState<{
     code: string;
@@ -105,6 +106,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       setManualCode('');
       setCustomPriceInput('');
       setCameraError(null);
+      setUnrecognizedPromptCode(null);
     }
   }, [isOpen, propMode, initialMode]);
 
@@ -176,6 +178,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         timestamp: now,
         actionTaken: `Unrecognized Barcode: ${cleanText}`,
       });
+      // Prompt user to add to POS
+      setUnrecognizedPromptCode(cleanText);
     }
   };
 
@@ -644,6 +648,45 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               onChange={handleFileUpload}
               className="hidden"
             />
+
+            {/* New Product Detected Prompt Overlay */}
+            {unrecognizedPromptCode && (
+              <div className="absolute inset-0 bg-slate-950/92 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95">
+                <div className="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-2 shadow-inner">
+                  <Barcode className="w-5 h-5" />
+                </div>
+                <h4 className="text-white text-sm font-extrabold tracking-wide">
+                  New Product Detected
+                </h4>
+                <p className="text-slate-300 text-xs mt-1 max-w-[280px]">
+                  Barcode <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-sm">{unrecognizedPromptCode}</span> is not in your POS catalog.
+                </p>
+                <div className="flex items-center gap-2 mt-3.5 w-full max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = unrecognizedPromptCode;
+                      setUnrecognizedPromptCode(null);
+                      if (registerBarcodeCallback) {
+                        registerBarcodeCallback(code);
+                        onClose();
+                      }
+                    }}
+                    className="flex-1 py-2 px-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                  >
+                    <Plus className="w-4 h-4 stroke-[3]" />
+                    <span>Add to POS</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUnrecognizedPromptCode(null)}
+                    className="py-2 px-3 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-lg cursor-pointer active:scale-95 transition-all"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Manual Input / Hardware Scanner Form */}
