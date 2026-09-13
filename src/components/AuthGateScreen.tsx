@@ -7,6 +7,7 @@ import {
   getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from '../firebase';
 import {
   ShieldCheck,
@@ -21,6 +22,7 @@ import {
   EyeOff,
   Loader2,
   AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,11 +45,14 @@ const FEATURES = [
 export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated, onDemoLogin }) => {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Check for return from redirect Google sign-in
   useEffect(() => {
@@ -144,6 +149,32 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setError('Please enter your email address to receive a password reset link.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      await sendPasswordResetEmail(auth, email.trim());
+      setResetSent(true);
+      setSuccessMessage(`Password reset link sent to ${email.trim()}. Check your inbox and spam folder.`);
+    } catch (err: any) {
+      console.error('Password reset failed:', err);
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email address.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else {
+        setError(err.message || 'Failed to send password reset email.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm sm:max-w-md flex flex-col items-center gap-6 sm:gap-8">
@@ -217,67 +248,139 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* Email/Password Form */}
+          {/* Email/Password / Forgot Password Flow */}
           {showEmailForm ? (
-            <form onSubmit={handleEmailAuth} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="auth-email" className="text-xs font-medium">Email</Label>
-                <Input
-                  id="auth-email"
-                  type="email"
-                  placeholder="owner@example.com"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                  autoComplete="email"
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="auth-password" className="text-xs font-medium">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="auth-password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+            isForgotPassword ? (
+              /* Forgot Password Form */
+              <form onSubmit={handleForgotPassword} className="space-y-3">
+                <div className="text-center space-y-1 pb-1">
+                  <h3 className="text-sm font-bold text-foreground">Reset your password</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your email address and we'll send you a password reset link.
+                  </p>
                 </div>
-              </div>
 
-              <Button
-                id="btn-submit-auth"
-                type="submit"
-                size="lg"
-                className="w-full h-11 gap-2 text-sm font-semibold"
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="w-4 h-4" />
-                )}
-                {isSignUp ? 'Create Account & Start Trial' : 'Sign In'}
-              </Button>
+                <div className="space-y-1.5">
+                  <Label htmlFor="auth-email-reset" className="text-xs font-medium">Email Address</Label>
+                  <Input
+                    id="auth-email-reset"
+                    type="email"
+                    placeholder="owner@example.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                    autoComplete="email"
+                    autoFocus
+                    required
+                  />
+                </div>
 
-              <button
-                id="btn-toggle-sign-up"
-                type="button"
-                onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-                className="w-full text-xs text-primary hover:underline font-medium cursor-pointer text-center py-1"
-              >
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
-              </button>
-            </form>
+                <Button
+                  id="btn-submit-reset"
+                  type="submit"
+                  size="lg"
+                  className="w-full h-11 gap-2 text-sm font-semibold"
+                  disabled={loading || resetSent}
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : resetSent ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <Mail className="w-4 h-4" />
+                  )}
+                  {resetSent ? 'Reset Link Sent!' : 'Send Password Reset Link'}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setResetSent(false);
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className="w-full text-xs text-primary hover:underline font-medium cursor-pointer text-center py-1"
+                >
+                  ← Back to Sign In
+                </button>
+              </form>
+            ) : (
+              /* Standard Sign In / Sign Up Form */
+              <form onSubmit={handleEmailAuth} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="auth-email" className="text-xs font-medium">Email</Label>
+                  <Input
+                    id="auth-email"
+                    type="email"
+                    placeholder="owner@example.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="auth-password" className="text-xs font-medium">Password</Label>
+                    {!isSignUp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(true);
+                          setError(null);
+                          setSuccessMessage(null);
+                        }}
+                        className="text-[11px] text-primary hover:underline cursor-pointer"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="auth-password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Min 6 characters"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                      autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  id="btn-submit-auth"
+                  type="submit"
+                  size="lg"
+                  className="w-full h-11 gap-2 text-sm font-semibold"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                  {isSignUp ? 'Create Account & Start Trial' : 'Sign In'}
+                </Button>
+
+                <button
+                  id="btn-toggle-sign-up"
+                  type="button"
+                  onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
+                  className="w-full text-xs text-primary hover:underline font-medium cursor-pointer text-center py-1"
+                >
+                  {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
+                </button>
+              </form>
+            )
           ) : (
             <Button
               id="btn-sign-in-email"
@@ -290,6 +393,14 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
               <Mail className="w-4 h-4" />
               Sign in with Email
             </Button>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{successMessage}</span>
+            </div>
           )}
 
           {/* Error Message */}
