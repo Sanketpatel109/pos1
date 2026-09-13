@@ -486,10 +486,12 @@ export default function App() {
   const handleOnboardingComplete = ({
     shopSettings: updatedSettings,
     useSampleData,
+    ownerPin,
   }: {
     shopSettings: Partial<ShopSettings>;
     useSampleData: boolean;
     businessType: string;
+    ownerPin?: string;
   }) => {
     const newSettings: ShopSettings = {
       ...shopSettings,
@@ -499,6 +501,36 @@ export default function App() {
     localStorage.setItem('monopos_retail_settings', JSON.stringify(newSettings));
     liveSaveSettings(newSettings).catch(() => {});
 
+    // Update Owner PIN and Name if provided
+    if (ownerPin && ownerPin.trim().length === 4) {
+      const pinToSet = ownerPin.trim();
+      const ownerName = newSettings.shopName ? `${newSettings.shopName} (Owner)` : 'Store Owner';
+      setStaffList((prev) => {
+        let found = false;
+        const updated = prev.map((s) => {
+          if (normalizeRole(s.role) === 'OWNER' || s.id === 'staff-owner') {
+            found = true;
+            return { ...s, pin: pinToSet, name: ownerName };
+          }
+          return s;
+        });
+        if (!found) {
+          updated.unshift({
+            id: 'staff-owner',
+            name: ownerName,
+            role: 'OWNER',
+            pin: pinToSet,
+            active: true,
+          });
+        }
+        localStorage.setItem('monopos_staff_list', JSON.stringify(updated));
+        const ownerMember = updated.find((s) => normalizeRole(s.role) === 'OWNER');
+        if (ownerMember) {
+          liveSaveStaff(ownerMember).catch(() => {});
+        }
+        return updated;
+      });
+    }
 
     if (!useSampleData) {
       setCatalog([]);

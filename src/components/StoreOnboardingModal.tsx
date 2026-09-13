@@ -12,6 +12,9 @@ import {
   Coffee,
   Shirt,
   Pill,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +27,7 @@ interface StoreOnboardingModalProps {
     shopSettings: Partial<ShopSettings>;
     useSampleData: boolean;
     businessType: string;
+    ownerPin: string;
   }) => void;
   initialSettings: ShopSettings;
 }
@@ -56,6 +60,9 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
   const [gstin, setGstin] = useState(isDefaultMockData ? '' : (initialSettings.gstin || ''));
   const [currencySymbol, setCurrencySymbol] = useState(initialSettings.currencySymbol || '₹');
   const [businessType, setBusinessType] = useState<string>('grocery');
+  const [ownerPin, setOwnerPin] = useState<string>('1234');
+  const [showPin, setShowPin] = useState<boolean>(false);
+  const [pinError, setPinError] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -63,6 +70,11 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
     e.preventDefault();
     if (step === 1) {
       if (!shopName.trim()) return;
+      if (ownerPin.trim().length !== 4) {
+        setPinError('Owner PIN must be exactly 4 digits');
+        return;
+      }
+      setPinError('');
       setStep(2);
     } else {
       // Production: Always launch 100% clean fresh store with zero fake sample items
@@ -78,6 +90,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
         },
         useSampleData: false,
         businessType,
+        ownerPin: ownerPin.trim() || '1234',
       });
     }
   };
@@ -199,6 +212,53 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
                     className="pl-9 h-11 uppercase"
                   />
                 </div>
+              </div>
+
+              {/* Master Owner Security PIN */}
+              <div className="space-y-1.5 p-3.5 rounded-xl border border-border bg-muted/40">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ob-pin" className="text-xs font-bold flex items-center gap-1.5 text-foreground">
+                    <KeyRound className="w-3.5 h-3.5 text-primary" />
+                    <span>Create Master Owner PIN (4 Digits) *</span>
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground font-semibold tabular-nums">
+                    {ownerPin.length}/4 digits
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Your private security PIN used to authorize manager voids, bill discounts, and admin settings.
+                </p>
+                <div className="relative pt-1">
+                  <Input
+                    id="ob-pin"
+                    type={showPin ? 'text' : 'password'}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
+                    placeholder="Enter 4-digit secret PIN (e.g. 1234)"
+                    value={ownerPin}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setOwnerPin(val);
+                      if (pinError) setPinError('');
+                    }}
+                    className="h-11 font-mono tracking-widest text-center text-base pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground size-8"
+                    title={showPin ? 'Hide PIN' : 'Show PIN'}
+                  >
+                    {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </Button>
+                </div>
+                {pinError && (
+                  <p className="text-xs text-destructive font-medium mt-1">{pinError}</p>
+                )}
               </div>
             </div>
           )}
