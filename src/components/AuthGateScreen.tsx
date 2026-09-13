@@ -19,7 +19,6 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,10 +30,9 @@ interface AuthGateScreenProps {
   onDemoLogin?: () => void;
 }
 
-export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated, onDemoLogin }) => {
+export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -81,21 +79,9 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
       } else if (err.code === 'auth/popup-closed-by-user') {
         setError(null);
       } else {
-        setError(err.message || 'Google sign-in failed. Try the direct redirect below.');
+        setError(err.message || 'Google sign-in failed. Please try again.');
       }
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleRedirectSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      await signInWithRedirect(auth, googleProvider);
-    } catch (err: any) {
-      console.error('Direct Google redirect failed:', err);
-      setError(err.message || 'Google redirect failed.');
       setLoading(false);
     }
   };
@@ -126,7 +112,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
       } else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Try signing in instead.');
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Email sign-in is disabled in Firebase. Please use "Continue with Google" or "Explore Interactive Demo" below.');
+        setError('Email sign-in is disabled in Firebase. Please use "Continue with Google".');
       } else if (err.code === 'auth/too-many-requests') {
         setError('Too many attempts. Please wait a moment and try again.');
       } else {
@@ -165,7 +151,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
 
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground">
-      {/* LEFT COLUMN: Auth Form */}
+      {/* LEFT COLUMN: Simplified, Ultra-Clean Auth Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-10 lg:p-14 overflow-y-auto">
         {/* Brand Header */}
         <div className="flex items-center gap-2.5">
@@ -183,7 +169,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
           {isForgotPassword ? (
             /* Forgot Password View */
             <div className="space-y-6">
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight">Reset Password</h2>
                 <p className="text-xs text-muted-foreground">
                   Enter your email address and we'll send you an instant reset link.
@@ -242,45 +228,33 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   {isSignUp
-                    ? 'Start your 14-day free trial. Select method to register:'
-                    : 'Welcome back! Select method to login:'}
+                    ? 'Start your 14-day free trial for your retail store.'
+                    : 'Sign in to access your store register and inventory.'}
                 </p>
               </div>
 
-              {/* Social Login Button */}
-              <div className="space-y-2">
-                <Button
-                  id="btn-google-sign-in"
-                  type="button"
-                  variant="outline"
-                  size="default"
-                  className="w-full h-10 font-semibold gap-2.5 shadow-2xs hover:bg-muted/50 cursor-pointer"
-                  onClick={handleGoogleSignIn}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <svg className="size-4 shrink-0" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                  )}
-                  <span>Login with Google</span>
-                </Button>
-
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={handleGoogleRedirectSignIn}
-                    className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    Popup blocked? <span className="underline">Sign in directly without popup →</span>
-                  </button>
-                </div>
-              </div>
+              {/* Google 1-Tap Login Button */}
+              <Button
+                id="btn-google-sign-in"
+                type="button"
+                variant="outline"
+                size="default"
+                className="w-full h-10 font-semibold gap-2.5 shadow-2xs hover:bg-muted/50 cursor-pointer"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                )}
+                <span>Continue with Google</span>
+              </Button>
 
               {/* Or continue with Email Divider */}
               <div className="relative flex items-center justify-center text-xs text-muted-foreground">
@@ -310,9 +284,24 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="auth-password" className="text-xs font-semibold">
-                    Password*
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="auth-password" className="text-xs font-semibold">
+                      Password*
+                    </Label>
+                    {!isSignUp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(true);
+                          setError(null);
+                          setSuccessMessage(null);
+                        }}
+                        className="text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <Input
                       id="auth-password"
@@ -334,39 +323,12 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
                   </div>
                 </div>
 
-                {/* Remember Me & Forgot Password Row */}
-                <div className="flex items-center justify-between text-xs pt-0.5">
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded border-border text-primary focus:ring-primary size-3.5"
-                    />
-                    <span>Remember Me</span>
-                  </label>
-
-                  {!isSignUp && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsForgotPassword(true);
-                        setError(null);
-                        setSuccessMessage(null);
-                      }}
-                      className="font-semibold text-foreground hover:underline cursor-pointer"
-                    >
-                      Forgot Password?
-                    </button>
-                  )}
-                </div>
-
                 {/* Submit Button */}
                 <Button
                   id="btn-submit-auth"
                   type="submit"
                   size="default"
-                  className="w-full font-semibold bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 cursor-pointer h-10 shadow-xs"
+                  className="w-full font-semibold bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 cursor-pointer h-10 shadow-xs mt-1"
                   disabled={loading}
                 >
                   {loading && <Loader2 className="size-4 animate-spin mr-2" />}
@@ -374,7 +336,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
                 </Button>
               </form>
 
-              {/* Bottom Toggle */}
+              {/* Account Switcher */}
               <div className="text-center text-xs text-muted-foreground pt-1">
                 {isSignUp ? (
                   <span>
@@ -403,7 +365,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
             </div>
           )}
 
-          {/* Alert Messages */}
+          {/* Feedback Alerts */}
           {successMessage && (
             <div className="mt-4 flex items-center gap-2 p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
               <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
@@ -419,42 +381,30 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
           )}
         </div>
 
-        {/* Footer Demo CTA */}
-        {onDemoLogin && (
-          <div className="text-center pt-2">
-            <Button
-              id="btn-explore-demo"
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onDemoLogin}
-              className="text-xs text-muted-foreground hover:text-foreground font-semibold gap-1.5 cursor-pointer"
-            >
-              <Sparkles className="size-3.5 text-amber-500" />
-              <span>⚡ Explore Interactive Demo (No Sign-In Required)</span>
-            </Button>
-          </div>
-        )}
+        {/* Clean Footer Trust Note */}
+        <div className="text-center text-[11px] text-muted-foreground">
+          Encrypted with 256-bit SSL • 🇮🇳 GST Compliant
+        </div>
       </div>
 
-      {/* RIGHT COLUMN: Modern Split Showcase (Hidden on Mobile) */}
+      {/* RIGHT COLUMN: Streamlined Showcase (Hidden on Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 p-6 flex-col justify-between relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-neutral-900 text-white rounded-3xl m-4 shadow-2xl">
-        {/* Subtle Silk / Wave Ambient Texture */}
+        {/* Ambient Lighting */}
         <div className="absolute inset-0 opacity-25 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-600 via-zinc-900 to-black pointer-events-none" />
         <div className="absolute -top-32 -right-32 size-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 size-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
 
-        {/* Top Showcase Content */}
+        {/* Top Product Value Proposition */}
         <div className="relative z-10 space-y-3 p-6 pt-10 max-w-lg">
           <Badge variant="outline" className="text-white/80 border-white/20 bg-white/5 gap-1.5 text-xs">
             <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Live Cloud Retail Engine
           </Badge>
           <h1 className="text-4xl font-extrabold tracking-tight leading-tight">
-            Welcome back!
+            Lightning-Fast Retail Billing
           </h1>
           <p className="text-sm text-zinc-300 leading-relaxed">
-            Thank you for choosing MonoPOS! Manage rapid barcode billing, multi-tender payments, automated inventory, and GST compliance in real-time.
+            Engineered for high-volume supermarkets, apparel stores, cafes, and groceries across India.
           </p>
 
           <div className="flex items-center gap-3 pt-4">
@@ -470,23 +420,18 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
           </div>
         </div>
 
-        {/* Bottom Floating White Card (Exact Shadcn Studio Style) */}
+        {/* Bottom Social Proof Card */}
         <div className="relative z-10 bg-white text-zinc-900 dark:bg-zinc-950 dark:text-white rounded-2xl p-6 shadow-2xl border border-white/20 mx-4 mb-4">
-          {/* Floating Monogram on Top-Right */}
-          <div className="absolute -top-4 right-6 size-10 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-black text-lg shadow-lg border border-white/20">
-            M
-          </div>
-
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <h3 className="text-base font-bold tracking-tight">
-              Please enter your login details
+              Trusted by 3,500+ Indian Retailers
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Stay connected with MonoPOS. Trusted by 3,500+ Indian supermarkets, groceries, apparel, and retail stores.
+              Powering daily counter sales with offline reliability, zero downtime, and instant digital receipts.
             </p>
           </div>
 
-          {/* Social Proof Avatars & Metric */}
+          {/* Social Proof Avatars & Uptime */}
           <div className="flex items-center justify-between pt-4 mt-2 border-t border-border/60">
             <div className="flex items-center -space-x-2">
               <div className="size-7 rounded-full bg-slate-200 border-2 border-white dark:border-zinc-950 flex items-center justify-center text-[10px] font-bold text-slate-700">
@@ -505,7 +450,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
 
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="size-3.5" />
-              <span>99.99% Uptime</span>
+              <span>99.99% Cloud Uptime</span>
             </div>
           </div>
         </div>
