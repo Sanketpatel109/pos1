@@ -164,10 +164,10 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                   <Card
                     key={cust.id}
                     onClick={() => setSelectedCustomerId(cust.id)}
-                    className={`p-3 flex items-center justify-between gap-3 transition-all cursor-pointer shadow-xs ${
+                    className={`p-3 flex flex-row items-center justify-between gap-3 transition-all cursor-pointer shadow-xs ${
                       isSelected
-                        ? 'bg-muted/80 border-primary ring-1 ring-primary'
-                        : 'border-border hover:border-primary/50'
+                        ? 'bg-accent/60 border-primary shadow-xs'
+                        : 'border-border hover:bg-muted/40 hover:border-border'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
@@ -183,7 +183,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                       <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 tabular-nums">
                         <span>{cust.totalOrders || 0} Bills</span>
                         <span>•</span>
-                        <span className="text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
+                        <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                           <Star className="w-2.5 h-2.5 text-amber-500" />
                           {cust.loyaltyPoints || 0} pts
                         </span>
@@ -195,8 +195,8 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-right">
                         <span
-                          className={`font-bold text-xs sm:text-sm tabular-nums tracking-tight font-medium ${
-                            hasDue ? 'text-destructive' : 'text-primary'
+                          className={`font-bold text-xs sm:text-sm tabular-nums tracking-tight ${
+                            hasDue ? 'text-destructive' : 'text-foreground'
                           }`}
                         >
                           {currencySymbol}
