@@ -260,12 +260,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       console.warn('LocalStorage bills backup failed:', lsErr);
     }
 
-    // 2. Firestore "bills" collection snapshot
+    // 2. Firestore "bills" collection snapshot (non-blocking background sync)
     try {
       const billRef = doc(db, 'bills', billRecord.id);
-      await setDoc(billRef, billRecord, { merge: true });
+      setDoc(billRef, billRecord, { merge: true }).catch((firestoreErr) => {
+        console.warn('Firestore bill snapshot saved locally / cloud deferred:', firestoreErr);
+      });
     } catch (firestoreErr) {
-      console.warn('Firestore bill snapshot saved locally / cloud deferred:', firestoreErr);
+      console.warn('Firestore bill snapshot deferred:', firestoreErr);
     }
 
     // Snapshot immutable sale data for the Success Screen
@@ -291,49 +293,53 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       setCompletedCustomerName(extraDetails.customerName);
     }
     setIsSuccess(true);
+    setIsSubmitting(false);
 
     // 3. Parent callback
-    onCompleteSale({
-      billNo: orderNumber,
-      paymentMethod: method,
-      tenderedAmount: method === 'CASH' ? parsedTendered : netTotal,
-      changeDue: method === 'CASH' ? changeDue : 0,
-      items,
-      subtotal,
-      taxAmount,
-      discount,
-      discountAmount,
-      total: netTotal,
-      customerId: extraDetails?.customerId || selectedCustomer?.id,
-      customerName: extraDetails?.customerName || selectedCustomer?.name,
-      customerPhone: extraDetails?.customerPhone || selectedCustomer?.phone,
-      redeemedPoints: redeemedPoints > 0 ? redeemedPoints : undefined,
-      pointsDiscount: pointsDiscountAmount > 0 ? pointsDiscountAmount : undefined,
-      ...extraDetails,
-    });
+    try {
+      onCompleteSale({
+        billNo: orderNumber,
+        paymentMethod: method,
+        tenderedAmount: method === 'CASH' ? parsedTendered : netTotal,
+        changeDue: method === 'CASH' ? changeDue : 0,
+        items,
+        subtotal,
+        taxAmount,
+        discount,
+        discountAmount,
+        total: netTotal,
+        customerId: extraDetails?.customerId || selectedCustomer?.id,
+        customerName: extraDetails?.customerName || selectedCustomer?.name,
+        customerPhone: extraDetails?.customerPhone || selectedCustomer?.phone,
+        redeemedPoints: redeemedPoints > 0 ? redeemedPoints : undefined,
+        pointsDiscount: pointsDiscountAmount > 0 ? pointsDiscountAmount : undefined,
+        ...extraDetails,
+      });
+    } catch (cbErr) {
+      console.warn('onCompleteSale callback warning:', cbErr);
+    }
   };
 
 
   // 1. CASH COMPLETION
-  const handleCompleteCashSale = async () => {
+  const handleCompleteCashSale = () => {
     if (parsedTendered < netTotal || netTotal <= 0 || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
       posSound?.playSuccess?.();
-      await persistBillRecord('CASH', {
+      persistBillRecord('CASH', {
         verificationMethod: 'cash_tender',
         isVerified: true,
       });
     } catch (err) {
       console.error('Failed to complete cash sale:', err);
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   // 2. UPI COMPLETION
-  const handleCompleteUpiSale = async (details: {
+  const handleCompleteUpiSale = (details: {
     upiRefNumber?: string;
     isVerified: boolean;
     verificationMethod: 'soundbox' | 'utr' | 'gateway';
@@ -343,20 +349,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     try {
       setIsSubmitting(true);
       posSound?.playSuccess?.();
-      await persistBillRecord('UPI', {
+      persistBillRecord('UPI', {
         upiRefNumber: details.upiRefNumber,
         isVerified: details.isVerified,
         verificationMethod: details.verificationMethod,
       });
     } catch (err) {
       console.error('Failed to complete UPI sale:', err);
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   // 3. KHATA COMPLETION
-  const handleCompleteKhataSale = async (details: {
+  const handleCompleteKhataSale = (details: {
     customerId: string;
     customerName: string;
     customerPhone: string;
@@ -369,30 +374,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       setIsSubmitting(true);
       posSound?.playSuccess?.();
 
-      // 1. Update customer's outstanding balance in Firestore
+      // 1. Update customer's outstanding balance in Firestore (non-blocking)
       try {
         const customerRef = doc(db, 'customers', details.customerId);
-        await setDoc(
+        setDoc(
           customerRef,
           {
             creditBalance: details.newTotalDue,
             lastBilledAt: new Date().toISOString(),
           },
           { merge: true }
-        );
+        ).catch((firestoreCustErr) => {
+          console.warn('Firestore customer balance update deferred/offline:', firestoreCustErr);
+        });
       } catch (firestoreCustErr) {
         console.warn('Firestore customer balance update deferred/offline:', firestoreCustErr);
       }
 
       // 2. Save bill to Firestore with paymentMethod: "KHATA"
-      await persistBillRecord('KHATA', {
+      persistBillRecord('KHATA', {
         customerId: details.customerId,
         customerName: details.customerName,
         customerPhone: details.customerPhone,
       });
     } catch (err) {
       console.error('Failed to complete Khata debit sale:', err);
-    } finally {
       setIsSubmitting(false);
     }
   };

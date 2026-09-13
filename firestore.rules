@@ -58,5 +58,8 @@ service cloud.firestore {
     match /heldOrders/{orderId} {
       allow read, write: if isAuthenticated();
     }
+    match /bills/{billId} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }
