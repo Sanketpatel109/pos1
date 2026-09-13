@@ -233,6 +233,8 @@ export interface ShopSettings {
   loyaltyPointValue?: number;
   enableSoundbox?: boolean;
   soundboxLanguage?: 'en' | 'hi';
+  onboarded?: boolean;
+  businessType?: string;
 }
 
 

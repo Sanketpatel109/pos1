@@ -8,6 +8,7 @@ import {
   SAMPLE_ORDERS,
   DEFAULT_SHOP_SETTINGS,
 } from './data/catalog';
+import { BUSINESS_TYPE_CATEGORIES } from './constants/businessCategories';
 import {
   CatalogItem,
   Category,
@@ -193,13 +194,23 @@ export default function App() {
       const tenantId = `tenant_${currentUser.uid}`;
       setActiveTenantId(tenantId);
       const onboardedKey = `monopos_onboarded_${currentUser.uid}`;
-      if (!localStorage.getItem(onboardedKey)) {
+      const isAlreadyOnboarded =
+        localStorage.getItem(onboardedKey) === 'true' ||
+        Boolean(shopSettings.onboarded) ||
+        (Boolean(shopSettings.shopName) &&
+          shopSettings.shopName !== 'MonoPOS Express' &&
+          shopSettings.shopName !== 'Anand Supermarket');
+
+      if (!isAlreadyOnboarded) {
         setIsStoreOnboardingOpen(true);
+      } else {
+        localStorage.setItem(onboardedKey, 'true');
+        setIsStoreOnboardingOpen(false);
       }
     } else {
       setActiveTenantId(null);
     }
-  }, [currentUser]);
+  }, [currentUser, shopSettings.onboarded, shopSettings.shopName]);
 
   // Handle demo store bypass for prospects & evaluators
   const handleDemoLogin = () => {
@@ -295,17 +306,76 @@ export default function App() {
   });
 
   // Categories & Catalog State
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [catalog, setCatalog] = useState<CatalogItem[]>(INITIAL_CATALOG);
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (localStorage.getItem('monopos_is_demo') === 'true') {
+      return INITIAL_CATEGORIES;
+    }
+    const saved = localStorage.getItem('monopos_categories');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return BUSINESS_TYPE_CATEGORIES.grocery;
+  });
+
+  const [catalog, setCatalog] = useState<CatalogItem[]>(() => {
+    if (localStorage.getItem('monopos_is_demo') === 'true') {
+      return INITIAL_CATALOG;
+    }
+    const saved = localStorage.getItem('monopos_live_catalog');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  });
 
   // Customers & Khata Ledger State
-  const [customers, setCustomers] = useState<Customer[]>(SAMPLE_CUSTOMERS);
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    if (localStorage.getItem('monopos_is_demo') === 'true') {
+      return SAMPLE_CUSTOMERS;
+    }
+    const saved = localStorage.getItem('monopos_customers');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  });
 
   // Cash Drawer Entries
-  const [cashEntries, setCashEntries] = useState<CashEntry[]>(SAMPLE_CASH_ENTRIES);
+  const [cashEntries, setCashEntries] = useState<CashEntry[]>(() => {
+    if (localStorage.getItem('monopos_is_demo') === 'true') {
+      return SAMPLE_CASH_ENTRIES;
+    }
+    const saved = localStorage.getItem('monopos_cash_entries');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  });
 
   // Active Billing State - Shared via CartContext
-  const [orderNumber, setOrderNumber] = useState<number>(42);
+  const [orderNumber, setOrderNumber] = useState<number>(() => {
+    const savedOrders = localStorage.getItem('monopos_orders');
+    if (savedOrders) {
+      try {
+        const parsed: Order[] = JSON.parse(savedOrders);
+        const maxNo = Math.max(...parsed.map((o) => o.orderNumber || 0), 0);
+        return maxNo > 0 ? maxNo + 1 : 1;
+      } catch {}
+    }
+    return 1;
+  });
   const {
     currentBillItems,
     addItem: cartAddItem,
@@ -322,7 +392,19 @@ export default function App() {
 
 
   // Orders and Invoices History
-  const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (localStorage.getItem('monopos_is_demo') === 'true') {
+      return SAMPLE_ORDERS;
+    }
+    const saved = localStorage.getItem('monopos_orders');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  });
   const [heldOrders, setHeldOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('monopos_held_orders');
@@ -459,6 +541,17 @@ export default function App() {
     const unsubSettings = listenToLiveSettings((remoteSettings) => {
       if (remoteSettings) {
         setShopSettings((prev) => ({ ...prev, ...remoteSettings }));
+        if (
+          remoteSettings.onboarded ||
+          (remoteSettings.shopName &&
+            remoteSettings.shopName !== 'MonoPOS Express' &&
+            remoteSettings.shopName !== 'Anand Supermarket')
+        ) {
+          if (currentUser) {
+            localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+          }
+          setIsStoreOnboardingOpen(false);
+        }
       }
     });
 
@@ -481,12 +574,13 @@ export default function App() {
       unsubStaff();
       unsubHeld();
     };
-  }, []);
+  }, [currentUser]);
 
   // Handle First-Time Store Onboarding Setup
   const handleOnboardingComplete = ({
     shopSettings: updatedSettings,
     useSampleData,
+    businessType,
     ownerPin,
   }: {
     shopSettings: Partial<ShopSettings>;
@@ -497,10 +591,20 @@ export default function App() {
     const newSettings: ShopSettings = {
       ...shopSettings,
       ...updatedSettings,
+      onboarded: true,
+      businessType,
     };
     setShopSettings(newSettings);
     localStorage.setItem('monopos_retail_settings', JSON.stringify(newSettings));
     liveSaveSettings(newSettings).catch(() => {});
+
+    // Set tailored clean categories for the selected business type
+    const tailoredCategories = BUSINESS_TYPE_CATEGORIES[businessType] || BUSINESS_TYPE_CATEGORIES.grocery;
+    setCategories(tailoredCategories);
+    localStorage.setItem('monopos_categories', JSON.stringify(tailoredCategories));
+    tailoredCategories.forEach((cat) => {
+      liveSaveCategory(cat).catch(() => {});
+    });
 
     // Update Owner PIN and Name if provided
     if (ownerPin && ownerPin.trim().length === 4) {
@@ -533,16 +637,17 @@ export default function App() {
       });
     }
 
-    if (!useSampleData) {
-      setCatalog([]);
-      setOrders([]);
-      setCustomers([]);
-      setCashEntries([]);
-      localStorage.setItem('monopos_live_catalog', JSON.stringify([]));
-      localStorage.setItem('monopos_orders', JSON.stringify([]));
-      localStorage.setItem('monopos_customers', JSON.stringify([]));
-      localStorage.setItem('monopos_cash_entries', JSON.stringify([]));
-    }
+    // Always launch completely clean fresh store: zero cart, zero dummy catalog, zero orders
+    setCatalog([]);
+    setOrders([]);
+    setCustomers([]);
+    setCashEntries([]);
+    cartClearCart();
+    setOrderNumber(1);
+    localStorage.setItem('monopos_live_catalog', JSON.stringify([]));
+    localStorage.setItem('monopos_orders', JSON.stringify([]));
+    localStorage.setItem('monopos_customers', JSON.stringify([]));
+    localStorage.setItem('monopos_cash_entries', JSON.stringify([]));
 
     if (currentUser) {
       localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');

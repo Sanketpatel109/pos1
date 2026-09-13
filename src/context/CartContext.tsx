@@ -102,7 +102,7 @@ export interface CartProviderProps {
 
 export const CartProvider: React.FC<CartProviderProps> = ({
   children,
-  initialItems = INITIAL_BILL_ITEMS,
+  initialItems = [],
   defaultTaxRate = 0,
 }) => {
   const [currentBillItems, setCurrentBillItems] = useState<BillItem[]>(initialItems);
