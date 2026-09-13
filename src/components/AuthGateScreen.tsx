@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   auth,
   googleProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from '../firebase';
@@ -47,6 +49,22 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check for return from redirect Google sign-in
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          onAuthenticated();
+        }
+      })
+      .catch((err) => {
+        console.warn('Redirect sign-in result check:', err);
+        if (err.code && err.code !== 'auth/popup-closed-by-user') {
+          setError(err.message || 'Google sign-in error.');
+        }
+      });
+  }, [onAuthenticated]);
+
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
@@ -54,13 +72,37 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
       await signInWithPopup(auth, googleProvider);
       onAuthenticated();
     } catch (err: any) {
-      console.error('Google Sign-In failed:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError(null); // User just closed the popup, not an error
+      console.warn('Google popup sign-in encountered an issue, falling back to redirect:', err);
+      if (
+        err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/cancelled-popup-request' ||
+        err.code === 'auth/internal-error'
+      ) {
+        // Automatic seamless redirect fallback if popup is blocked by browser
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr: any) {
+          setError(redirectErr.message || 'Redirect sign-in failed.');
+        }
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError(null); // User closed popup
       } else {
-        setError(err.message || 'Google sign-in failed. Please try again.');
+        setError(err.message || 'Google sign-in failed. Try the direct redirect below.');
       }
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleRedirectSignIn = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await signInWithRedirect(auth, googleProvider);
+    } catch (err: any) {
+      console.error('Direct Google redirect failed:', err);
+      setError(err.message || 'Google redirect failed.');
       setLoading(false);
     }
   };
@@ -157,6 +199,16 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated,
             )}
             Continue with Google
           </Button>
+
+          <div className="text-center -mt-2">
+            <button
+              type="button"
+              onClick={handleGoogleRedirectSignIn}
+              className="text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            >
+              Popup blank or blocked? <span className="underline font-medium text-primary">Sign in directly without popup →</span>
+            </button>
+          </div>
 
           {/* Divider */}
           <div className="flex items-center gap-3">
