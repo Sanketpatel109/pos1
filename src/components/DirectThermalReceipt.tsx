@@ -238,8 +238,8 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
           *ORD-{order.orderNumber}-2026*
         </div>
         <p className="font-bold">*** THANK YOU, VISIT AGAIN ***</p>
-        {shopSettings.footerMessage && (
-          <p className="text-[9px] text-zinc-600">{shopSettings.footerMessage}</p>
+        {shopSettings.receiptFooterNote && (
+          <p className="text-[9px] text-zinc-600">{shopSettings.receiptFooterNote}</p>
         )}
       </div>
     </div>

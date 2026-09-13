@@ -88,8 +88,8 @@ export interface BillItem {
 }
 
 
-export type OrderStatus = 'active' | 'held' | 'completed' | 'cancelled' | 'refunded' | 'partially_refunded';
-export type PaymentMethod = 'NONE' | 'CASH' | 'ONLINE' | 'CREDIT' | 'SPLIT';
+export type OrderStatus = 'active' | 'held' | 'completed' | 'cancelled' | 'refunded' | 'partially_refunded' | 'credit';
+export type PaymentMethod = 'NONE' | 'CASH' | 'ONLINE' | 'CREDIT' | 'SPLIT' | 'UPI' | 'CARD' | 'KHATA';
 
 export interface SplitPaymentDetail {
   cash: number;
@@ -166,6 +166,8 @@ export interface Order {
   refundedAt?: string;
   refundMethod?: 'CASH' | 'KHATA' | 'ONLINE';
   refundedItems?: { id: string; name: string; quantity: number; amount: number }[];
+  isDuplicate?: boolean;
+  splitPaymentMode?: string;
 }
 
 
@@ -275,6 +277,8 @@ export interface SubscriptionPlanInfo {
   maxRegisters: number;
   features: string[];
   popular?: boolean;
+  badge?: string;
+  period?: string;
 }
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlanInfo[] = [

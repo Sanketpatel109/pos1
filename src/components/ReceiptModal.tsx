@@ -341,7 +341,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   Cash collected at billing counter &middot; No balance due
                 </div>
               </div>
-            ) : (activePaymentMethod === 'CREDIT' || activePaymentMethod === 'KHATA' || order?.status === 'unpaid') ? (
+            ) : (activePaymentMethod === 'CREDIT' || activePaymentMethod === 'KHATA' || order?.status === 'credit') ? (
               /* Reserve QR codes strictly for unpaid / Khata credit slips so customers can pay outstanding balance */
               shopSettings.upiId && (
                 <div className="text-center py-2 px-1 bg-amber-50 rounded-xl border border-amber-300 space-y-1.5 my-1">

@@ -378,7 +378,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             </span>
           </div>
           <span className="text-[10px] font-semibold bg-card text-foreground px-2 py-0.5 rounded border border-border shadow-2xs">
-            {shopSettings.thermalPrinterPaperWidth || '58mm'} Thermal
+            {shopSettings.printerPaperWidth || shopSettings.paperWidth || '58mm'} Thermal
           </span>
         </div>
       </div>

@@ -13,15 +13,10 @@ export interface CloudSyncModalProps extends Partial<PrintSettingsModalProps> {
  * Settings ➔ Cloud & Backup ➔ Advanced Diagnostics
  * Enforcing that only Store Owner or Manager can view collection health and cloud credentials.
  */
+import { DEFAULT_SHOP_SETTINGS } from '../data/catalog';
+
 export const CloudSyncModal: React.FC<CloudSyncModalProps> = (props) => {
-  const defaultSettings: ShopSettings = props.settings || {
-    shopName: 'Store POS',
-    address: '',
-    phone: '',
-    paperWidth: '58mm',
-    taxRate: 5,
-    currencySymbol: '₹',
-  };
+  const defaultSettings: ShopSettings = props.settings || DEFAULT_SHOP_SETTINGS;
 
   return (
     <PrintSettingsModal

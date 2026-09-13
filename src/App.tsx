@@ -24,6 +24,7 @@ import {
   StorePermissions,
   DEFAULT_STORE_PERMISSIONS,
   PackagingOption,
+  StaffRole,
 } from './types';
 import { resolveBarcodeMatch } from './utils/barcodeResolver';
 import { Header } from './components/Header';
@@ -989,7 +990,6 @@ export default function App() {
     if (!data.fromPaymentModal) {
       setCurrentBillItems([]);
       setOrderNumber((prev) => prev + 1);
-      setIsSaveBillModalOpen(false);
       setIsReceiptModalOpen(false);
 
       if (data.shareWhatsApp) {
@@ -1060,7 +1060,6 @@ export default function App() {
 
     // 1. Close all modals immediately - DO NOT open receipt preview screen
     setIsPaymentModalOpen(false);
-    setIsSaveBillModalOpen(false);
     setIsReceiptModalOpen(false);
 
     // 2. Clear cart completely
@@ -1087,7 +1086,6 @@ export default function App() {
 
     // 1. Close all modals immediately - DO NOT open any receipt screen
     setIsPaymentModalOpen(false);
-    setIsSaveBillModalOpen(false);
     setIsReceiptModalOpen(false);
 
     // 2. Clear the cart completely
@@ -1990,7 +1988,7 @@ export default function App() {
         currencySymbol={shopSettings.currencySymbol}
         customers={customers}
         storeVpa="anandsupermarket@okaxis"
-        storeName={shopSettings.storeName || 'Anand Supermarket'}
+        storeName={shopSettings.shopName || 'Anand Supermarket'}
         discount={discount}
         discountType={discountType}
         discountAmount={discountAmount}

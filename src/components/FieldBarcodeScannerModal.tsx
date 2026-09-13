@@ -124,9 +124,13 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
     if (scannerRef.current) {
       try {
         if (scannerRef.current.isScanning) {
-          scannerRef.current.stop().catch(() => {});
+          try {
+            scannerRef.current.stop();
+          } catch {}
         }
-        scannerRef.current.clear().catch(() => {});
+        try {
+          scannerRef.current.clear();
+        } catch {}
       } catch {}
       scannerRef.current = null;
     }

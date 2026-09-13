@@ -40,6 +40,7 @@ export interface CompletedSnapshot {
 export interface PaymentModalProps {
   isOpen: boolean;
   orderNumber: number;
+  terminalPrefix?: string;
   items: BillItem[];
   subtotal: number;
   taxRate: number;

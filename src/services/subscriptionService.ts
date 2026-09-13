@@ -230,6 +230,8 @@ export async function simulatePlanUpgrade(
         ownerUid: 'demo_retail_owner',
         ownerEmail: 'demo@monopos.retail',
         ownerName: 'Demo Retail Owner',
+        trialStartedAt: now.toISOString(),
+        trialEndsAt: now.toISOString(),
         createdAt: now.toISOString(),
       }),
       plan,

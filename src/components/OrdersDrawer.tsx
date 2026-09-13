@@ -41,13 +41,13 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
     0
   );
   const cashSales = completedOrders
-    .filter((o) => o.paymentMethod === 'cash')
+    .filter((o) => o.paymentMethod === 'CASH')
     .reduce((sum, o) => sum + o.total, 0);
   const upiSales = completedOrders
-    .filter((o) => o.paymentMethod === 'upi')
+    .filter((o) => o.paymentMethod === 'UPI')
     .reduce((sum, o) => sum + o.total, 0);
   const cardSales = completedOrders
-    .filter((o) => o.paymentMethod === 'card')
+    .filter((o) => o.paymentMethod === 'CARD')
     .reduce((sum, o) => sum + o.total, 0);
 
   const handleSaveSettings = (e: React.FormEvent) => {

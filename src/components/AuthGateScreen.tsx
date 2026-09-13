@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 
 interface AuthGateScreenProps {
   onAuthenticated: () => void;
+  onDemoLogin?: () => void;
 }
 
 const FEATURES = [
