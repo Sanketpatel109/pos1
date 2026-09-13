@@ -23,6 +23,7 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
   const [manualCode, setManualCode] = useState<string>('');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'field-barcode-camera-reader';
@@ -47,9 +48,30 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
     onClose();
   };
 
-  const startCameraScanner = async () => {
+  const enforceVideoPlayback = () => {
+    const container = document.getElementById(scannerContainerId);
+    if (!container) return;
+    const video = container.querySelector('video');
+    if (video) {
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('autoplay', 'true');
+      video.setAttribute('muted', 'true');
+      video.style.setProperty('width', '100%', 'important');
+      video.style.setProperty('height', '100%', 'important');
+      video.style.setProperty('object-fit', 'cover', 'important');
+      video.style.setProperty('border-radius', '0.75rem', 'important');
+      video.style.setProperty('display', 'block', 'important');
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+    }
+  };
+
+  const startCameraScanner = async (targetFacing?: 'environment' | 'user') => {
     setCameraError(null);
     hasCapturedRef.current = false;
+    const modeToUse = targetFacing || facingMode;
 
     try {
       if (scannerRef.current) {
@@ -77,47 +99,59 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
         ],
         verbose: false,
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: false,
         },
       });
       scannerRef.current = html5QrCode;
 
       const scanConfig = {
-        fps: 20,
+        fps: 24,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const w = Math.min(Math.floor(viewfinderWidth * 0.9), 340);
-          const h = Math.min(Math.floor(viewfinderHeight * 0.65), 190);
+          const w = Math.floor(viewfinderWidth * 0.82);
+          const h = Math.floor(viewfinderHeight * 0.65);
           return {
-            width: Math.max(w, 220),
-            height: Math.max(h, 130),
+            width: Math.max(50, Math.min(w, viewfinderWidth - 10)),
+            height: Math.max(50, Math.min(h, viewfinderHeight - 10)),
           };
         },
       };
 
       try {
         await html5QrCode.start(
-          { facingMode: 'environment' },
+          { facingMode: modeToUse },
           scanConfig,
           (text) => handleDetected(text),
           () => {}
         );
+        setFacingMode(modeToUse);
       } catch {
+        const altMode = modeToUse === 'environment' ? 'user' : 'environment';
         await html5QrCode.start(
-          { facingMode: 'user' },
+          { facingMode: altMode },
           scanConfig,
           (text) => handleDetected(text),
           () => {}
         );
+        setFacingMode(altMode);
       }
 
       setCameraActive(true);
       setIsScanning(true);
+
+      enforceVideoPlayback();
+      setTimeout(enforceVideoPlayback, 150);
+      setTimeout(enforceVideoPlayback, 400);
     } catch (err: any) {
       console.warn('Camera start error:', err);
       setCameraError('Unable to access camera. Check browser permissions or upload photo.');
       setCameraActive(false);
       setIsScanning(false);
     }
+  };
+
+  const handleToggleCamera = async () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    await startCameraScanner(nextMode);
   };
 
   const stopCameraScanner = () => {
@@ -238,7 +272,7 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
           <div className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[260px]">
             <div
               id={scannerContainerId}
-              className="w-full h-full min-h-[220px] max-h-[260px] flex items-center justify-center overflow-hidden [&_video]:w-full [&_video]:h-full [&_video]:max-h-[260px] [&_video]:object-cover [&_video]:rounded-xl"
+              className="w-full h-full min-h-[220px] max-h-[260px] flex items-center justify-center overflow-hidden relative [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[260px] [&_video]:!object-cover [&_video]:!rounded-xl [&_video]:!block [&_#qr-shaded-region]:!hidden"
             />
 
             {/* Targeting Reticle */}
@@ -265,7 +299,7 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
                 <div className="flex items-center gap-2 mt-1">
                   <button
                     type="button"
-                    onClick={startCameraScanner}
+                    onClick={() => startCameraScanner(facingMode)}
                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -283,13 +317,23 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
               </div>
             )}
 
-            {/* Photo upload shortcut */}
+            {/* Camera Switch & Photo upload shortcuts */}
             <div className="absolute top-2 right-2 flex items-center gap-1.5 z-20">
+              <button
+                type="button"
+                onClick={handleToggleCamera}
+                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs"
+                title={facingMode === 'environment' ? 'Switch to Front Camera' : 'Switch to Back Camera'}
+              >
+                <Camera className="w-3 h-3" />
+                <span>{facingMode === 'environment' ? 'Front' : 'Back'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isFileProcessing}
-                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer"
+                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs"
                 title="Scan QR or Barcode from Photo"
               >
                 <Upload className="w-3 h-3" />

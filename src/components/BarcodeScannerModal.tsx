@@ -16,6 +16,8 @@ import {
   Upload,
   Copy,
   CheckCheck,
+  Flashlight,
+  FlashlightOff,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { CatalogItem, BillItem, PackagingOption } from '../types';
@@ -79,6 +81,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     actionTaken: string;
   } | null>(null);
 
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [torchOn, setTorchOn] = useState<boolean>(false);
+  const [torchSupported, setTorchSupported] = useState<boolean>(false);
   const [availableCameras, setAvailableCameras] = useState<{ id: string; label: string }[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
 
@@ -174,9 +179,32 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }
   };
 
-  // Start Camera Scanner
-  const startCameraScanner = async (cameraId?: string) => {
+  // Helper to ensure video element plays inline with correct attributes on iOS Safari
+  const enforceVideoPlayback = () => {
+    const container = document.getElementById(scannerContainerId);
+    if (!container) return;
+    const video = container.querySelector('video');
+    if (video) {
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('autoplay', 'true');
+      video.setAttribute('muted', 'true');
+      video.style.setProperty('width', '100%', 'important');
+      video.style.setProperty('height', '100%', 'important');
+      video.style.setProperty('object-fit', 'cover', 'important');
+      video.style.setProperty('border-radius', '0.75rem', 'important');
+      video.style.setProperty('display', 'block', 'important');
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+    }
+  };
+
+  // Start Camera Scanner with iOS Safari & Android mobile optimization
+  const startCameraScanner = async (targetFacing?: 'environment' | 'user') => {
     setCameraError(null);
+    setTorchOn(false);
+    const modeToUse = targetFacing || facingMode;
 
     try {
       // Clean up previous instance
@@ -199,6 +227,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       }
 
       // Initialize Html5Qrcode with extensive format support
+      // Note: useBarCodeDetectorIfSupported is set to false because on iOS 17+ Safari's native
+      // BarcodeDetector throws a TypeError when given 1D formats (EAN-13, Code 128, etc.), which
+      // freezes the camera feed into a black frame. ZXing decodes both 1D and 2D reliably on iOS/Android.
       const html5QrCode = new Html5Qrcode(scannerContainerId, {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.QR_CODE,
@@ -214,19 +245,20 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         ],
         verbose: false,
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: false,
         },
       });
       scannerRef.current = html5QrCode;
 
+      // Safe responsive qrbox that never exceeds viewfinder boundaries
       const scanConfig = {
-        fps: 20,
+        fps: 24,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const w = Math.min(Math.floor(viewfinderWidth * 0.88), 340);
-          const h = Math.min(Math.floor(viewfinderHeight * 0.65), 200);
+          const w = Math.floor(viewfinderWidth * 0.82);
+          const h = Math.floor(viewfinderHeight * 0.65);
           return {
-            width: Math.max(w, 220),
-            height: Math.max(h, 140),
+            width: Math.max(50, Math.min(w, viewfinderWidth - 10)),
+            height: Math.max(50, Math.min(h, viewfinderHeight - 10)),
           };
         },
       };
@@ -239,30 +271,42 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         // Continuous frame analysis - silently ignore unreadable frames
       };
 
-      if (cameraId) {
-        setSelectedCameraId(cameraId);
-        await html5QrCode.start(cameraId, scanConfig, onScanSuccess, onScanFailure);
-      } else {
-        // Attempt back camera (environment) first, with fallback to front/default
-        try {
-          await html5QrCode.start({ facingMode: 'environment' }, scanConfig, onScanSuccess, onScanFailure);
-        } catch (envErr) {
-          console.warn('Environment camera constraint failed, falling back to default:', envErr);
-          await html5QrCode.start({ facingMode: 'user' }, scanConfig, onScanSuccess, onScanFailure);
-        }
+      // Start stream with requested facingMode
+      try {
+        await html5QrCode.start({ facingMode: modeToUse }, scanConfig, onScanSuccess, onScanFailure);
+        setFacingMode(modeToUse);
+      } catch (modeErr) {
+        console.warn(`Starting camera with ${modeToUse} failed, trying fallback:`, modeErr);
+        const altMode = modeToUse === 'environment' ? 'user' : 'environment';
+        await html5QrCode.start({ facingMode: altMode }, scanConfig, onScanSuccess, onScanFailure);
+        setFacingMode(altMode);
       }
 
       setCameraActive(true);
       setIsScanning(true);
 
-      // Once permission is granted and stream starts, query device list
+      // Force playsinline and inline attributes to prevent black screen in WebKit/Safari
+      enforceVideoPlayback();
+      setTimeout(enforceVideoPlayback, 150);
+      setTimeout(enforceVideoPlayback, 400);
+
+      // Check if torch/flashlight is supported on this camera track
+      try {
+        const capabilities = (html5QrCode as any).getRunningTrackCapabilities?.();
+        if (capabilities && Boolean(capabilities.torch)) {
+          setTorchSupported(true);
+        } else {
+          setTorchSupported(false);
+        }
+      } catch {
+        setTorchSupported(false);
+      }
+
+      // Query devices for multiple camera options if needed
       try {
         const devices = await Html5Qrcode.getCameras();
         if (devices && devices.length > 0) {
           setAvailableCameras(devices);
-          if (!selectedCameraId) {
-            setSelectedCameraId(devices[devices.length - 1].id);
-          }
         }
       } catch {
         // Enumerate error is non-fatal
@@ -272,11 +316,11 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       let errMsg = 'Unable to access camera. Check browser permissions.';
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.message.toLowerCase().includes('permission')) {
-          errMsg = 'Camera permission denied. Please allow camera access in browser settings.';
+          errMsg = 'Camera permission denied. Please allow camera access in your phone browser settings.';
         } else if (err.name === 'NotFoundError' || err.message.toLowerCase().includes('not found')) {
           errMsg = 'No video camera detected on this device.';
         } else if (err.name === 'NotReadableError' || err.message.toLowerCase().includes('in use')) {
-          errMsg = 'Camera is in use by another app or browser tab.';
+          errMsg = 'Camera is in use by another app or browser tab. Please close other camera apps and retry.';
         } else {
           errMsg = err.message || errMsg;
         }
@@ -284,6 +328,26 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       setCameraError(errMsg);
       setCameraActive(false);
       setIsScanning(false);
+    }
+  };
+
+  // Toggle front/back camera
+  const handleToggleCamera = async () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    await startCameraScanner(nextMode);
+  };
+
+  // Toggle flashlight / torch
+  const handleToggleTorch = async () => {
+    if (!scannerRef.current || !torchSupported) return;
+    try {
+      const nextTorch = !torchOn;
+      await (scannerRef.current as any).applyVideoConstraints({
+        advanced: [{ torch: nextTorch }],
+      });
+      setTorchOn(nextTorch);
+    } catch (e) {
+      console.warn('Failed to toggle torch:', e);
     }
   };
 
@@ -300,6 +364,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       }
       scannerRef.current = null;
     }
+    setTorchOn(false);
     setCameraActive(false);
     setIsScanning(false);
   };
@@ -479,7 +544,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             {/* HTML5 QR Container */}
             <div
               id={scannerContainerId}
-              className="w-full h-full min-h-[220px] max-h-[280px] flex items-center justify-center overflow-hidden [&_video]:w-full [&_video]:h-full [&_video]:max-h-[280px] [&_video]:object-cover [&_video]:rounded-xl"
+              className="w-full h-full min-h-[220px] max-h-[280px] flex items-center justify-center overflow-hidden relative [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[280px] [&_video]:!object-cover [&_video]:!rounded-xl [&_video]:!block [&_#qr-shaded-region]:!hidden"
             ></div>
 
             {/* Overlaid Animated Targeting Reticle */}
@@ -511,7 +576,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 <div className="flex items-center gap-2 mt-1">
                   <button
                     type="button"
-                    onClick={() => startCameraScanner(selectedCameraId)}
+                    onClick={() => startCameraScanner(facingMode)}
                     className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -530,30 +595,39 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               </div>
             )}
 
-            {/* Camera Controls Overlay: Switch Camera & Upload Photo */}
+            {/* Camera Controls Overlay: Torch, Switch Camera & Upload Photo */}
             <div className="absolute top-2 right-2 flex items-center gap-1.5 z-20">
-              {availableCameras.length > 1 && (
+              {torchSupported && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const nextIdx =
-                      (availableCameras.findIndex((c) => c.id === selectedCameraId) + 1) %
-                      availableCameras.length;
-                    startCameraScanner(availableCameras[nextIdx].id);
-                  }}
-                  className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer"
-                  title="Switch Front/Back Camera"
+                  onClick={handleToggleTorch}
+                  className={`text-white text-[10px] px-2 py-1 rounded-md font-bold border backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all ${
+                    torchOn
+                      ? 'bg-amber-500 border-amber-400 text-black'
+                      : 'bg-black/75 hover:bg-black border-white/20'
+                  }`}
+                  title={torchOn ? 'Turn off Torch' : 'Turn on Torch / Flashlight'}
                 >
-                  <Camera className="w-3 h-3" />
-                  <span>Switch</span>
+                  {torchOn ? <Flashlight className="w-3 h-3 text-black" /> : <FlashlightOff className="w-3 h-3" />}
+                  <span>{torchOn ? 'Torch On' : 'Torch'}</span>
                 </button>
               )}
 
               <button
                 type="button"
+                onClick={handleToggleCamera}
+                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                title={facingMode === 'environment' ? 'Switch to Front Camera' : 'Switch to Back Camera'}
+              >
+                <Camera className="w-3 h-3" />
+                <span>{facingMode === 'environment' ? 'Front' : 'Back'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isFileProcessing}
-                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer"
+                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
                 title="Scan QR Code from Photo"
               >
                 <Upload className="w-3 h-3" />
