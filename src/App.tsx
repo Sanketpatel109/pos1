@@ -116,6 +116,7 @@ import { useCart } from './context/CartContext';
 import { DirectThermalReceipt } from './components/DirectThermalReceipt';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { StoreOnboardingModal } from './components/StoreOnboardingModal';
+import { soundbox } from './utils/soundbox';
 
 export default function App() {
   // Screen Routing
@@ -1002,6 +1003,16 @@ export default function App() {
     setActiveReceiptOrder(newOrder);
     lastSettledOrderRef.current = newOrder;
     setIsReceiptDuplicate(false);
+
+    // Voice Soundbox Announcement (Paytm/PhonePe style voice announcement)
+    if (shopSettings.enableSoundbox !== false && newOrder.total > 0) {
+      soundbox.announcePayment({
+        amount: newOrder.total,
+        paymentMethod: newOrder.paymentMethod,
+        language: shopSettings.soundboxLanguage || 'en',
+        shopName: shopSettings.shopName,
+      });
+    }
 
     // Live real-time bidirectional Firestore synchronization
     liveSaveOrder(newOrder).catch((err) => console.warn('Live order save failed:', err));

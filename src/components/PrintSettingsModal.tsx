@@ -32,7 +32,9 @@ import {
   Trash2,
   UploadCloud,
   Star,
+  Volume2,
 } from 'lucide-react';
+import { soundbox } from '../utils/soundbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -170,15 +172,50 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleScanBluetooth = () => {
+  const handleScanBluetooth = async () => {
     setIsScanningBluetooth(true);
-    setTimeout(() => {
-      setIsScanningBluetooth(false);
-      setFormData((prev) => ({
-        ...prev,
-        connectedBluetoothDevice: 'MonoPOS Thermal-58',
-      }));
-    }, 1500);
+    if (typeof navigator !== 'undefined' && 'bluetooth' in navigator) {
+      try {
+        const device = await (navigator as any).bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [
+            '000018f0-0000-1000-8000-00805f9b34fb',
+            '0000e781-0000-1000-8000-00805f9b34fb',
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+          ],
+        });
+        if (device) {
+          const deviceName = device.name || 'Bluetooth Thermal Printer';
+          setFormData((prev) => ({
+            ...prev,
+            connectedBluetoothDevice: deviceName,
+          }));
+        }
+      } catch (err: any) {
+        if (err.name !== 'NotFoundError') {
+          console.warn('Bluetooth pairing notice:', err);
+        }
+      } finally {
+        setIsScanningBluetooth(false);
+      }
+    } else {
+      setTimeout(() => {
+        setIsScanningBluetooth(false);
+        setFormData((prev) => ({
+          ...prev,
+          connectedBluetoothDevice: prev.connectedBluetoothDevice || 'MonoPOS Thermal-58 (Standard ESC/POS)',
+        }));
+      }, 800);
+    }
+  };
+
+  const handleTestSoundbox = () => {
+    soundbox.announcePayment({
+      amount: 250,
+      paymentMethod: 'UPI',
+      language: formData.soundboxLanguage || 'en',
+      shopName: formData.shopName,
+    });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -607,18 +644,105 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     <Bluetooth className="w-3.5 h-3.5 text-zinc-900" />
                     <span>Bluetooth ESC/POS Device</span>
                   </span>
+                  <div className="flex items-center gap-2">
+                    {formData.connectedBluetoothDevice && (
+                      <button
+                        type="button"
+                        onClick={handleTestPrint}
+                        className="text-[11px] font-bold text-emerald-600 hover:underline cursor-pointer"
+                      >
+                        Test Print
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleScanBluetooth}
+                      disabled={isScanningBluetooth}
+                      className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {isScanningBluetooth ? 'Scanning...' : 'Pair / Scan'}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-zinc-700 bg-white p-2 rounded-lg border border-zinc-200">
+                  <span className="truncate">{formData.connectedBluetoothDevice || 'No Bluetooth printer paired'}</span>
+                  {formData.connectedBluetoothDevice ? (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-emerald-500/30 text-emerald-600 bg-emerald-500/10 shrink-0">
+                      Connected
+                    </Badge>
+                  ) : (
+                    <span className="text-[10px] text-zinc-400">Web Bluetooth Ready</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Digital Voice Soundbox (Paytm / PhonePe Style) */}
+              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-2.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-zinc-900 flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5 text-primary" />
+                    <span>Digital Voice Soundbox</span>
+                  </span>
                   <button
                     type="button"
-                    onClick={handleScanBluetooth}
-                    disabled={isScanningBluetooth}
-                    className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                    onClick={handleTestSoundbox}
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
                   >
-                    {isScanningBluetooth ? 'Scanning...' : 'Pair / Scan'}
+                    <Volume2 className="w-3 h-3" />
+                    <span>Test Voice</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-zinc-700 bg-white p-2 rounded-lg border border-zinc-200">
-                  {formData.connectedBluetoothDevice || 'No Bluetooth printer paired'}
-                </p>
+
+                <div className="space-y-2 pt-0.5">
+                  <label className="flex items-center justify-between p-2 rounded-lg bg-white border border-zinc-200 cursor-pointer">
+                    <div>
+                      <span className="text-xs font-semibold text-zinc-800 block">
+                        Voice Payment Announcements
+                      </span>
+                      <span className="text-[10px] text-zinc-500 block">
+                        Speaks "₹250 received on UPI" aloud on completed payments
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.enableSoundbox !== false}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          enableSoundbox: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded text-primary focus:ring-primary accent-zinc-900"
+                    />
+                  </label>
+
+                  {formData.enableSoundbox !== false && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, soundboxLanguage: 'en' })}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer ${
+                          (formData.soundboxLanguage || 'en') === 'en'
+                            ? 'bg-zinc-900 text-white border-zinc-900 shadow-2xs'
+                            : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50'
+                        }`}
+                      >
+                        English (Indian Accent)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, soundboxLanguage: 'hi' })}
+                        className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer ${
+                          formData.soundboxLanguage === 'hi'
+                            ? 'bg-zinc-900 text-white border-zinc-900 shadow-2xs'
+                            : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50'
+                        }`}
+                      >
+                        Hindi (हिंदी उद्घोषणा)
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Terminal ID Prefix & Daily Token */}

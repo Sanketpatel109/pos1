@@ -231,6 +231,8 @@ export interface ShopSettings {
   enableLoyaltyPoints?: boolean;
   loyaltyEarnSpendAmount?: number;
   loyaltyPointValue?: number;
+  enableSoundbox?: boolean;
+  soundboxLanguage?: 'en' | 'hi';
 }
 
 

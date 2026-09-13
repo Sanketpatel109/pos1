@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Order, PaymentMethod, CatalogItem, ShopSettings } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
+import { downloadTallyXml } from '../utils/tallyExport';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -368,6 +369,12 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
     triggerCsvDownload('MonoPOS_Inventory_Stock_Report', headers, rows);
   };
 
+  // 5. Official Tally Prime & ERP 9 XML Sales Vouchers Export
+  const handleExportTallyXML = () => {
+    downloadTallyXml(orders, shopSettings?.shopName || 'MonoPOS Retail');
+    setIsExportMenuOpen(false);
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background text-foreground overflow-hidden">
       {/* Top Metrics Summary Strip */}
@@ -563,6 +570,21 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         <div>
                           <div className="leading-tight">Inventory & Valuation</div>
                           <div className="text-[10px] text-muted-foreground font-normal">Current stock & low stock alerts</div>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleExportTallyXML}
+                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground border-t border-border"
+                      >
+                        <FileText className="w-4 h-4 text-emerald-600" />
+                        <div>
+                          <div className="leading-tight flex items-center gap-1.5">
+                            <span>Tally Prime & ERP 9 (XML)</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold border border-emerald-500/30 text-emerald-600 bg-emerald-500/10">Official</span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-normal">Importable Sales Vouchers XML</div>
                         </div>
                       </button>
                     </div>
