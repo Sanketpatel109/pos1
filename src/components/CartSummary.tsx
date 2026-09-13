@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '../context/CartContext';
@@ -259,14 +260,22 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
         </Button>
       </div>
 
-      {/* Interactive Bill Discount Modal */}
-      {isDiscountModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
+      {/* Interactive Bill Discount Modal - Portalled to document.body to prevent any stacking context clipping */}
+      {isDiscountModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Apply Bill Discount"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+        >
           <div
             className="fixed inset-0 bg-transparent"
             onClick={() => setIsDiscountModalOpen(false)}
           />
-          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-4 z-10 space-y-4">
+          <div
+            className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-4 z-10 space-y-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <div className="flex items-center gap-2">
@@ -281,7 +290,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
               <button
                 type="button"
                 onClick={() => setIsDiscountModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -400,7 +409,8 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

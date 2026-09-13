@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Scale,
   X,
@@ -216,9 +217,17 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
       </div>
 
       {/* Simulated Scale Modal */}
-      {isScaleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-card rounded-lg border border-border shadow-xl p-5 w-full max-w-sm flex flex-col gap-3">
+      {isScaleModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Weighing Scale Simulation"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+        >
+          <div
+            className="bg-card rounded-xl border border-border shadow-2xl p-5 w-full max-w-sm flex flex-col gap-3 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-primary" />
@@ -227,7 +236,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsScaleModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-md"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -261,7 +270,8 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
               Reset Scale to 0.000 kg
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
