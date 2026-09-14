@@ -1408,8 +1408,25 @@ export default function App() {
     gstRate: number;
     stock: number;
     unit: string;
+    weightOrVolume?: string;
+    containerType?: string;
+    packCount?: number;
+    packName?: string;
   }) => {
     playSfx('add');
+    const packCount = productData.packCount && productData.packCount > 1 ? productData.packCount : 1;
+    const packOption: PackagingOption | undefined =
+      packCount > 1
+        ? {
+            id: `pack_${packCount}_${Date.now()}`,
+            packName: productData.packName || `${packCount}-Pack`,
+            barcode: productData.barcode,
+            multiplier: packCount,
+            sellingPrice: productData.price,
+            isDefault: true,
+          }
+        : undefined;
+
     const newProd: CatalogItem = {
       id: `item-${Date.now()}`,
       name: productData.name,
@@ -1419,11 +1436,19 @@ export default function App() {
       gstRate: productData.gstRate,
       stock: productData.stock,
       unit: productData.unit,
+      weightOrVolume: productData.weightOrVolume,
+      containerType: productData.containerType,
+      packCount: productData.packCount,
+      packagingOptions: packOption ? [packOption] : undefined,
       lowStockThreshold: 5,
     };
     setCatalog((prev) => [newProd, ...prev]);
     liveSaveProduct(newProd).catch((err) => console.warn('Live save quick product:', err));
-    handleAddItem(newProd);
+    if (packOption) {
+      handleAddItemWithPack(newProd, packOption);
+    } else {
+      handleAddItem(newProd);
+    }
     posSound.playBeep();
     setQuickAddBarcode(null);
   };

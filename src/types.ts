@@ -20,6 +20,9 @@ export interface CatalogItem {
   stock?: number;
   lowStockThreshold?: number;
   unit?: string; // 'pcs' | 'kg' | 'g' | 'pack' | 'ltr'
+  weightOrVolume?: string; // e.g. "750ml", "1L", "12 oz", "500g"
+  containerType?: string; // e.g. "Bottle", "Can", "Pack", "Pouch", "Box", "Jar"
+  packCount?: number; // e.g. 1, 4, 6, 12, 24
   costPrice?: number;
   gstRate?: number;
   packagingOptions?: PackagingOption[];
