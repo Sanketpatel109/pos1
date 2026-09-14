@@ -24,10 +24,12 @@ import {
   SwitchCamera,
   WifiOff,
   ZoomIn,
+  Loader2,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { CatalogItem, BillItem, PackagingOption } from '../types';
 import { resolveBarcodeMatch } from '../utils/barcodeResolver';
+import { lookupBarcodeDetails, ProductLookupResult } from '../services/barcodeLookup';
 import { posSound } from '../utils/sound';
 import {
   getDeviceType,
@@ -112,6 +114,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [customPriceInput, setCustomPriceInput] = useState<string>('');
   const [unrecognizedPromptCode, setUnrecognizedPromptCode] = useState<string | null>(null);
+  const [isFetchingOnline, setIsFetchingOnline] = useState<boolean>(false);
+  const [fetchedOnlineProduct, setFetchedOnlineProduct] = useState<ProductLookupResult | null>(null);
+  const [onlinePriceInput, setOnlinePriceInput] = useState<string>('');
   const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
   const [showFallbackPanel, setShowFallbackPanel] = useState<boolean>(false);
   const [cameraPermission, setCameraPermission] = useState<CameraPermissionState>('unknown');
@@ -166,6 +171,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       setCameraErrorType(null);
       setCameraFixInstructions(null);
       setUnrecognizedPromptCode(null);
+      setIsFetchingOnline(false);
+      setFetchedOnlineProduct(null);
+      setOnlinePriceInput('');
       setShowFallbackPanel(false);
       setRetryCount(0);
     }
@@ -231,16 +239,38 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         });
       }
     } else {
-      // Code not in catalog
+      // Code not in local catalog -> Immediately search global product registries!
       posSound.playBuzzer();
       setLastScannedResult({
         code: cleanText,
         item: null,
         timestamp: now,
-        actionTaken: `Unrecognized Barcode: ${cleanText}`,
+        actionTaken: `Searching product for ${cleanText}...`,
       });
-      // Prompt user to add to POS
       setUnrecognizedPromptCode(cleanText);
+      setIsFetchingOnline(true);
+      setFetchedOnlineProduct(null);
+      setOnlinePriceInput('');
+
+      lookupBarcodeDetails(cleanText).then((onlineRes) => {
+        setIsFetchingOnline(false);
+        if (onlineRes) {
+          posSound.playBeep();
+          setFetchedOnlineProduct(onlineRes);
+          if (onlineRes.suggestedPrice) {
+            setOnlinePriceInput(String(onlineRes.suggestedPrice));
+          }
+          setLastScannedResult({
+            code: cleanText,
+            item: null,
+            displayName: onlineRes.name,
+            timestamp: Date.now(),
+            actionTaken: `Found: ${onlineRes.name} (${onlineRes.brand || 'Product'})`,
+          });
+        }
+      }).catch(() => {
+        setIsFetchingOnline(false);
+      });
     }
   }, [catalog, currentMode, currencySymbol, addItemCallback, searchItemCallback, onClose]);
 
@@ -953,42 +983,162 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               className="hidden"
             />
 
-            {/* New Product Detected Prompt Overlay */}
+            {/* New Product Detected Prompt Overlay with Live Online Fetching */}
             {unrecognizedPromptCode && (
-              <div className="absolute inset-0 bg-slate-950/92 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95">
-                <div className="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-2 shadow-inner">
-                  <Barcode className="w-5 h-5" />
-                </div>
-                <h4 className="text-white text-sm font-extrabold tracking-wide">
-                  New Product Detected
-                </h4>
-                <p className="text-slate-300 text-xs mt-1 max-w-[280px]">
-                  Barcode <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-sm">{unrecognizedPromptCode}</span> is not in your POS catalog.
-                </p>
-                <div className="flex items-center gap-2 mt-3.5 w-full max-w-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const code = unrecognizedPromptCode;
-                      setUnrecognizedPromptCode(null);
-                      if (registerBarcodeCallback) {
-                        registerBarcodeCallback(code);
-                        onClose();
-                      }
-                    }}
-                    className="flex-1 py-2 px-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                  >
-                    <Plus className="w-4 h-4 stroke-[3]" />
-                    <span>Add to POS</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUnrecognizedPromptCode(null)}
-                    className="py-2 px-3 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-lg cursor-pointer active:scale-95 transition-all"
-                  >
-                    Dismiss
-                  </button>
-                </div>
+              <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95">
+                {isFetchingOnline ? (
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center animate-spin">
+                      <Loader2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-white text-sm font-bold">
+                      Fetching Product Details...
+                    </h4>
+                    <p className="text-slate-300 text-xs font-mono bg-white/10 px-2 py-1 rounded">
+                      Barcode: {unrecognizedPromptCode}
+                    </p>
+                    <p className="text-slate-400 text-[11px]">
+                      Searching India & global retail databases...
+                    </p>
+                  </div>
+                ) : fetchedOnlineProduct ? (
+                  <div className="w-full max-w-xs flex flex-col items-center gap-2">
+                    {fetchedOnlineProduct.imageUrl ? (
+                      <img
+                        src={fetchedOnlineProduct.imageUrl}
+                        alt={fetchedOnlineProduct.name}
+                        className="w-16 h-16 object-contain rounded-xl bg-white p-1 shadow-md border border-white/20"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6" />
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                      <span>Product Found Online</span>
+                    </div>
+
+                    <h4 className="text-white text-sm font-extrabold line-clamp-2 px-1 text-center leading-snug">
+                      {fetchedOnlineProduct.name}
+                    </h4>
+
+                    {fetchedOnlineProduct.brand && (
+                      <p className="text-slate-300 text-xs font-medium -mt-0.5">
+                        Brand: <span className="text-white font-bold">{fetchedOnlineProduct.brand}</span>
+                      </p>
+                    )}
+
+                    {/* Price Input */}
+                    <div className="w-full bg-white/10 rounded-xl px-3 py-2 flex items-center justify-between gap-2 border border-white/15 mt-1">
+                      <span className="text-xs text-slate-300 font-medium">Selling Price:</span>
+                      <div className="flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-lg border border-white/20">
+                        <span className="text-xs font-bold text-amber-400">{currencySymbol}</span>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={onlinePriceInput}
+                          onChange={(e) => setOnlinePriceInput(e.target.value)}
+                          className="w-20 text-xs font-bold text-white bg-transparent focus:outline-hidden text-right"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 mt-2 w-full">
+                      {currentMode === 'add-to-bill' && onAddCustomBillItem && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const price = parseFloat(onlinePriceInput) || fetchedOnlineProduct.suggestedPrice || 0;
+                            onAddCustomBillItem({
+                              id: `custom-${Date.now()}`,
+                              name: fetchedOnlineProduct.name,
+                              unitPrice: price,
+                              quantity: 1,
+                              category: fetchedOnlineProduct.category || 'General',
+                              gstRate: 0,
+                            });
+                            posSound.playBeep();
+                            setUnrecognizedPromptCode(null);
+                            setFetchedOnlineProduct(null);
+                          }}
+                          className="flex-1 py-2 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>Add to Bill</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = unrecognizedPromptCode;
+                          setUnrecognizedPromptCode(null);
+                          setFetchedOnlineProduct(null);
+                          if (registerBarcodeCallback) {
+                            registerBarcodeCallback(code);
+                            onClose();
+                          }
+                        }}
+                        className="flex-1 py-2 px-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Save to POS</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUnrecognizedPromptCode(null);
+                          setFetchedOnlineProduct(null);
+                        }}
+                        className="p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-lg cursor-pointer"
+                        title="Dismiss"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full max-w-xs flex flex-col items-center">
+                    <div className="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-2 shadow-inner">
+                      <Barcode className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-white text-sm font-extrabold tracking-wide">
+                      New Product Detected
+                    </h4>
+                    <p className="text-slate-300 text-xs mt-1 max-w-[280px]">
+                      Barcode <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-sm">{unrecognizedPromptCode}</span> is not in your POS catalog.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3.5 w-full max-w-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = unrecognizedPromptCode;
+                          setUnrecognizedPromptCode(null);
+                          if (registerBarcodeCallback) {
+                            registerBarcodeCallback(code);
+                            onClose();
+                          }
+                        }}
+                        className="flex-1 py-2 px-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                      >
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                        <span>Add to POS</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUnrecognizedPromptCode(null)}
+                        className="py-2 px-3 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-lg cursor-pointer active:scale-95 transition-all"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

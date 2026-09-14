@@ -181,80 +181,40 @@ export const useBarcodeLookup = (barcode?: string, enabled: boolean = true) => {
       error: null,
     });
 
-    const controller = new AbortController();
-    // Strict 2-second timeout using AbortController so billing is never blocked
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, 2000);
-
     const performLookup = async () => {
       try {
-        const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(
-          cleanBarcode
-        )}.json`;
-
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error status ${response.status}`);
-        }
-
-        const json = await response.json();
+        const { lookupBarcodeDetails } = await import('../services/barcodeLookup');
+        const res = await lookupBarcodeDetails(cleanBarcode);
         if (!isMounted) return;
 
-        if (json.status === 1 && json.product) {
-          const title = formatOpenFoodFactsTitle(json.product);
-          const brand = (json.product.brands || json.product.brand_owner || '')
-            .split(',')[0]
-            .trim();
-          const quantity = (json.product.quantity || '').trim();
-          const name = (
-            json.product.product_name_en ||
-            json.product.product_name ||
-            json.product.generic_name ||
-            ''
-          ).trim();
+        if (res) {
+          const packInfo = res.packaging
+            ? {
+                packCount: res.packaging.multiplier,
+                packName: res.packaging.packName,
+              }
+            : extractPackInfo(res.name);
 
-          const packagingText = [
-            json.product.packaging || '',
-            json.product.packaging_text || '',
-            ...(json.product.packaging_materials_tags || []),
-            ...(json.product.packaging_shapes_tags || []),
-            name,
-            title,
-          ].join(' ');
-
-          // Smart Extraction
-          const fullSearchText = `${title} ${quantity} ${packagingText}`;
-          const packInfo = extractPackInfo(fullSearchText);
-          const weightOrVol = packInfo.unitWeight || extractWeightOrVolume(quantity || fullSearchText);
-          const container = extractContainerType(packagingText);
-
-          const finalTitle = title || name || brand || cleanBarcode;
+          const weightOrVol = extractWeightOrVolume(res.name);
+          const container = extractContainerType(res.name);
 
           setState({
             isLookingUp: false,
             product: {
-              title: finalTitle,
-              name: name || finalTitle,
-              brand,
-              quantity,
+              title: res.name,
+              name: res.name,
+              brand: res.brand,
+              quantity: weightOrVol,
               weightOrVolume: weightOrVol,
               containerType: container,
               packCount: packInfo.packCount,
               packName: packInfo.packName,
-              category: json.product.categories_tags?.[0]?.replace('en:', '') || '',
-              imageUrl: json.product.image_front_small_url || json.product.image_url || '',
+              category: res.category || '',
+              imageUrl: res.imageUrl || '',
             },
             error: null,
           });
         } else {
-          // Unrecognized barcode or product not found
           setState({
             isLookingUp: false,
             product: null,
@@ -263,14 +223,11 @@ export const useBarcodeLookup = (barcode?: string, enabled: boolean = true) => {
         }
       } catch (err: any) {
         if (!isMounted) return;
-        const isTimeout = err.name === 'AbortError';
         setState({
           isLookingUp: false,
           product: null,
-          error: isTimeout ? 'Timeout' : 'Network/Offline',
+          error: 'Network/Offline',
         });
-      } finally {
-        clearTimeout(timeoutId);
       }
     };
 
@@ -278,8 +235,6 @@ export const useBarcodeLookup = (barcode?: string, enabled: boolean = true) => {
 
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
-      controller.abort();
     };
   }, [barcode, enabled]);
 
