@@ -257,7 +257,7 @@ export type ActiveScreen =
 
 // ─── SaaS Subscription & Multi-Tenant Types ───────────────────────────────────
 
-export type SubscriptionPlan = 'TRIAL' | 'STARTER' | 'PRO' | 'ANNUAL';
+export type SubscriptionPlan = 'TRIAL' | 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS' | 'ANNUAL';
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'GRACE' | 'EXPIRED';
 
 export interface TenantLicense {
@@ -271,6 +271,7 @@ export interface TenantLicense {
   trialStartedAt: string;
   trialEndsAt: string;
   currentPeriodEnd: string; // When the current paid cycle ends (same as trialEndsAt for trial)
+  billingCycle?: 'MONTHLY' | 'ANNUAL';
   maxRegisters: number;
   lastPaymentId?: string;
   lastPaymentGateway?: 'RAZORPAY' | 'STRIPE' | 'MANUAL' | 'SIMULATED';
@@ -282,56 +283,92 @@ export interface TenantLicense {
 export interface SubscriptionPlanInfo {
   id: SubscriptionPlan;
   name: string;
-  price: number;          // Monthly price in INR
-  annualPrice?: number;   // Annual price in INR (for ANNUAL plan)
+  price: number;          // Monthly price in INR (0, 399, 799, 1499)
+  annualPrice: number;    // Annual price in INR (0, 3999, 7999, 14999)
   maxRegisters: number;
   features: string[];
   popular?: boolean;
   badge?: string;
   period?: string;
+  tagline?: string;
 }
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlanInfo[] = [
   {
+    id: 'FREE',
+    name: 'Free Forever',
+    price: 0,
+    annualPrice: 0,
+    maxRegisters: 1,
+    tagline: 'Ideal for trying out or micro single-register kiosks',
+    features: [
+      'Up to 50 Products in Catalog',
+      'Up to 100 Orders / Month',
+      '1 Register / Device',
+      'Quick Bill + Item-Wise POS',
+      'Thermal Receipt Printing (58/80mm)',
+      'Offline PWA Mode (No Internet Needed)',
+      'Camera Barcode Scanning',
+    ],
+  },
+  {
     id: 'STARTER',
     name: 'Starter',
-    price: 499,
+    price: 399,
+    annualPrice: 3999,
     maxRegisters: 1,
+    tagline: 'For solo storekeepers & single-counter retail',
     features: [
-      'Unlimited Billing & Receipts',
+      'Unlimited Products & SKU Catalog',
+      'Unlimited Orders & Invoices',
       '1 Register / Device',
-      'Cloud Backup & Sync',
-      'Barcode Scanning',
-      'Cash Drawer Management',
+      'Cloud Backup & Real-Time Sync',
+      'Customer Management & Phone CRM',
+      'Cash Drawer Float & Day Close',
+      'Hold & Recall Parked Orders',
+      'Rolling Pickup Tokens (1–99999)',
     ],
   },
   {
     id: 'PRO',
     name: 'Pro Retail',
-    price: 999,
+    price: 799,
+    annualPrice: 7999,
     maxRegisters: 3,
     popular: true,
+    badge: 'MOST POPULAR',
+    tagline: 'For busy supermarkets & growing retail businesses',
     features: [
       'Everything in Starter',
-      'Up to 3 Registers / Devices',
-      'GSTR-1 Tax Reports & Export',
-      'Multi-Barcode & Packaging Tiers',
-      'Staff Management & RBAC',
-      'Customer Khata / Credit Ledger',
-      'Purchase Inward & Stock Tracking',
+      'Up to 3 Registers / Multi-Device Sync',
+      'Customer Khata (Credit Ledger)',
+      'Staff RBAC & 1-Sec PIN Switching',
+      'Purchase Inward (Stock Receiving & GRN)',
+      'Stock Tracking & Low-Stock Alerts',
+      'Multi-Pack Barcodes & Packaging Tiers',
+      'In-App Barcode Label Generator',
+      'Digital Weighing Scale RS-232 live integration',
+      'Z-Report & Cash Variance Audit',
+      'Bilingual Soundbox & Split Payments',
+      'GSTR-1 & Tally-Ready Financial Export',
     ],
   },
   {
-    id: 'ANNUAL',
-    name: 'Annual Super Saver',
-    price: 666,
-    annualPrice: 7999,
-    maxRegisters: 3,
+    id: 'BUSINESS',
+    name: 'Business',
+    price: 1499,
+    annualPrice: 14999,
+    maxRegisters: 10,
+    badge: 'ENTERPRISE',
+    tagline: 'For multi-counter retail & high-volume stores',
     features: [
       'Everything in Pro Retail',
-      'Save 35% vs Monthly',
-      'Priority WhatsApp Support',
-      'Early Access to New Features',
+      'Up to 10 Registers / Multi-Device Sync',
+      'Multi-Terminal ID Prefixes (A, B, C)',
+      'Returns & Refund Management',
+      'Advanced Role Permissions & Overrides',
+      'Custom Receipt Branding (Logo & Custom Notes)',
+      'Priority WhatsApp & Dedicated Support',
     ],
   },
 ];

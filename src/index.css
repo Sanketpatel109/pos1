@@ -104,7 +104,8 @@ body {
 }
 
 @media screen {
-  .direct-thermal-receipt-print-only {
+  .direct-thermal-receipt-print-only,
+  .z-report-print-slip {
     display: none !important;
   }
 }
@@ -116,9 +117,23 @@ body {
   .print\:m-0, .print\:m-0 * {
     visibility: visible;
   }
-  .direct-thermal-receipt-print-only {
+  .direct-thermal-receipt-print-only,
+  .direct-thermal-receipt-print-only *,
+  .z-report-print-slip,
+  .z-report-print-slip * {
     display: block !important;
     visibility: visible !important;
+  }
+  .z-report-print-slip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    padding: 10px;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
   .print\:m-0 {
     position: absolute;

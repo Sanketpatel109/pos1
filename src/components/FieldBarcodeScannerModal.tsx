@@ -1,7 +1,48 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Camera, X, RefreshCw, Upload, Sparkles, Check, AlertCircle, Barcode } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Camera,
+  X,
+  RefreshCw,
+  Upload,
+  Sparkles,
+  Check,
+  AlertCircle,
+  Barcode,
+  Keyboard,
+  Monitor,
+  Smartphone,
+  Info,
+  SwitchCamera,
+  WifiOff,
+  ZoomIn,
+} from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { posSound } from '../utils/sound';
+import {
+  getDeviceType,
+  checkCameraPermission,
+  isGetUserMediaSupported,
+  enumerateCameras,
+  releaseAllCameraTracks,
+  classifyError,
+  getActiveVideoTrack,
+  isZoomSupported,
+  applyZoom,
+  createHardwareBarcodeDetector,
+  detectBarcodeFromImage,
+  type DeviceType,
+} from '../utils/cameraCapability';
+
+// Supported barcode formats for html5-qrcode
+const SUPPORTED_FORMATS = [
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+];
 
 export interface FieldBarcodeScannerModalProps {
   isOpen: boolean;
@@ -20,17 +61,35 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
 }) => {
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraErrorType, setCameraErrorType] = useState<string | null>(null);
+  const [cameraFixInstructions, setCameraFixInstructions] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
   const [manualCode, setManualCode] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [showFallbackPanel, setShowFallbackPanel] = useState<boolean>(false);
+  const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
+  const [hasMultipleCams, setHasMultipleCams] = useState<boolean>(false);
+  const [zoomSupported, setZoomSupported] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'field-barcode-camera-reader';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasCapturedRef = useRef<boolean>(false);
+  const isSwitchingCameraRef = useRef<boolean>(false);
+  const isScanningRef = useRef<boolean>(false);
+  const hardwareTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDetected = (decodedText: string) => {
+  // Detect device type
+  useEffect(() => {
+    setDeviceType(getDeviceType());
+  }, []);
+
+  const handleDetected = useCallback((decodedText: string) => {
     const clean = decodedText.trim();
     if (!clean || hasCapturedRef.current) return;
     hasCapturedRef.current = true;
@@ -46,9 +105,9 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
     stopCameraScanner();
     onScan(clean);
     onClose();
-  };
+  }, [onScan, onClose]);
 
-  const enforceVideoPlayback = () => {
+  const enforceVideoPlayback = useCallback(() => {
     const container = document.getElementById(scannerContainerId);
     if (!container) return;
     const video = container.querySelector('video');
@@ -66,14 +125,40 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
         video.play().catch(() => {});
       }
     }
-  };
+  }, []);
 
-  const startCameraScanner = async (targetFacing?: 'environment' | 'user') => {
+  const startCameraScanner = useCallback(async (targetFacing?: 'environment' | 'user') => {
+    // Prevent concurrent starts
+    if (isSwitchingCameraRef.current) return;
+    isSwitchingCameraRef.current = true;
+
     setCameraError(null);
+    setCameraErrorType(null);
+    setCameraFixInstructions(null);
     hasCapturedRef.current = false;
     const modeToUse = targetFacing || facingMode;
 
     try {
+      // Step 1: Check getUserMedia support
+      if (!isGetUserMediaSupported()) {
+        setCameraError('Camera API not supported in this browser.');
+        setCameraErrorType('not-supported');
+        setCameraFixInstructions('Use Chrome, Edge, or Safari on HTTPS to access the camera.');
+        setCameraActive(false);
+        setIsScanning(false);
+        isScanningRef.current = false;
+        setShowFallbackPanel(true);
+        isSwitchingCameraRef.current = false;
+        return;
+      }
+
+      // Step 2: Clean up previous instance and hardware vision timers
+      if (hardwareTimerRef.current) {
+        clearInterval(hardwareTimerRef.current);
+        hardwareTimerRef.current = null;
+      }
+      isScanningRef.current = false;
+
       if (scannerRef.current) {
         try {
           if (scannerRef.current.isScanning) {
@@ -83,78 +168,225 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
         } catch {}
         scannerRef.current = null;
       }
+      releaseAllCameraTracks();
+      // Wait for OS to release camera hardware
+      await new Promise((r) => setTimeout(r, 250));
 
       const containerEl = document.getElementById(scannerContainerId);
-      if (!containerEl) return;
+      if (!containerEl) {
+        isSwitchingCameraRef.current = false;
+        return;
+      }
 
-      const html5QrCode = new Html5Qrcode(scannerContainerId, {
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
+      // Helper: create fresh scanner instance with native BarcodeDetector enabled
+      const createScanner = () => new Html5Qrcode(scannerContainerId, {
+        formatsToSupport: SUPPORTED_FORMATS,
         verbose: false,
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: false,
+          useBarCodeDetectorIfSupported: true,
         },
       });
-      scannerRef.current = html5QrCode;
 
+      // 15 FPS: optimal balance of smooth detection and low CPU/battery consumption on mobile
+      // Omit qrbox to scan full frame without cropping distortion or dimension crashes
       const scanConfig = {
-        fps: 24,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const w = Math.floor(viewfinderWidth * 0.82);
-          const h = Math.floor(viewfinderHeight * 0.65);
-          return {
-            width: Math.max(50, Math.min(w, viewfinderWidth - 10)),
-            height: Math.max(50, Math.min(h, viewfinderHeight - 10)),
-          };
-        },
+        fps: 15,
       };
 
+      // Helper: fully destroy a scanner instance and release OS camera
+      const destroyScanner = async (s: Html5Qrcode | null) => {
+        if (!s) return;
+        try { if (s.isScanning) await s.stop(); } catch {}
+        try { await s.clear(); } catch {}
+        releaseAllCameraTracks();
+      };
+
+      // Progressive camera start with full cleanup between attempts
+      let startedSuccessfully = false;
+      let activeScanner: Html5Qrcode | null = null;
+
+      // Attempt 1: HD resolution with requested facing mode & continuous autofocus
       try {
-        await html5QrCode.start(
-          { facingMode: modeToUse },
+        activeScanner = createScanner();
+        await activeScanner.start(
+          {
+            facingMode: modeToUse,
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+          },
           scanConfig,
           (text) => handleDetected(text),
           () => {}
         );
         setFacingMode(modeToUse);
+        startedSuccessfully = true;
       } catch {
-        const altMode = modeToUse === 'environment' ? 'user' : 'environment';
-        await html5QrCode.start(
-          { facingMode: altMode },
-          scanConfig,
-          (text) => handleDetected(text),
-          () => {}
-        );
-        setFacingMode(altMode);
+        console.warn(`Camera HD ${modeToUse} failed, trying simple constraint`);
+        await destroyScanner(activeScanner);
+        activeScanner = null;
+        await new Promise((r) => setTimeout(r, 200));
       }
 
+      // Attempt 2: Simple facingMode constraint
+      if (!startedSuccessfully) {
+        try {
+          activeScanner = createScanner();
+          await activeScanner.start(
+            { facingMode: modeToUse },
+            scanConfig,
+            (text) => handleDetected(text),
+            () => {}
+          );
+          setFacingMode(modeToUse);
+          startedSuccessfully = true;
+        } catch {
+          console.warn('Simple facing mode failed, trying alternate');
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      }
+
+      // Attempt 3: Alternate facing mode
+      if (!startedSuccessfully) {
+        try {
+          const altMode = modeToUse === 'environment' ? 'user' : 'environment';
+          activeScanner = createScanner();
+          await activeScanner.start(
+            { facingMode: altMode },
+            scanConfig,
+            (text) => handleDetected(text),
+            () => {}
+          );
+          setFacingMode(altMode);
+          startedSuccessfully = true;
+        } catch {
+          console.warn('Alternate facing mode also failed');
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      }
+
+      // Attempt 4: Use specific deviceId (bypasses facingMode constraints)
+      if (!startedSuccessfully) {
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            const backCam = cameras.find((c) => /back|rear|environment/i.test(c.label));
+            const camToUse = backCam || cameras[0];
+            activeScanner = createScanner();
+            await activeScanner.start(
+              camToUse.id,
+              scanConfig,
+              (text) => handleDetected(text),
+              () => {}
+            );
+            startedSuccessfully = true;
+          }
+        } catch {
+          console.warn('Device ID fallback also failed');
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+        }
+      }
+
+      if (!startedSuccessfully || !activeScanner) {
+        throw new Error('Could not start any camera. All methods failed.');
+      }
+
+      scannerRef.current = activeScanner;
       setCameraActive(true);
       setIsScanning(true);
+      isScanningRef.current = true;
+      setShowFallbackPanel(false);
+      setRetryCount(0);
 
       enforceVideoPlayback();
-      setTimeout(enforceVideoPlayback, 150);
-      setTimeout(enforceVideoPlayback, 400);
-    } catch (err: any) {
+      setTimeout(enforceVideoPlayback, 100);
+      setTimeout(enforceVideoPlayback, 300);
+      setTimeout(enforceVideoPlayback, 800);
+
+      // Step 3: Launch Native Hardware Vision Engine (runs in parallel with ZXing)
+      createHardwareBarcodeDetector().then((detector) => {
+        if (!detector) return;
+        const timer = setInterval(async () => {
+          if (!isScanningRef.current || hasCapturedRef.current) return;
+          const container = document.getElementById(scannerContainerId);
+          const video = container?.querySelector('video');
+          if (video && video.readyState >= 2 && !video.paused && video.videoWidth > 0) {
+            const result = await detector(video);
+            if (result && result.rawValue) {
+              handleDetected(result.rawValue);
+            }
+          }
+        }, 75);
+        hardwareTimerRef.current = timer;
+      });
+
+      // Step 4: Check Digital Zoom support
+      setTimeout(() => {
+        const track = getActiveVideoTrack(scannerContainerId);
+        const hasZoom = isZoomSupported(track);
+        setZoomSupported(hasZoom);
+        setZoomLevel(1);
+      }, 500);
+
+      // Step 5: Enumerate cameras for toggle
+      try {
+        const cameras = await enumerateCameras();
+        setHasMultipleCams(cameras.length > 1);
+      } catch {}
+    } catch (err: unknown) {
       console.warn('Camera start error:', err);
-      setCameraError('Unable to access camera. Check browser permissions or upload photo.');
+      const errResult = classifyError(err);
+      setCameraError(errResult.error || 'Unable to access camera.');
+      setCameraErrorType(errResult.errorType || 'unknown');
+      setCameraFixInstructions(errResult.fixInstructions || null);
       setCameraActive(false);
       setIsScanning(false);
-    }
-  };
+      isScanningRef.current = false;
+      setShowFallbackPanel(true);
 
-  const handleToggleCamera = async () => {
+      // Single auto-retry after 2.5s (give OS time to release camera)
+      if (retryCount < 1) {
+        retryTimerRef.current = setTimeout(() => {
+          setRetryCount((c) => c + 1);
+          startCameraScanner(targetFacing);
+        }, 2500);
+      }
+    } finally {
+      isSwitchingCameraRef.current = false;
+    }
+  }, [facingMode, handleDetected, enforceVideoPlayback, retryCount]);
+
+  const handleToggleCamera = useCallback(async () => {
+    if (isSwitchingCameraRef.current) return;
     const nextMode = facingMode === 'environment' ? 'user' : 'environment';
     await startCameraScanner(nextMode);
-  };
+  }, [facingMode, startCameraScanner]);
 
-  const stopCameraScanner = () => {
+  const handleToggleZoom = useCallback(async () => {
+    const track = getActiveVideoTrack(scannerContainerId);
+    if (!track) return;
+    const nextZoom = zoomLevel === 1 ? 2 : 1;
+    const ok = await applyZoom(track, nextZoom);
+    if (ok) {
+      setZoomLevel(nextZoom);
+    }
+  }, [zoomLevel]);
+
+  const stopCameraScanner = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (hardwareTimerRef.current) {
+      clearInterval(hardwareTimerRef.current);
+      hardwareTimerRef.current = null;
+    }
+    isScanningRef.current = false;
+
     if (scannerRef.current) {
       try {
         if (scannerRef.current.isScanning) {
@@ -168,19 +400,25 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
       } catch {}
       scannerRef.current = null;
     }
+    releaseAllCameraTracks();
+    setZoomLevel(1);
     setCameraActive(false);
     setIsScanning(false);
-  };
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isOpen) {
       hasCapturedRef.current = false;
       setCameraError(null);
+      setCameraErrorType(null);
+      setCameraFixInstructions(null);
       setManualCode('');
+      setShowFallbackPanel(false);
+      setRetryCount(0);
       timer = setTimeout(() => {
         startCameraScanner();
-      }, 200);
+      }, 300);
     } else {
       stopCameraScanner();
     }
@@ -188,6 +426,7 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
       clearTimeout(timer);
       stopCameraScanner();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,24 +436,45 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
     try {
       setIsFileProcessing(true);
       setCameraError(null);
+      setCameraErrorType(null);
+      setCameraFixInstructions(null);
 
       if (scannerRef.current && scannerRef.current.isScanning) {
         await scannerRef.current.stop();
         setCameraActive(false);
       }
+      if (hardwareTimerRef.current) {
+        clearInterval(hardwareTimerRef.current);
+        hardwareTimerRef.current = null;
+      }
+      isScanningRef.current = false;
 
+      // Method 1: Hardware BarcodeDetector on uploaded image
+      try {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+        const detected = await detectBarcodeFromImage(img);
+        URL.revokeObjectURL(objectUrl);
+        if (detected) {
+          handleDetected(detected);
+          setIsFileProcessing(false);
+          if (e.target) e.target.value = '';
+          return;
+        }
+      } catch (e) {
+        console.warn('Image hardware detector error:', e);
+      }
+
+      // Method 2: Fallback to Html5Qrcode.scanFile
       let scanner = scannerRef.current;
       if (!scanner) {
         scanner = new Html5Qrcode(scannerContainerId, {
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-          ],
+          formatsToSupport: SUPPORTED_FORMATS,
           verbose: false,
         });
         scannerRef.current = scanner;
@@ -223,7 +483,8 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
       const decodedText = await scanner.scanFile(file, true);
       handleDetected(decodedText);
     } catch {
-      setCameraError('No barcode detected in this image. Try another photo.');
+      setCameraError('No barcode detected in this image. Try another photo or enter manually below.');
+      setCameraErrorType('unknown');
     } finally {
       setIsFileProcessing(false);
       if (e.target) e.target.value = '';
@@ -236,7 +497,16 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
     handleDetected(manualCode.trim());
   };
 
+  // Focus manual input when fallback panel is shown
+  useEffect(() => {
+    if (showFallbackPanel && manualInputRef.current) {
+      setTimeout(() => manualInputRef.current?.focus(), 200);
+    }
+  }, [showFallbackPanel]);
+
   if (!isOpen) return null;
+
+  const isDesktop = deviceType === 'desktop';
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-xs animate-in fade-in duration-150 select-none">
@@ -272,7 +542,7 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
           <div className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[260px]">
             <div
               id={scannerContainerId}
-              className="w-full h-full min-h-[220px] max-h-[260px] flex items-center justify-center overflow-hidden relative [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[260px] [&_video]:!object-cover [&_video]:!rounded-xl [&_video]:!block [&_#qr-shaded-region]:!hidden"
+              className="w-full h-full min-h-[220px] max-h-[260px] flex items-center justify-center overflow-hidden relative [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[260px] [&_video]:!object-cover [&_video]:!rounded-xl [&_video]:!block [&#qr-shaded-region]:!hidden"
             />
 
             {/* Targeting Reticle */}
@@ -291,20 +561,51 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
               </div>
             )}
 
-            {/* Error Overlay */}
-            {cameraError && (
+            {/* ============================================================ */}
+            {/* COMPREHENSIVE FALLBACK / ERROR STATE                         */}
+            {/* ============================================================ */}
+            {(cameraError || (showFallbackPanel && !cameraActive)) && (
               <div className="absolute inset-0 bg-slate-900/95 p-4 flex flex-col items-center justify-center text-center text-white gap-2 z-20">
-                <AlertCircle className="w-7 h-7 text-amber-400" />
+                {/* Error icon */}
+                {cameraErrorType === 'not-found' ? (
+                  <div className="w-10 h-10 rounded-full bg-slate-700/80 flex items-center justify-center">
+                    {isDesktop ? <Monitor className="w-5 h-5 text-slate-300" /> : <Smartphone className="w-5 h-5 text-slate-300" />}
+                  </div>
+                ) : cameraErrorType === 'permission-denied' ? (
+                  <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <WifiOff className="w-5 h-5 text-red-400" />
+                  </div>
+                ) : (
+                  <AlertCircle className="w-7 h-7 text-amber-400" />
+                )}
+
                 <p className="text-xs font-bold text-slate-100">{cameraError}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => startCameraScanner(facingMode)}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Retry Camera</span>
-                  </button>
+
+                {/* Device-specific fix instructions */}
+                {cameraFixInstructions && (
+                  <div className="flex items-start gap-1.5 bg-white/10 rounded-lg px-3 py-2 max-w-xs">
+                    <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-slate-300 text-left leading-relaxed">
+                      {cameraFixInstructions}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 mt-1 flex-wrap justify-center">
+                  {cameraErrorType !== 'not-supported' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRetryCount(0);
+                        startCameraScanner(facingMode);
+                      }}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Retry Camera</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -313,56 +614,121 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
                     <Upload className="w-3.5 h-3.5 text-blue-600" />
                     <span>Upload Photo</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowFallbackPanel(false);
+                      manualInputRef.current?.focus();
+                    }}
+                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Keyboard className="w-3.5 h-3.5" />
+                    <span>Type Barcode</span>
+                  </button>
                 </div>
+
+                {/* Desktop guidance */}
+                {isDesktop && (
+                  <div className="mt-1 bg-white/5 rounded-lg px-3 py-2 max-w-xs">
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      <strong className="text-slate-300">💡 Tip:</strong> Connect a USB barcode scanner gun — it types barcodes directly into the input field below.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Camera Switch & Photo upload shortcuts */}
-            <div className="absolute top-2 right-2 flex items-center gap-1.5 z-20">
-              <button
-                type="button"
-                onClick={handleToggleCamera}
-                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs"
-                title={facingMode === 'environment' ? 'Switch to Front Camera' : 'Switch to Back Camera'}
-              >
-                <Camera className="w-3 h-3" />
-                <span>{facingMode === 'environment' ? 'Front' : 'Back'}</span>
-              </button>
+            {/* Camera Switch, Zoom & Photo upload shortcuts */}
+            {cameraActive && (
+              <div className="absolute top-2 right-2 flex items-center gap-1.5 z-20">
+                {/* Digital Zoom toggle */}
+                {zoomSupported && (
+                  <button
+                    type="button"
+                    onClick={handleToggleZoom}
+                    className={`text-white text-[10px] px-2 py-1 rounded-md font-bold border backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs ${
+                      zoomLevel > 1
+                        ? 'bg-blue-600 border-blue-400 text-white'
+                        : 'bg-black/75 hover:bg-black border-white/20'
+                    }`}
+                    title={zoomLevel > 1 ? 'Reset to 1x Zoom' : 'Zoom 2x for small barcodes'}
+                  >
+                    <ZoomIn className="w-3 h-3" />
+                    <span>{zoomLevel}x</span>
+                  </button>
+                )}
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isFileProcessing}
-                className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs"
-                title="Scan QR or Barcode from Photo"
-              >
-                <Upload className="w-3 h-3" />
-                <span>{isFileProcessing ? 'Scanning...' : 'Upload Photo'}</span>
-              </button>
-            </div>
+                {hasMultipleCams && (
+                  <button
+                    type="button"
+                    onClick={handleToggleCamera}
+                    disabled={isSwitchingCameraRef.current}
+                    className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs disabled:opacity-50"
+                    title={facingMode === 'environment' ? 'Switch to Front Camera' : 'Switch to Back Camera'}
+                  >
+                    <SwitchCamera className="w-3 h-3" />
+                    <span>{facingMode === 'environment' ? 'Front' : 'Back'}</span>
+                  </button>
+                )}
 
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isFileProcessing}
+                  className="bg-black/75 hover:bg-black text-white text-[10px] px-2 py-1 rounded-md font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all shadow-xs"
+                  title="Scan QR or Barcode from Photo"
+                >
+                  <Upload className="w-3 h-3" />
+                  <span>{isFileProcessing ? 'Scanning...' : 'Upload Photo'}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Micro-tip for focal distance on iPhone & mobile cameras */}
+            {cameraActive && isScanning && (
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center pointer-events-none z-15">
+                <span className="bg-black/75 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/10 shadow-xs">
+                  💡 Hold 6-8 in (15-20 cm) away for sharp focus
+                </span>
+              </div>
+            )}
+
+            {/* Hidden file input — capture attribute intentionally REMOVED
+                to prevent mobile browsers from hijacking the native camera app */}
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleFileUpload}
               className="hidden"
             />
           </div>
 
-          {/* Manual or USB gun fallback input */}
+          {/* ============================================================ */}
+          {/* ALWAYS-VISIBLE Manual / USB gun fallback input                */}
+          {/* ============================================================ */}
           <form
             onSubmit={handleManualSubmit}
-            className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 shadow-2xs"
+            className={`flex items-center gap-2 bg-white border rounded-xl p-1.5 shadow-2xs transition-all ${
+              !cameraActive
+                ? 'border-blue-500 ring-2 ring-blue-500/20'
+                : 'border-slate-200'
+            }`}
           >
             <Barcode className="w-4 h-4 text-slate-400 ml-1 shrink-0" />
             <input
+              ref={manualInputRef}
               type="text"
-              placeholder="Or type/paste barcode number..."
+              placeholder={
+                isDesktop
+                  ? 'Scan with USB gun or type barcode number...'
+                  : 'Or type/paste barcode number...'
+              }
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
               className="w-full text-xs text-slate-900 placeholder-slate-400 bg-transparent focus:outline-hidden"
+              autoComplete="off"
             />
             <button
               type="submit"
@@ -372,6 +738,16 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
               Use Code
             </button>
           </form>
+
+          {/* USB / Bluetooth Scanner Notice (when camera is off) */}
+          {!cameraActive && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl">
+              <Keyboard className="w-4 h-4 text-blue-600 shrink-0" />
+              <p className="text-[11px] text-blue-800 font-medium leading-relaxed">
+                <strong>USB / Bluetooth scanner ready.</strong> Barcode guns type directly into the field above.
+              </p>
+            </div>
+          )}
 
           {/* Fast DEV Simulator Chips */}
           {((typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') || Boolean(import.meta.env?.DEV)) && (

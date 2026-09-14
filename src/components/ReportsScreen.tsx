@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   FileSpreadsheet,
+  FileText,
   Calendar,
   Filter,
   Eye,

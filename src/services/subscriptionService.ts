@@ -147,6 +147,22 @@ export interface LicenseStatus {
  */
 export function checkLicenseStatus(license: TenantLicense): LicenseStatus {
   const now = new Date();
+  const isFree = license.plan === 'FREE';
+
+  if (isFree) {
+    return {
+      isValid: true,
+      status: 'ACTIVE',
+      plan: 'FREE',
+      daysRemaining: 9999,
+      isTrialActive: false,
+      isGracePeriod: false,
+      isExpired: false,
+      expiresAt: new Date(license.currentPeriodEnd || addDays(now, 3650)),
+      displayLabel: 'Free Plan',
+    };
+  }
+
   const expiresAt = new Date(license.currentPeriodEnd);
   const graceEnd = addHours(expiresAt, GRACE_HOURS);
   const diffMs = expiresAt.getTime() - now.getTime();
@@ -171,7 +187,7 @@ export function checkLicenseStatus(license: TenantLicense): LicenseStatus {
     displayLabel = `Grace: ${graceHoursLeft}h left`;
   } else {
     status = 'EXPIRED';
-    displayLabel = 'Expired — Renew';
+    displayLabel = 'Expired — Free Mode';
   }
 
   return {
@@ -205,6 +221,21 @@ export function loadRazorpayCheckoutScript(): Promise<boolean> {
   });
 }
 
+function getMaxRegistersForPlan(plan: SubscriptionPlan): number {
+  switch (plan) {
+    case 'FREE':
+    case 'STARTER':
+      return 1;
+    case 'BUSINESS':
+      return 10;
+    case 'PRO':
+    case 'ANNUAL':
+    case 'TRIAL':
+    default:
+      return 3;
+  }
+}
+
 /**
  * Upgrade or activate the tenant plan license in Firestore and local cache.
  * Accepts optional live payment details from Razorpay/Stripe or runs in sandbox mode.
@@ -216,14 +247,21 @@ export async function simulatePlanUpgrade(
     paymentId?: string;
     gateway?: 'RAZORPAY' | 'STRIPE' | 'MANUAL' | 'SIMULATED';
     amount?: number;
+    billingCycle?: 'MONTHLY' | 'ANNUAL';
   }
 ): Promise<TenantLicense | null> {
   const gateway = paymentDetails?.gateway || (paymentDetails?.paymentId ? 'RAZORPAY' : 'SIMULATED');
+  const isAnnual = paymentDetails?.billingCycle === 'ANNUAL' || plan === 'ANNUAL';
+  const now = new Date();
+  const periodEnd = plan === 'FREE'
+    ? addDays(now, 3650)
+    : isAnnual
+    ? addDays(now, 365)
+    : addDays(now, 30);
+  const maxRegs = getMaxRegistersForPlan(plan);
 
   if (ownerUid === 'demo_retail_owner') {
     const cached = getCachedLicense();
-    const now = new Date();
-    const periodEnd = plan === 'ANNUAL' ? addDays(now, 365) : addDays(now, 30);
     const updated: TenantLicense = {
       ...(cached || {
         tenantId: 'tenant_demo_retail_owner',
@@ -237,7 +275,8 @@ export async function simulatePlanUpgrade(
       plan,
       status: 'ACTIVE',
       currentPeriodEnd: periodEnd.toISOString(),
-      maxRegisters: plan === 'STARTER' ? 1 : 3,
+      billingCycle: isAnnual ? 'ANNUAL' : 'MONTHLY',
+      maxRegisters: maxRegs,
       lastPaymentId: paymentDetails?.paymentId,
       lastPaymentGateway: gateway,
       lastPaymentAmount: paymentDetails?.amount,
@@ -253,17 +292,14 @@ export async function simulatePlanUpgrade(
     if (!snapshot.exists()) return null;
 
     const current = snapshot.data() as TenantLicense;
-    const now = new Date();
-    const periodEnd = plan === 'ANNUAL'
-      ? addDays(now, 365)
-      : addDays(now, 30);
 
     const updated: TenantLicense = {
       ...current,
       plan,
       status: 'ACTIVE',
       currentPeriodEnd: periodEnd.toISOString(),
-      maxRegisters: plan === 'STARTER' ? 1 : 3,
+      billingCycle: isAnnual ? 'ANNUAL' : 'MONTHLY',
+      maxRegisters: maxRegs,
       lastPaymentId: paymentDetails?.paymentId,
       lastPaymentGateway: gateway,
       lastPaymentAmount: paymentDetails?.amount,

@@ -8,11 +8,10 @@ import {
   ShieldCheck,
   Clock,
   AlertTriangle,
-  ArrowRight,
-  HelpCircle,
   CreditCard,
-  Building,
   Loader2,
+  Users,
+  HardDrive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +44,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   currencySymbol = '₹',
 }) => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('PRO');
+  const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('ANNUAL');
   const [isProcessing, setIsProcessing] = useState(false);
   const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string>(() => {
@@ -75,9 +75,30 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const handleUpgrade = async (plan: SubscriptionPlan) => {
     if (!license?.ownerUid) return;
 
-    // Price calculation
+    // Free plan instant activation
+    if (plan === 'FREE') {
+      try {
+        setIsProcessing(true);
+        const updated = await simulatePlanUpgrade(license.ownerUid, 'FREE', {
+          gateway: 'SIMULATED',
+          amount: 0,
+          billingCycle: 'ANNUAL',
+        });
+        if (updated) {
+          onLicenseUpdated(updated);
+          setUpgradeSuccess('Switched to the Free Forever plan.');
+          setTimeout(() => setUpgradeSuccess(null), 4000);
+        }
+      } catch (err) {
+        console.error('Free plan activation error:', err);
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
     const planInfo = SUBSCRIPTION_PLANS.find((p) => p.id === plan);
-    const amountInRupees = plan === 'ANNUAL' ? (planInfo?.annualPrice || 7999) : (planInfo?.price || 999);
+    const amountInRupees = billingCycle === 'ANNUAL' ? (planInfo?.annualPrice || 7999) : (planInfo?.price || 799);
 
     // If Razorpay key is configured, initiate real payment popup
     if (razorpayKey.trim() && license.ownerUid !== 'demo_retail_owner') {
@@ -93,7 +114,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           amount: amountInRupees * 100, // paise
           currency: 'INR',
           name: 'MonoPOS Retail',
-          description: `${plan} Plan SaaS Subscription`,
+          description: `${planInfo?.name || plan} (${billingCycle}) SaaS Subscription`,
           image: 'https://cdn-icons-png.flaticon.com/512/891/891462.png',
           prefill: {
             name: license.ownerName || 'Store Owner',
@@ -108,6 +129,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               paymentId,
               gateway: 'RAZORPAY',
               amount: amountInRupees,
+              billingCycle,
             });
             if (updated) {
               onLicenseUpdated(updated);
@@ -138,10 +160,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       const updated = await simulatePlanUpgrade(license.ownerUid, plan, {
         gateway: 'SIMULATED',
         amount: amountInRupees,
+        billingCycle,
       });
       if (updated) {
         onLicenseUpdated(updated);
-        setUpgradeSuccess(`Successfully upgraded to the ${plan} Plan (Sandbox Activation)!`);
+        setUpgradeSuccess(`Successfully upgraded to the ${plan} Plan (${billingCycle})!`);
         setTimeout(() => {
           setUpgradeSuccess(null);
         }, 4000);
@@ -154,7 +177,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity"
@@ -162,7 +185,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-3xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] z-10">
+      <div className="relative w-full max-w-5xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] z-10">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-card shrink-0">
           <div className="flex items-center gap-2.5">
@@ -171,10 +194,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-extrabold text-foreground tracking-tight">
-                Subscription & Plans
+                MonoPOS Plans & Subscriptions
               </h2>
               <p className="text-xs text-muted-foreground">
-                Manage your MonoPOS license, billing frequency, and store tier.
+                Simple, transparent retail pricing. Switch or cancel anytime.
               </p>
             </div>
           </div>
@@ -214,7 +237,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-sm">
                     {isTrial
-                      ? '14-Day Free Trial'
+                      ? '14-Day Free Pro Trial'
                       : `${license?.plan} Plan Active`}
                   </span>
                   <Badge variant="outline" className="text-[11px] px-2 py-0">
@@ -223,11 +246,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
                 <p className="text-xs opacity-90 mt-0.5">
                   {isExpired
-                    ? 'Your subscription period has ended. Choose a plan below to keep billing and syncing uninterrupted.'
+                    ? 'Your subscription period has ended. Choose a plan below to keep multi-device sync and premium features uninterrupted.'
                     : isGrace
                     ? 'Your account is in grace period. Please renew to avoid service pause.'
                     : isTrial
-                    ? `You have ${licenseStatus?.daysRemaining ?? 14} days remaining in your free trial. No payment method required during trial.`
+                    ? `You have ${licenseStatus?.daysRemaining ?? 14} days remaining in your free Pro trial. No credit card required.`
                     : `Next renewal: ${
                         license?.currentPeriodEnd
                           ? new Date(license.currentPeriodEnd).toLocaleDateString('en-GB', {
@@ -254,6 +277,40 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             )}
           </div>
 
+          {/* Billing Cycle Toggle */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+            <div className="flex items-center gap-3 bg-muted/60 p-1 rounded-xl border border-border">
+              <button
+                type="button"
+                onClick={() => setBillingCycle('MONTHLY')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  billingCycle === 'MONTHLY'
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Monthly Billing
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingCycle('ANNUAL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  billingCycle === 'ANNUAL'
+                    ? 'bg-background text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <span>Annual Billing</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                  Save 17%
+                </span>
+              </button>
+            </div>
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">
+              (Get 2 months free with Annual plans)
+            </span>
+          </div>
+
           {/* Success Banner */}
           {upgradeSuccess && (
             <div className="p-3 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
@@ -262,12 +319,32 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </div>
           )}
 
-          {/* Plans Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Plans Grid (4 columns on desktop) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {SUBSCRIPTION_PLANS.map((plan) => {
               const isCurrent = license?.plan === plan.id;
               const isSelected = selectedPlan === plan.id;
               const isPro = plan.id === 'PRO';
+              const isBusiness = plan.id === 'BUSINESS';
+              const isFree = plan.id === 'FREE';
+
+              // Price display
+              const priceDisplay = isFree
+                ? '₹0'
+                : billingCycle === 'ANNUAL'
+                ? `${currencySymbol}${plan.annualPrice.toLocaleString()}`
+                : `${currencySymbol}${plan.price.toLocaleString()}`;
+
+              const periodDisplay = isFree
+                ? 'forever'
+                : billingCycle === 'ANNUAL'
+                ? '/year'
+                : '/month';
+
+              const monthlyEquivalent =
+                !isFree && billingCycle === 'ANNUAL'
+                  ? `~${currencySymbol}${Math.round(plan.annualPrice / 12)}/mo`
+                  : null;
 
               return (
                 <div
@@ -275,7 +352,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   onClick={() => setSelectedPlan(plan.id)}
                   className={`relative rounded-xl border p-4 sm:p-5 flex flex-col justify-between transition-all cursor-pointer ${
                     isPro
-                      ? 'border-primary shadow-md bg-card ring-1 ring-primary/20'
+                      ? 'border-primary shadow-lg bg-card ring-2 ring-primary/20'
+                      : isBusiness
+                      ? 'border-indigo-500/50 bg-card shadow-xs'
                       : isSelected
                       ? 'border-foreground/50 bg-card shadow-xs'
                       : 'border-border bg-card/60 hover:border-border/80'
@@ -283,7 +362,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 >
                   {/* Badge */}
                   {plan.badge && (
-                    <span className="absolute -top-2.5 right-4 bg-primary text-primary-foreground text-[10px] uppercase font-black px-2 py-0.5 rounded-full tracking-wider shadow-xs">
+                    <span
+                      className={`absolute -top-2.5 right-4 text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full tracking-wider shadow-xs ${
+                        isPro
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-indigo-600 text-white'
+                      }`}
+                    >
                       {plan.badge}
                     </span>
                   )}
@@ -298,33 +383,41 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                           </Badge>
                         )}
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                        {plan.id === 'STARTER' && 'For single-counter shops & small stores.'}
-                        {plan.id === 'PRO' && 'For busy supermarkets & multi-counter retail.'}
-                        {plan.id === 'ANNUAL' && 'Best value for long-term retail businesses.'}
+                      <p className="text-xs text-muted-foreground mt-0.5 min-h-[32px] leading-snug">
+                        {plan.tagline}
                       </p>
                     </div>
 
                     <div className="pt-2 pb-1">
                       <div className="flex items-baseline gap-1">
                         <span className="text-2xl sm:text-3xl font-extrabold text-foreground">
-                          {currencySymbol}{plan.price.toLocaleString()}
+                          {priceDisplay}
                         </span>
                         <span className="text-xs text-muted-foreground font-medium">
-                          {plan.period === 'MONTHLY' ? '/month' : '/year'}
+                          {periodDisplay}
                         </span>
                       </div>
-                      {plan.id === 'ANNUAL' && (
+                      {monthlyEquivalent && (
                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-                          Save ₹3,989 compared to monthly Pro
+                          {monthlyEquivalent} (billed annually)
                         </p>
                       )}
                     </div>
 
+                    {/* Hardware / Register Cap */}
+                    <div className="py-1 px-2 rounded-md bg-muted/50 border border-border/50 flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+                      <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>
+                        {plan.maxRegisters === 1
+                          ? '1 Counter / Register'
+                          : `Up to ${plan.maxRegisters} Counters / Devices`}
+                      </span>
+                    </div>
+
                     {/* Feature List */}
-                    <div className="pt-2 border-t border-border/60 space-y-2">
+                    <div className="pt-2 border-t border-border/60 space-y-1.5">
                       {plan.features.map((feat, idx) => (
-                        <div key={idx} className="flex items-start gap-2 text-xs text-foreground/90">
+                        <div key={idx} className="flex items-start gap-1.5 text-[11px] text-foreground/90 leading-tight">
                           <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                           <span>{feat}</span>
                         </div>
@@ -332,7 +425,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-5 mt-4 border-t border-border/40">
+                  <div className="pt-4 mt-4 border-t border-border/40">
                     <Button
                       type="button"
                       variant={isCurrent ? 'outline' : isPro ? 'default' : 'secondary'}
@@ -348,6 +441,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : isCurrent ? (
                         'Active Plan'
+                      ) : isFree ? (
+                        'Switch to Free'
                       ) : (
                         `Choose ${plan.name}`
                       )}
@@ -410,10 +505,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           <div className="pt-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
-              <span>Cancel anytime. Offline mode always retains your local database.</span>
+              <span>Cancel anytime. Offline PWA always retains your local database.</span>
             </div>
             <div className="flex items-center gap-3 font-medium">
-              <span>Need help with GST billing or custom setup?</span>
+              <span>Need help choosing a plan or hardware bundle?</span>
               <a
                 href="https://wa.me/919876543210?text=Hello%20MonoPOS%20Support%2C%20I%20need%20help%20with%20my%20subscription"
                 target="_blank"
