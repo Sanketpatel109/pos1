@@ -67,7 +67,7 @@ import {
 import { hardware } from './utils/hardware';
 import { Zap, PauseCircle, CheckCircle2, Printer, X, Camera } from 'lucide-react';
 import { posSound } from './utils/sound';
-import { auth, onAuthStateChanged, signOut, User } from './firebase';
+import { auth, onAuthStateChanged, signOut, User, getDoc } from './firebase';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { AuthGateScreen } from './components/AuthGateScreen';
@@ -112,6 +112,7 @@ import {
   liveDeleteHeldOrder,
   liveClearAllHeldOrders,
   setActiveTenantId,
+  getTenantDoc,
 } from './services/liveSync';
 import { useCart } from './context/CartContext';
 import { DirectThermalReceipt } from './components/DirectThermalReceipt';
@@ -226,23 +227,66 @@ export default function App() {
       const tenantId = `tenant_${currentUser.uid}`;
       setActiveTenantId(tenantId);
       const onboardedKey = `monopos_onboarded_${currentUser.uid}`;
-      const isAlreadyOnboarded =
-        localStorage.getItem(onboardedKey) === 'true' ||
-        Boolean(shopSettings.onboarded) ||
-        (Boolean(shopSettings.shopName) &&
-          shopSettings.shopName !== 'MonoPOS Express' &&
-          shopSettings.shopName !== 'Anand Supermarket');
+      const userSettingsKey = `monopos_retail_settings_${currentUser.uid}`;
 
-      if (!isAlreadyOnboarded) {
-        setIsStoreOnboardingOpen(true);
-      } else {
+      // 1. Check local storage for this user's specific store settings
+      const userSavedSettings = localStorage.getItem(userSettingsKey);
+      let localAlreadyOnboarded = localStorage.getItem(onboardedKey) === 'true';
+
+      if (userSavedSettings) {
+        try {
+          const parsed = JSON.parse(userSavedSettings);
+          if (
+            parsed.shopName &&
+            parsed.shopName !== 'MonoPOS Express' &&
+            parsed.shopName !== 'Anand Supermarket'
+          ) {
+            setShopSettings((prev) => ({ ...prev, ...parsed }));
+            localAlreadyOnboarded = true;
+          }
+        } catch {}
+      }
+
+      if (localAlreadyOnboarded || Boolean(shopSettings.onboarded)) {
         localStorage.setItem(onboardedKey, 'true');
         setIsStoreOnboardingOpen(false);
+      } else {
+        // 2. Query Firestore directly before opening onboarding modal to avoid race conditions
+        getDoc(getTenantDoc('settings', 'store_config', tenantId))
+          .then((snap) => {
+            if (snap.exists()) {
+              const remote = snap.data() as ShopSettings;
+              if (
+                remote.onboarded ||
+                (remote.shopName &&
+                  remote.shopName !== 'MonoPOS Express' &&
+                  remote.shopName !== 'Anand Supermarket')
+              ) {
+                setShopSettings((prev) => ({ ...prev, ...remote }));
+                localStorage.setItem(onboardedKey, 'true');
+                localStorage.setItem(userSettingsKey, JSON.stringify(remote));
+                setIsStoreOnboardingOpen(false);
+                return;
+              }
+            }
+            // Only show onboarding if user has never configured a store
+            setIsStoreOnboardingOpen(true);
+          })
+          .catch((err) => {
+            console.warn('Firestore store config check deferred:', err);
+            // If offline, check if settings already have a valid custom name
+            if (shopSettings.shopName && shopSettings.shopName !== 'MonoPOS Express') {
+              setIsStoreOnboardingOpen(false);
+            } else {
+              setIsStoreOnboardingOpen(true);
+            }
+          });
       }
     } else {
       setActiveTenantId(null);
+      setIsStoreOnboardingOpen(false);
     }
-  }, [currentUser, shopSettings.onboarded, shopSettings.shopName]);
+  }, [currentUser]);
 
   // Handle demo store bypass for prospects & evaluators
   const handleDemoLogin = () => {
@@ -598,7 +642,12 @@ export default function App() {
     };
     setShopSettings(newSettings);
     localStorage.setItem('monopos_retail_settings', JSON.stringify(newSettings));
-    liveSaveSettings(newSettings).catch(() => {});
+    if (currentUser) {
+      localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+      localStorage.setItem(`monopos_retail_settings_${currentUser.uid}`, JSON.stringify(newSettings));
+    }
+    setIsStoreOnboardingOpen(false);
+    liveSaveSettings(newSettings).catch((err) => console.warn('Live save settings error:', err));
 
     // Set tailored clean categories for the selected business type
     const tailoredCategories = BUSINESS_TYPE_CATEGORIES[businessType] || BUSINESS_TYPE_CATEGORIES.grocery;
@@ -2283,6 +2332,11 @@ export default function App() {
         }}
         onSaveSettings={(newSettings) => {
           setShopSettings(newSettings);
+          localStorage.setItem('monopos_retail_settings', JSON.stringify(newSettings));
+          if (currentUser) {
+            localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+            localStorage.setItem(`monopos_retail_settings_${currentUser.uid}`, JSON.stringify(newSettings));
+          }
           liveSaveSettings(newSettings).catch((err) => console.warn('Live settings save:', err));
         }}
         user={currentUser}

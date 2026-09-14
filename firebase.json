@@ -24,7 +24,10 @@
       }
     ]
   },
-  "firestore": {
-    "rules": "firestore.rules"
-  }
+  "firestore": [
+    {
+      "database": "ai-studio-monoposindustria-c0fc5ba0-8b14-4035-8ee1-558369132d53",
+      "rules": "firestore.rules"
+    }
+  ]
 }
