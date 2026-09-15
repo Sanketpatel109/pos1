@@ -80,6 +80,7 @@ export interface BillItem {
   selectedPackName?: string; // e.g. "Box of 6"
   multiplier?: number;        // e.g. 6 (defaults to 1)
   barcode?: string;           // Barcode scanned or assigned
+  category?: string;          // Category name e.g. "Drinks", "Snacks"
   gstRate?: number;
   taxableAmount?: number; // Snapshot of taxable value (unitPrice * quantity)
   cgst?: number;          // Snapshot of CGST amount

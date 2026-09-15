@@ -218,6 +218,10 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
     });
   };
 
+  const handleTestPrint = () => {
+    window.print();
+  };
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

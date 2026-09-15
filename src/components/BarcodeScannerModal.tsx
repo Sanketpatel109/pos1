@@ -1017,11 +1017,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
                     <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
                       <Check className="w-3 h-3 stroke-[3]" />
-                      <span>Product Found Online</span>
+                      <span>{fetchedOnlineProduct.sourceRegistry || 'Product Found Online'}</span>
                     </div>
 
                     <h4 className="text-white text-sm font-extrabold line-clamp-2 px-1 text-center leading-snug">
-                      {fetchedOnlineProduct.name}
+                      {fetchedOnlineProduct.brand && !fetchedOnlineProduct.name.toLowerCase().includes(fetchedOnlineProduct.brand.toLowerCase())
+                        ? `${fetchedOnlineProduct.brand} - ${fetchedOnlineProduct.name}`
+                        : fetchedOnlineProduct.name}
                     </h4>
 
                     {fetchedOnlineProduct.brand && (
@@ -1053,9 +1055,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                           type="button"
                           onClick={() => {
                             const price = parseFloat(onlinePriceInput) || fetchedOnlineProduct.suggestedPrice || 0;
+                            const itemTitle = fetchedOnlineProduct.brand && !fetchedOnlineProduct.name.toLowerCase().includes(fetchedOnlineProduct.brand.toLowerCase())
+                              ? `${fetchedOnlineProduct.brand} - ${fetchedOnlineProduct.name}`
+                              : fetchedOnlineProduct.name;
                             onAddCustomBillItem({
                               id: `custom-${Date.now()}`,
-                              name: fetchedOnlineProduct.name,
+                              name: itemTitle,
                               unitPrice: price,
                               quantity: 1,
                               category: fetchedOnlineProduct.category || 'General',

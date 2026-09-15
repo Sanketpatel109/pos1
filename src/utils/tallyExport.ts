@@ -31,7 +31,7 @@ function escapeXml(unsafe: string): string {
  * Generates official Tally Prime / ERP 9 compliant XML for Sales Vouchers
  */
 export function generateTallySalesXml(orders: Order[], shopName = 'MonoPOS Retail'): string {
-  const validOrders = orders.filter((o) => o.status !== 'VOID');
+  const validOrders = orders.filter((o) => (o.status as string) !== 'cancelled' && (o.status as string) !== 'refunded' && (o.status as string) !== 'VOID');
 
   let vouchersXml = '';
 

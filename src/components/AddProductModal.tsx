@@ -137,8 +137,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     try {
       const result = await lookupBarcodeDetails(code, categories);
       if (result) {
+        const displayName = result.brand && !result.name.toLowerCase().includes(result.brand.toLowerCase())
+          ? `${result.brand} - ${result.name}`
+          : result.name;
+
         if (!prodName || !editingProduct) {
-          setProdName(result.name);
+          setProdName(displayName);
         }
         if (result.category) {
           setProdCategory(result.category);
