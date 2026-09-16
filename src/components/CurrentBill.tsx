@@ -118,7 +118,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
       */}
       <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <ShoppingBag className="w-4 h-4 text-blue-600 shrink-0" />
+          <ShoppingBag className="w-4 h-4 text-foreground shrink-0" />
           <h2 className="text-sm text-foreground font-semibold tracking-tight truncate">
             Current Bill
           </h2>
@@ -129,10 +129,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Bill Number Badge (India-First: "Bill #042") */}
-          <Badge
-            variant="default"
-            className="text-xs px-2 py-0.5 tabular-nums bg-blue-600 text-white hover:bg-blue-600 shadow-xs border-0 font-semibold"
-          >
+          <Badge variant="default" className="text-xs px-2 py-0.5 tabular-nums">
             Bill {displayBillNumber}
           </Badge>
 
@@ -163,7 +160,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
       >
         {items.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-2 text-muted-foreground">
-            <ShoppingBag className="w-5 h-5 mb-1 text-blue-600/60 stroke-[1.5]" />
+            <ShoppingBag className="w-5 h-5 mb-1 text-muted-foreground/60 stroke-[1.5]" />
             <p className="text-xs font-semibold text-foreground">Bill is empty</p>
             <p className="text-xs text-muted-foreground">Tap products to add items</p>
           </div>

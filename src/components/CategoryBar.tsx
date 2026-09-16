@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import { CatalogItem, Category } from '../types';
+import { ensureAllItemsFirst } from '../utils/categories';
 
 export interface CategoryBarProps {
   categories: (Category | string)[];
@@ -24,6 +25,11 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(Boolean(searchQuery));
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Guarantee that "All Items" is always strictly the FIRST category chip
+  const orderedCategories = useMemo(() => {
+    return ensureAllItemsFirst(categories);
+  }, [categories]);
 
   // Sync state if external search query changes
   useEffect(() => {
@@ -128,7 +134,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
 
           {/* Scrollable Category Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none py-0.5 flex-1 min-w-0">
-            {categories.map((category) => {
+            {orderedCategories.map((category) => {
               const catName =
                 typeof category === 'string' ? category : category.name;
               const catId =

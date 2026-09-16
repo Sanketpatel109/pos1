@@ -275,7 +275,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           {/* Header Row: Current Bill & Bill #{displayBillNo} */}
           <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />
+              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-foreground shrink-0" />
               <h2 className="text-xs sm:text-sm text-foreground font-semibold tracking-tight truncate">
                 Current Bill
               </h2>
@@ -286,7 +286,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
 
             <div className="flex items-center gap-2 shrink-0">
               {/* Bill Number Badge (India-First: "Bill #042") */}
-              <span className="bg-blue-600 text-white text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-semibold tracking-wide tabular-nums font-medium shadow-xs">
+              <span className="bg-primary text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 rounded-md font-medium tracking-wide tabular-nums font-medium">
                 Bill #{displayBillNo}
               </span>
             </div>

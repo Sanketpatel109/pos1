@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Package,
   Layers,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Category, CatalogItem, StaffRole, StorePermissions, PackagingOption } from '../types';
 import { canViewCostPrice } from '../utils/permissions';
+import { ensureAllItemsFirst } from '../utils/categories';
 import { AddProductModal } from './AddProductModal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -67,6 +68,11 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
   const isStaffRole = staffRole?.toUpperCase() === 'STAFF' || staffRole?.toUpperCase() === 'CASHIER';
   const canSeeCost = !isStaffRole && canViewCostPrice(staffRole, permissions);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Guarantee that "All Items" is always strictly the FIRST category
+  const orderedCategories = useMemo(() => {
+    return ensureAllItemsFirst(categories);
+  }, [categories]);
 
   // Modals state
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -310,7 +316,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
             onClick={() => setActiveTab('categories')}
             className="h-7 text-xs font-medium cursor-pointer"
           >
-            Categories ({categories.length})
+            Categories ({orderedCategories.length})
           </Button>
           <Button
             size="xs"
@@ -364,7 +370,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-primary" />
-                <span>Categories ({categories.length})</span>
+                <span>Categories ({orderedCategories.length})</span>
               </h2>
             </div>
             <Button
@@ -380,7 +386,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
 
           {/* Categories List */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
-            {categories.map((cat) => {
+            {orderedCategories.map((cat) => {
               const catName = (cat.name || '').trim();
               const isAllCat = catName.toUpperCase() === 'ALL' || catName.toLowerCase() === 'all items';
               const count = isAllCat

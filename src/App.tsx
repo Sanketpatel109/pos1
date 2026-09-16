@@ -28,6 +28,7 @@ import {
   StaffRole,
 } from './types';
 import { resolveBarcodeMatch } from './utils/barcodeResolver';
+import { ensureAllItemsFirst, isAllCategory } from './utils/categories';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { ItemWiseBillTerminal } from './components/ItemWiseBillTerminal';
@@ -322,10 +323,10 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return ensureAllItemsFirst(parsed);
       } catch {}
     }
-    return BUSINESS_TYPE_CATEGORIES.grocery;
+    return ensureAllItemsFirst(BUSINESS_TYPE_CATEGORIES.grocery);
   });
 
   const [catalog, setCatalog] = useState<CatalogItem[]>(() => {
@@ -555,9 +556,10 @@ export default function App() {
 
     const unsubCategories = listenToLiveCategories((cats) => {
       if (cats.length > 0) {
-        setCategories(cats);
+        const ordered = ensureAllItemsFirst(cats);
+        setCategories(ordered);
         try {
-          localStorage.setItem('monopos_categories', JSON.stringify(cats));
+          localStorage.setItem('monopos_categories', JSON.stringify(ordered));
         } catch {}
       }
     });
@@ -1356,7 +1358,7 @@ export default function App() {
       const pulled = await pullAllFromCloud();
       if (pulled.orders && pulled.orders.length > 0) setOrders(pulled.orders);
       if (pulled.catalog && pulled.catalog.length > 0) setCatalog(pulled.catalog);
-      if (pulled.categories && pulled.categories.length > 0) setCategories(pulled.categories);
+      if (pulled.categories && pulled.categories.length > 0) setCategories(ensureAllItemsFirst(pulled.categories));
       if (pulled.customers && pulled.customers.length > 0) setCustomers(pulled.customers);
       if (pulled.cashEntries && pulled.cashEntries.length > 0) setCashEntries(pulled.cashEntries);
       if (pulled.shopSettings) setShopSettings(pulled.shopSettings);
@@ -1406,7 +1408,7 @@ export default function App() {
       name,
     };
     setCategories((prev) => {
-      const updated = [...prev, newCat];
+      const updated = ensureAllItemsFirst([...prev, newCat]);
       try {
         localStorage.setItem('monopos_categories', JSON.stringify(updated));
       } catch {}
@@ -1418,7 +1420,7 @@ export default function App() {
   const handleUpdateCategory = (id: string, name: string) => {
     playSfx('tap');
     setCategories((prev) => {
-      const updated = prev.map((c) => (c.id === id ? { ...c, name } : c));
+      const updated = ensureAllItemsFirst(prev.map((c) => (c.id === id ? { ...c, name } : c)));
       try {
         localStorage.setItem('monopos_categories', JSON.stringify(updated));
       } catch {}
@@ -1431,9 +1433,11 @@ export default function App() {
   };
 
   const handleDeleteCategory = (id: string) => {
+    const target = categories.find((c) => c.id === id);
+    if (isAllCategory(target?.name)) return; // Prevent deleting "All Items"
     playSfx('remove');
     setCategories((prev) => {
-      const updated = prev.filter((c) => c.id !== id);
+      const updated = ensureAllItemsFirst(prev.filter((c) => c.id !== id));
       try {
         localStorage.setItem('monopos_categories', JSON.stringify(updated));
       } catch {}
@@ -1558,7 +1562,7 @@ export default function App() {
           existingNames.add(catName.toLowerCase());
         }
       });
-      const updatedCats = [...prev, ...added];
+      const updatedCats = ensureAllItemsFirst([...prev, ...added]);
       try {
         localStorage.setItem('monopos_categories', JSON.stringify(updatedCats));
       } catch {}
