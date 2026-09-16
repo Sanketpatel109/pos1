@@ -1220,7 +1220,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                             onClose();
                           }
                         }}
-                        className="flex-1 py-2 px-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                        className="flex-1 py-2 px-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Save to POS</span>
@@ -1274,7 +1274,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                             onClose();
                           }
                         }}
-                        className="flex-1 py-2 px-3 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                        className="flex-1 py-2 px-3 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                       >
                         <Plus className="w-4 h-4 stroke-[3]" />
                         <span>Add to POS</span>
@@ -1463,7 +1463,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
                   <span>Instant Test Barcodes & QR Codes</span>
                 </span>
                 <span className="text-[10px] text-slate-500">

@@ -16,6 +16,25 @@ import { Category } from '../types';
 import { GST_SLABS } from '../constants/taxRates';
 import { useBarcodeLookup } from '../hooks/useBarcodeLookup';
 import { getWebSearchUrl } from '../services/barcodeLookup';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface QuickAddProductModalProps {
   isOpen: boolean;
@@ -302,40 +321,43 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className="bg-card text-card-foreground rounded-xl w-full max-w-lg border border-border shadow-lg overflow-hidden flex flex-col max-h-[92vh]"
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="sm:max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl"
+        showCloseButton={false}
       >
         {/* Header - Strictly Shadcn Default */}
-        <div className="px-5 py-3.5 bg-card border-b border-border flex items-center justify-between shrink-0">
+        <DialogHeader className="px-5 py-3.5 bg-card border-b border-border flex flex-row items-center justify-between shrink-0 space-y-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-xs shrink-0">
               <Plus className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-foreground leading-tight">
+              <DialogTitle className="text-sm font-semibold text-foreground leading-tight">
                 Quick Add Product
-              </h3>
-              <p className="text-xs text-muted-foreground">
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
                 Register unscanned barcode to POS catalog & bill
-              </p>
+              </DialogDescription>
             </div>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X className="w-4 h-4" />
-          </button>
-        </div>
+            <span className="sr-only">Close</span>
+          </Button>
+        </DialogHeader>
 
         {/* Barcode & Auto-Lookup Banner */}
-        <div className="px-5 py-2.5 bg-muted/50 border-b border-border text-foreground flex items-center justify-between shrink-0 text-xs">
+        <div className="px-5 py-2.5 bg-muted/40 border-b border-border text-foreground flex items-center justify-between shrink-0 text-xs">
           <div className="flex items-center gap-2">
             <Barcode className="w-4 h-4 text-primary" />
-            <span className="font-mono font-medium tracking-wider tabular-nums">
+            <span className="font-mono font-semibold tracking-wider tabular-nums">
               {activeBarcode || 'NO BARCODE'}
             </span>
             {activeBarcode && (
@@ -353,32 +375,32 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             )}
           </div>
           {foundBadge && (
-            <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium border border-primary/20">
+            <Badge variant="outline" className="gap-1 text-xs bg-primary/10 text-primary border-primary/20 font-medium">
               <Sparkles className="w-3 h-3 text-primary" />
               <span>Auto-filled ({foundBadge})</span>
-            </span>
+            </Badge>
           )}
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
-          {/* Product Name */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-foreground flex items-center gap-1">
-                <span>Product Name / Brand</span>
-                <span className="text-destructive">*</span>
-              </label>
-              {isLookingUp && (
-                <span className="text-xs text-primary font-medium flex items-center gap-1 animate-pulse">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Looking up online catalog...</span>
-                </span>
-              )}
-            </div>
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="p-5 space-y-4 overflow-y-auto flex-1 no-scrollbar">
+            {/* Product Name */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="quick-add-product-name" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <span>Product Name / Brand</span>
+                  <span className="text-destructive">*</span>
+                </Label>
+                {isLookingUp && (
+                  <span className="text-xs text-primary font-medium flex items-center gap-1 animate-pulse">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Looking up online catalog...</span>
+                  </span>
+                )}
+              </div>
 
-            <div className="relative flex items-center">
-              <input
+              <Input
                 ref={nameInputRef}
                 type="text"
                 id="quick-add-product-name"
@@ -388,265 +410,247 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
                   setProductName(e.target.value);
                 }}
                 placeholder={isLookingUp ? 'Looking up product...' : 'e.g. Corona Extra, Absolut Vodka, Tata Salt'}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                className="h-9 text-xs font-medium"
                 autoComplete="off"
               />
             </div>
-          </div>
 
-          {/* Pack Size / Multiplier Selector (1-Tap Shadcn Pills) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-foreground flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Pack Size</span>
-              </label>
-              {packCount > 1 && (
-                <span className="text-[11px] font-mono font-medium text-primary">
-                  Inventory Multiplier: {packCount}x units
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {PACK_PRESETS.map((p) => {
-                const isSelected = packCount === p.count;
-                return (
-                  <button
-                    key={p.count}
-                    type="button"
-                    onClick={() => setPackCount(p.count)}
-                    className={`h-7 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 border ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                        : 'bg-muted/60 text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <span>{p.label}</span>
-                    {p.count > 1 && (
-                      <span
-                        className={`text-[10px] px-1 rounded-sm ${
-                          isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-background text-muted-foreground'
-                        }`}
-                      >
-                        {p.multiplierLabel}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Weight / Volume & Container Type (Dedicated Structured Fields) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Weight / Volume */}
+            {/* Pack Size / Multiplier Selector */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-foreground flex items-center gap-1">
-                  <Scale className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Weight / Volume</span>
-                </label>
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Pack Size</span>
+                </Label>
+                {packCount > 1 && (
+                  <span className="text-[11px] font-mono font-medium text-primary">
+                    Inventory Multiplier: {packCount}x units
+                  </span>
+                )}
               </div>
-              <input
-                type="text"
-                value={weightOrVolume}
-                onChange={(e) => setWeightOrVolume(e.target.value)}
-                placeholder="e.g. 750ml, 12 oz, 500g"
-                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors"
-              />
-              {/* Quick Pills */}
-              <div className="flex flex-wrap gap-1 pt-0.5">
-                {WEIGHT_PRESETS.slice(0, 5).map((w) => (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => setWeightOrVolume(w)}
-                    className={`text-[10px] px-1.5 py-0.5 rounded-sm border cursor-pointer transition-colors ${
-                      weightOrVolume.toLowerCase() === w.toLowerCase()
-                        ? 'bg-primary text-primary-foreground border-primary font-semibold'
-                        : 'bg-muted/50 border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    {w}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-1.5">
+                {PACK_PRESETS.map((p) => {
+                  const isSelected = packCount === p.count;
+                  return (
+                    <Button
+                      key={p.count}
+                      type="button"
+                      variant={isSelected ? 'default' : 'outline'}
+                      size="xs"
+                      onClick={() => setPackCount(p.count)}
+                      className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                    >
+                      {p.label}
+                      {p.count > 1 && (
+                        <span className={`text-[10px] ${isSelected ? 'opacity-80' : 'text-muted-foreground'}`}>
+                          ({p.multiplierLabel})
+                        </span>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Container / Type */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-foreground flex items-center gap-1">
+            {/* Container & Size / Volume Pills */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Bottle / Can / Box Type */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
                   <Package className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>Container Type</span>
-                </label>
+                </Label>
+                <div className="flex flex-wrap gap-1">
+                  {CONTAINER_PRESETS.slice(0, 5).map((type) => (
+                    <Button
+                      key={type}
+                      type="button"
+                      variant={containerType === type ? 'default' : 'outline'}
+                      size="xs"
+                      onClick={() => setContainerType(containerType === type ? '' : type)}
+                      className="h-6 px-2 text-[11px] cursor-pointer"
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <input
-                type="text"
-                value={containerType}
-                onChange={(e) => setContainerType(e.target.value)}
-                placeholder="e.g. Bottle, Can, Pouch"
-                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors"
-              />
-              {/* Quick Pills */}
-              <div className="flex flex-wrap gap-1 pt-0.5">
-                {CONTAINER_PRESETS.slice(0, 5).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setContainerType(c)}
-                    className={`text-[10px] px-1.5 py-0.5 rounded-sm border cursor-pointer transition-colors ${
-                      containerType.toLowerCase() === c.toLowerCase()
-                        ? 'bg-primary text-primary-foreground border-primary font-semibold'
-                        : 'bg-muted/50 border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
+
+              {/* Volume / Weight */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <Scale className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Size / Volume</span>
+                </Label>
+                <div className="flex flex-wrap gap-1">
+                  {WEIGHT_PRESETS.slice(0, 5).map((vol) => (
+                    <Button
+                      key={vol}
+                      type="button"
+                      variant={weightOrVolume === vol ? 'default' : 'outline'}
+                      size="xs"
+                      onClick={() => setWeightOrVolume(weightOrVolume === vol ? '' : vol)}
+                      className="h-6 px-2 text-[11px] cursor-pointer"
+                    >
+                      {vol}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Selling Price & Unit */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <label className="text-xs font-medium text-foreground flex items-center gap-1">
-                <span>Selling Price ({currencySymbol})</span>
-                <span className="text-destructive">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
-                  {currencySymbol}
-                </span>
-                <input
-                  ref={priceInputRef}
+            {/* Price & Category */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Price */}
+              <div className="space-y-1.5">
+                <Label htmlFor="quick-add-selling-price" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <span>Selling Price ({currencySymbol})</span>
+                  <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-xs font-semibold text-muted-foreground">
+                    {currencySymbol}
+                  </span>
+                  <Input
+                    ref={priceInputRef}
+                    type="number"
+                    id="quick-add-selling-price"
+                    step="0.01"
+                    min="0"
+                    value={sellingPrice}
+                    onChange={(e) => setSellingPrice(e.target.value)}
+                    placeholder="0.00"
+                    className="h-9 pl-7 text-xs font-semibold tabular-nums"
+                  />
+                </div>
+              </div>
+
+              {/* Category Selector */}
+              <div className="space-y-1.5">
+                <Label htmlFor="quick-add-category" className="text-xs font-semibold text-foreground">
+                  Category
+                </Label>
+                <Select
+                  value={category}
+                  onValueChange={(val) => val && setCategory(val)}
+                >
+                  <SelectTrigger id="quick-add-category" className="w-full h-9 text-xs">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories
+                      .filter((c) => c.name !== 'ALL' && c.name !== 'All Items')
+                      .map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Unit & Stock Qty */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">Base Unit</Label>
+                <Select
+                  value={unit}
+                  onValueChange={(val) => val && setUnit(val)}
+                >
+                  <SelectTrigger className="w-full h-9 text-xs">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pcs">pcs (Pieces)</SelectItem>
+                    <SelectItem value="bottle">bottle</SelectItem>
+                    <SelectItem value="can">can</SelectItem>
+                    <SelectItem value="pack">pack</SelectItem>
+                    <SelectItem value="box">box</SelectItem>
+                    <SelectItem value="kg">kg</SelectItem>
+                    <SelectItem value="gm">gm</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="quick-add-stock-qty" className="text-xs font-semibold text-foreground">
+                  Opening Stock
+                </Label>
+                <Input
                   type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full h-9 rounded-md border border-input bg-background pl-7 pr-3 text-xs font-semibold text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors tabular-nums"
-                  required
+                  id="quick-add-stock-qty"
+                  min="0"
+                  value={stockQty}
+                  onChange={(e) => setStockQty(e.target.value)}
+                  placeholder="10"
+                  className="h-9 text-xs font-medium tabular-nums"
                 />
               </div>
             </div>
 
+            {/* GST Tax Slab */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Unit</label>
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors cursor-pointer"
-              >
-                <option value="pcs">pcs</option>
-                <option value="pack">pack</option>
-                <option value="bottle">bottle</option>
-                <option value="can">can</option>
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-                <option value="ltr">ltr</option>
-                <option value="ml">ml</option>
-                <option value="box">box</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Category & Initial Stock */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors cursor-pointer"
-              >
-                {categories
-                  .filter((c) => c.name !== 'ALL' && c.name !== 'All Items')
-                  .map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                {categories.length === 0 && <option value="General">General</option>}
-              </select>
+              <Label className="text-xs font-semibold text-foreground">Tax / GST Slab</Label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {GST_SLABS.slice(0, 6).map((slab) => (
+                  <Button
+                    key={slab.rate}
+                    type="button"
+                    variant={gstRate === String(slab.rate) ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setGstRate(String(slab.rate));
+                      setCustomGstRate('');
+                    }}
+                    className="h-8 text-xs font-medium tabular-nums cursor-pointer"
+                  >
+                    {slab.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Initial Stock</label>
-              <input
-                type="number"
-                min="0"
-                value={stockQty}
-                onChange={(e) => setStockQty(e.target.value)}
-                placeholder="10"
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-medium text-foreground shadow-xs focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring transition-colors tabular-nums"
-              />
-            </div>
-          </div>
-
-          {/* GST Tax Slab */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">Tax / GST Slab</label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {GST_SLABS.slice(0, 6).map((slab) => (
-                <button
-                  key={slab.rate}
-                  type="button"
-                  onClick={() => {
-                    setGstRate(String(slab.rate));
-                    setCustomGstRate('');
-                  }}
-                  className={`h-8 px-2 rounded-md border text-xs font-medium transition-colors cursor-pointer tabular-nums flex items-center justify-center ${
-                    gstRate === String(slab.rate)
-                      ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                      : 'bg-muted/40 border-border text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {slab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Live Receipt Preview Banner */}
-          <div className="rounded-lg border border-border bg-muted/40 p-2.5 space-y-1">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-              Receipt & Bill Preview
-            </span>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-foreground truncate max-w-[70%]">
-                {formattedPreviewTitle}
+            {/* Live Receipt Preview Banner */}
+            <div className="rounded-lg border border-border bg-muted/40 p-2.5 space-y-1">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                Receipt & Bill Preview
               </span>
-              <span className="font-mono font-bold text-foreground">
-                {currencySymbol}
-                {sellingPrice ? parseFloat(sellingPrice).toFixed(2) : '0.00'}
-              </span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-foreground truncate max-w-[70%]">
+                  {formattedPreviewTitle}
+                </span>
+                <span className="font-mono font-bold text-foreground">
+                  {currencySymbol}
+                  {sellingPrice ? (parseFloat(sellingPrice) || 0).toFixed(2) : '0.00'}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-1 flex items-center gap-2">
-            <button
+          {/* Action Buttons in Footer */}
+          <DialogFooter className="p-4 border-t border-border bg-card shrink-0 flex-row items-center gap-2 sm:justify-end">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="flex-1 h-9 px-4 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-md text-xs transition-colors cursor-pointer"
+              className="flex-1 h-9 text-xs font-semibold cursor-pointer"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={!productName.trim() || !sellingPrice || parseFloat(sellingPrice) <= 0}
-              className="flex-2 h-9 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-[0.98]"
+              variant="default"
+              disabled={!productName.trim() || !sellingPrice || (parseFloat(sellingPrice) || 0) <= 0}
+              className="flex-[2] h-9 text-xs font-semibold gap-1.5 cursor-pointer shadow-xs"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Save & Add to Bill</span>
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

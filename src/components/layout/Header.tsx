@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-2xs">
+          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-2xs">
             A
           </div>
           <div className="flex items-center gap-1.5 min-w-0 truncate">

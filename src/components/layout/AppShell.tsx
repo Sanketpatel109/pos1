@@ -224,7 +224,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-[10px] bg-[#2563EB] text-white flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 rounded-[10px] bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
                     A
                   </div>
                   <span className="text-base font-bold text-[#0F172A]">
