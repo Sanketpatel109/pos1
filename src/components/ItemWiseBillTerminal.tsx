@@ -171,7 +171,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
         - Direct Primary Action Button: "Pay ₹{total.toFixed(2)} →"
         ========================================================================
       */}
-      <div className="order-1 md:order-2 w-full md:w-[40%] lg:w-[36%] xl:w-[34%] flex flex-col bg-card border-b md:border-b-0 border-border shrink-0 md:h-full md:max-h-full shadow-xs z-10">
+      <div className="order-1 md:order-2 w-full md:w-[40%] lg:w-[36%] xl:w-[34%] flex flex-col bg-accent border-b md:border-b-0 border-border shrink-0 md:h-full md:max-h-full shadow-xs z-10">
         <CurrentBill
           orderNumber={orderNumber}
           items={currentBillItems}

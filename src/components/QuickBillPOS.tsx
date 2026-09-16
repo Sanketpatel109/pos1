@@ -271,9 +271,9 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           Tablet/Desktop (>=768px): Right Column (order-2, md:w-5/12 or md:col-span-5, sticky full-height with border-l)
           ======================================================================
         */}
-        <div className="order-1 md:order-2 w-full md:w-[38%] lg:w-[35%] h-[345px] sm:h-[365px] md:h-full flex flex-col min-h-0 border-b md:border-b-0 md:border-l border-border overflow-hidden bg-card shrink-0">
+        <div className="order-1 md:order-2 w-full md:w-[38%] lg:w-[35%] h-[345px] sm:h-[365px] md:h-full flex flex-col min-h-0 border-b md:border-b-0 md:border-l border-border overflow-hidden bg-accent shrink-0">
           {/* Header Row: Current Bill & Bill #{displayBillNo} */}
-          <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
+          <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-accent shrink-0">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-foreground shrink-0" />
               <h2 className="text-xs sm:text-sm text-foreground font-semibold tracking-tight truncate">
@@ -295,7 +295,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
           {/* Scrollable Items Stack (Internal Scroll Only - never push CartSummary off screen) */}
           <div
             ref={itemsContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-3.5 divide-y divide-border bg-card scrollbar-thin"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-3.5 divide-y divide-border bg-accent scrollbar-thin"
           >
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-2 text-muted-foreground">
@@ -309,7 +309,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
                   key={item.id}
                   id={`bill-item-${item.id}`}
                   className={`py-1 sm:py-1.5 flex items-center justify-between gap-1.5 sm:gap-2 rounded-xs px-1 -mx-1 transition-colors ${
-                    idx === items.length - 1 ? 'bg-muted/30' : 'bg-card'
+                    idx === items.length - 1 ? 'bg-muted/30' : 'bg-transparent'
                   }`}
                 >
                   {/* Column 1: Item Name & Sub-details */}

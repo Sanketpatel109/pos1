@@ -109,14 +109,14 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
 
 
   return (
-    <div className="flex flex-col bg-card border-t md:border-t-0 border-border z-10 min-h-0 h-full overflow-hidden select-none">
+    <div className="flex flex-col bg-accent border-t md:border-t-0 border-border z-10 min-h-0 h-full overflow-hidden select-none">
       {/* 
         ========================================================================
         BILL HEADER: Fixed at top (stays completely still)
         India-First Terminology: "Current Bill" · "Bill #042"
         ========================================================================
       */}
-      <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-card shrink-0">
+      <div className="flex justify-between items-center px-3 py-2 sm:px-4 sm:py-2.5 border-b border-border bg-accent shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <ShoppingBag className="w-4 h-4 text-foreground shrink-0" />
           <h2 className="text-sm text-foreground font-semibold tracking-tight truncate">
@@ -156,7 +156,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
       */}
       <div
         ref={itemsContainerRef}
-        className="h-[176px] sm:h-[184px] md:h-auto md:flex-1 min-h-[176px] overflow-y-auto overscroll-contain px-2.5 sm:px-4 divide-y divide-border bg-card scrollbar-thin"
+        className="h-[176px] sm:h-[184px] md:h-auto md:flex-1 min-h-[176px] overflow-y-auto overscroll-contain px-2.5 sm:px-4 divide-y divide-border bg-accent scrollbar-thin"
       >
         {items.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center py-2 text-muted-foreground">

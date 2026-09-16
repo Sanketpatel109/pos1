@@ -85,7 +85,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
   const finalTotal = Math.max(0, subtotal - discountAmount) + taxAmount;
 
   return (
-    <div className="px-3 py-2 sm:px-4 sm:py-3.5 bg-card border-t border-border shrink-0 z-20 shadow-xs select-none relative">
+    <div className="px-3 py-2 sm:px-4 sm:py-3.5 bg-accent border-t border-border shrink-0 z-20 shadow-xs select-none relative">
       {/* Subtotals & GST Breakdown */}
       <div className="mb-1.5 sm:mb-2 text-xs text-muted-foreground space-y-1">
         {/* Items & Subtotal */}
