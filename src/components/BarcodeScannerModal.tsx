@@ -35,6 +35,18 @@ import { lookupBarcodeDetails, ProductLookupResult, getWebSearchUrl } from '../s
 import { posSound } from '../utils/sound';
 import { hardware } from '../utils/hardware';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
   getDeviceType,
   isMobileDevice,
   checkCameraPermission,
@@ -812,80 +824,65 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const isDesktop = deviceType === 'desktop';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[94vh] text-slate-900">
-        {/* Modal Top Header */}
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center shadow-xs">
-              <Scan className="w-4 h-4" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xl max-h-[96vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl">
+        {/* Header */}
+        <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+              <Scan className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+              <DialogTitle className="text-base font-bold text-foreground leading-tight">
                 Barcode & QR Scanner
-              </h2>
-              <p className="text-[10px] text-slate-500 font-medium">
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                 {isDesktop
                   ? 'USB Scanner • Photo upload • Manual SKU'
                   : 'Live camera • Photo upload • USB Laser Gun • Manual SKU'}
-              </p>
+              </DialogDescription>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-            title="Close Scanner"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Mode Selector Tabs */}
-        <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
-          <button
+        <div className="px-3.5 py-2 bg-muted/40 border-b border-border flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
+          <Button
             type="button"
+            variant={currentMode === 'add-to-bill' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setCurrentMode('add-to-bill')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              currentMode === 'add-to-bill'
-                ? 'bg-[#2563EB] text-white shadow-xs'
-                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-            }`}
+            className="gap-1.5 text-xs whitespace-nowrap"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             <span>Scan & Add to Bill</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant={currentMode === 'price-check' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setCurrentMode('price-check')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              currentMode === 'price-check'
-                ? 'bg-[#2563EB] text-white shadow-xs'
-                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-            }`}
+            className="gap-1.5 text-xs whitespace-nowrap"
           >
             <Tag className="w-3.5 h-3.5" />
             <span>Check Price & Info</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant={currentMode === 'search' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setCurrentMode('search')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              currentMode === 'search'
-                ? 'bg-[#2563EB] text-white shadow-xs'
-                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-            }`}
+            className="gap-1.5 text-xs whitespace-nowrap"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Scan to Filter Menu</span>
-          </button>
+          </Button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-[#F8FAFC]">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-card">
           {/* Camera Viewfinder Box */}
           <div
             className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[280px] select-none cursor-pointer touch-none"
@@ -893,7 +890,6 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            title="Double-tap to toggle 1x/2x zoom, or pinch to zoom"
           >
             {/* HTML5 QR Container */}
             <div
@@ -1297,181 +1293,169 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             )}
           </div>
 
-          {/* ============================================================ */}
-          {/* ALWAYS-VISIBLE Manual Input / Hardware Scanner Form           */}
-          {/* This is the CRITICAL fallback — always visible regardless     */}
-          {/* of camera state. USB scanner guns type directly here.         */}
-          {/* ============================================================ */}
+          {/* Manual Input / Hardware Scanner Form */}
           <form
             onSubmit={handleManualSubmit}
-            className={`flex items-center gap-2 bg-white border rounded-xl p-1.5 shadow-2xs transition-all ${
-              !cameraActive
-                ? 'border-[#2563EB] ring-2 ring-[#2563EB]/20'
-                : 'border-slate-200'
-            }`}
+            className="flex items-center gap-2"
           >
-            <Barcode className="w-5 h-5 text-slate-400 ml-1.5 shrink-0" />
-            <input
-              ref={manualInputRef}
-              type="text"
-              placeholder={
-                isDesktop
-                  ? 'Scan with USB gun or type Barcode / SKU...'
-                  : 'Enter or scan Barcode / SKU / QR text...'
-              }
-              value={manualCode}
-              onChange={(e) => setManualCode(e.target.value)}
-              className="w-full text-xs text-slate-900 placeholder-slate-400 bg-transparent focus:outline-hidden "
-              autoComplete="off"
-            />
-            <button
+            <div className="relative flex-1">
+              <Barcode className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                ref={manualInputRef}
+                type="text"
+                placeholder={
+                  isDesktop
+                    ? 'Scan with USB gun or type Barcode / SKU...'
+                    : 'Enter or scan Barcode / SKU / QR text...'
+                }
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                className="pl-9 h-10 text-xs bg-background"
+                autoComplete="off"
+              />
+            </div>
+            <Button
               type="submit"
               disabled={!manualCode.trim()}
-              className="px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 text-white rounded-lg text-xs font-bold cursor-pointer transition-all active:scale-95 shrink-0"
+              className="h-10 text-xs px-4"
             >
               Lookup
-            </button>
+            </Button>
           </form>
 
           {/* USB / Bluetooth Scanner Notice (shown when camera is off) */}
           {!cameraActive && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl">
-              <Keyboard className="w-4 h-4 text-blue-600 shrink-0" />
-              <p className="text-[11px] text-blue-800 font-medium leading-relaxed">
-                <strong>USB / Bluetooth scanner ready.</strong> Barcode guns are auto-detected — just scan and the code appears above.
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground">
+              <Keyboard className="w-4 h-4 text-foreground shrink-0" />
+              <p className="leading-relaxed">
+                <strong className="text-foreground font-semibold">USB / Bluetooth scanner ready.</strong> Barcode guns are auto-detected — just scan and the code appears above.
               </p>
             </div>
           )}
 
           {/* Real-time Scan Result Card */}
           {lastScannedResult && (
-            <div
-              className={`p-3 rounded-xl border transition-all ${
-                lastScannedResult.item
-                  ? 'bg-primary/10 border-primary/30'
-                  : 'bg-amber-50/80 border-amber-300'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      lastScannedResult.item
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-amber-500 text-white'
-                    }`}
-                  >
-                    {lastScannedResult.item ? (
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] font-bold text-slate-900 truncate max-w-[200px]">
-                        {lastScannedResult.code}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCode(lastScannedResult.code)}
-                        className="text-slate-500 hover:text-slate-800 p-0.5 rounded cursor-pointer"
-                        title="Copy code"
-                      >
-                        {copiedCode ? (
-                          <CheckCheck className="w-3 h-3 text-primary" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
-                      <span
-                        className={`text-[10px] px-2 py-0.2 rounded-full font-bold ${
-                          lastScannedResult.item
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-amber-200 text-amber-900'
-                        }`}
-                      >
-                        {lastScannedResult.actionTaken}
-                      </span>
+            <Card className="border-border bg-card shadow-xs">
+              <CardContent className="p-3.5 space-y-3">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        lastScannedResult.item
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-amber-500 text-white'
+                      }`}
+                    >
+                      {lastScannedResult.item ? (
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
+                      )}
                     </div>
-
-                    {lastScannedResult.item && (
-                      <div className="mt-1 flex items-baseline gap-2">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                          {lastScannedResult.item.name}
-                        </h4>
-                        <span className="text-xs font-extrabold text-primary">
-                          {currencySymbol}
-                          {(Number(lastScannedResult.item.price) || 0).toFixed(2)}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-foreground truncate max-w-[200px]">
+                          {lastScannedResult.code}
                         </span>
-                        <span className="text-[10px] text-slate-500">
-                          ({lastScannedResult.item.category})
-                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => handleCopyCode(lastScannedResult.code)}
+                          title="Copy code"
+                        >
+                          {copiedCode ? (
+                            <CheckCheck className="w-3 h-3 text-primary" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-muted-foreground" />
+                          )}
+                        </Button>
+                        <Badge
+                          variant={lastScannedResult.item ? 'default' : 'secondary'}
+                          className="text-[10px]"
+                        >
+                          {lastScannedResult.actionTaken}
+                        </Badge>
                       </div>
+
+                      {lastScannedResult.item && (
+                        <div className="mt-1 flex items-baseline gap-2">
+                          <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                            {lastScannedResult.item.name}
+                          </h4>
+                          <span className="text-xs font-extrabold text-primary">
+                            {currencySymbol}
+                            {(Number(lastScannedResult.item.price) || 0).toFixed(2)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({lastScannedResult.item.category})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Direct Action Buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {lastScannedResult.item && currentMode !== 'add-to-bill' && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (addItemCallback && lastScannedResult.item) {
+                            addItemCallback(lastScannedResult.item);
+                          }
+                        }}
+                        className="gap-1 text-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add</span>
+                      </Button>
+                    )}
+
+                    {!lastScannedResult.item && registerBarcodeCallback && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          registerBarcodeCallback(lastScannedResult.code);
+                          onClose();
+                        }}
+                        className="gap-1 text-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Register Item</span>
+                      </Button>
                     )}
                   </div>
                 </div>
 
-                {/* Direct Action Buttons */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {lastScannedResult.item && currentMode !== 'add-to-bill' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (addItemCallback && lastScannedResult.item) {
-                          addItemCallback(lastScannedResult.item);
-                        }
-                      }}
-                      className="px-2.5 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add</span>
-                    </button>
-                  )}
-
-                  {!lastScannedResult.item && registerBarcodeCallback && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        registerBarcodeCallback(lastScannedResult.code);
-                        onClose();
-                      }}
-                      className="px-2.5 py-1.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Register Item</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Unrecognized item: Quick Add to Bill as Custom Item option */}
-              {!lastScannedResult.item && onAddCustomBillItem && (
-                <div className="mt-2.5 pt-2 border-t border-amber-200/80 flex items-center gap-2">
-                  <span className="text-[11px] font-medium text-amber-900">Quick Add to Bill:</span>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex items-center border border-slate-300 rounded-lg bg-white px-2 py-0.5">
-                      <span className="text-xs font-bold text-slate-500">{currencySymbol}</span>
-                      <input
-                        type="number"
-                        placeholder="Price"
-                        value={customPriceInput}
-                        onChange={(e) => setCustomPriceInput(e.target.value)}
-                        className="w-16 text-xs font-bold text-slate-900 focus:outline-hidden ml-1"
-                      />
+                {/* Unrecognized item: Quick Add to Bill as Custom Item option */}
+                {!lastScannedResult.item && onAddCustomBillItem && (
+                  <div className="pt-2 border-t border-border flex items-center gap-2">
+                    <span className="text-xs font-medium text-foreground">Quick Add to Bill:</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center border border-input rounded-md bg-background px-2 py-0.5">
+                        <span className="text-xs font-bold text-muted-foreground">{currencySymbol}</span>
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          value={customPriceInput}
+                          onChange={(e) => setCustomPriceInput(e.target.value)}
+                          className="w-16 text-xs font-bold text-foreground focus:outline-hidden ml-1"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleAddAsCustomItem}
+                        disabled={!customPriceInput || parseFloat(customPriceInput) <= 0}
+                        className="text-xs h-7"
+                      >
+                        Add to Bill
+                      </Button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddAsCustomItem}
-                      disabled={!customPriceInput || parseFloat(customPriceInput) <= 0}
-                      className="px-2.5 py-1 bg-primary hover:bg-primary/90 disabled:opacity-40 text-primary-foreground text-xs font-bold rounded-lg cursor-pointer"
-                    >
-                      Add to Bill
-                    </button>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* Quick Demo Simulator Barcode Chips (Instant testing - Development only) */}
@@ -1529,34 +1513,33 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         </div>
 
         {/* Modal Bottom Action Footer */}
-        <div className="p-3 sm:px-4 sm:py-2.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
-          <div className="flex items-center justify-between sm:justify-start gap-2 text-xs text-slate-500">
+        <DialogFooter className="p-3 sm:px-4 sm:py-3 bg-muted/30 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+          <div className="flex items-center justify-between sm:justify-start gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <Keyboard className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
+              <Keyboard className="w-3.5 h-3.5 hidden sm:inline" />
               <span className="hidden sm:inline">Laser & Bluetooth barcode guns auto-detected</span>
             </div>
             {billItemCount > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold text-xs">
-                <span>In Bill:</span>
-                <span className="font-extrabold">{billItemCount} items • {currencySymbol}{billTotal.toFixed(2)}</span>
-              </span>
+              <Badge variant="secondary" className="font-semibold text-xs">
+                In Bill: {billItemCount} items • {currencySymbol}{billTotal.toFixed(2)}
+              </Badge>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
               id="btn-scanner-done"
               onClick={onClose}
-              className="w-full sm:w-auto px-5 py-2.5 sm:py-1.5 rounded-xl sm:rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs sm:text-sm cursor-pointer shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto font-bold text-xs sm:text-sm"
             >
               <span>Done Scanning</span>
-              <span className="opacity-75">•</span>
+              <span className="opacity-50 mx-1">•</span>
               <span>Back to Bill</span>
-            </button>
+            </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  X,
   PauseCircle,
   Play,
   Trash2,
@@ -8,15 +7,26 @@ import {
   Search,
   Clock,
   User,
-  ShoppingBag,
   ShoppingCart,
   ArrowRightLeft,
   Layers,
   AlertCircle,
   FileText,
-  CheckCircle2,
 } from 'lucide-react';
 import { Order, ShopSettings } from '../types';
+import { printThermalHtml } from '../utils/thermalPrinter';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export interface HeldOrdersModalProps {
   isOpen: boolean;
@@ -122,12 +132,10 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
     }
   };
 
-  const handleTriggerResume = (order: Order) => {
+  const handleResumeClick = (order: Order) => {
     if (currentCartCount > 0) {
-      // Prompt user to choose how to handle active cart
       setOrderToResume(order);
     } else {
-      // Active cart is empty - directly restore
       onResumeOrder(order, 'replace');
     }
   };
@@ -137,430 +145,460 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
     setOrderToDelete(null);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl w-full max-w-2xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-foreground animate-in zoom-in-95 duration-150">
-        {/* Modal Header */}
-        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border bg-muted/50 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-xs shrink-0">
-              <PauseCircle className="w-4 h-4 stroke-[2.5]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="font-extrabold text-sm sm:text-base text-foreground tracking-tight">
-                  Parked / Held Orders
-                </h2>
-                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                  {heldOrders.length} {heldOrders.length === 1 ? 'Order' : 'Orders'}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                Temporarily saved tickets waiting to be resumed or paid
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-            title="Close (Esc)"
-          >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+  const handlePrintSlip = (order: Order) => {
+    const itemsHtml = order.items
+      .map(
+        (i) => `
+        <div class="row" style="font-size: 10px; padding: 2px 0;">
+          <span>${i.quantity}x ${i.name}</span>
+          <span style="font-weight: bold;">${currencySymbol}${(i.unitPrice * i.quantity).toFixed(2)}</span>
         </div>
+      `
+      )
+      .join('');
 
-        {/* Search & Filter Bar */}
-        {heldOrders.length > 0 && (
-          <div className="px-4 py-2.5 sm:px-5 bg-card border-b border-border flex items-center gap-2 shrink-0">
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by order #, item name, note, or cashier..."
-                className="w-full pl-8 pr-3 py-1.5 bg-muted/50 border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-primary transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground font-bold cursor-pointer"
+    const slipHtml = `
+      <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+        <h3 class="font-extrabold uppercase">${shopSettings.shopName || 'MonoPOS'}</h3>
+        <div style="font-size: 10px; font-weight: bold; margin-top: 2px;">PARKED ORDER TOKEN</div>
+        <div style="font-size: 16px; font-weight: 900; margin: 4px 0;">#${order.orderNumber}</div>
+      </div>
+      <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
+        <div class="row"><span>Date:</span><span>${new Date(order.createdAt).toLocaleDateString()}</span></div>
+        <div class="row"><span>Time:</span><span>${formatTime(order.createdAt)}</span></div>
+        ${order.staffName ? `<div class="row"><span>Cashier:</span><span>${order.staffName}</span></div>` : ''}
+      </div>
+      <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+        ${itemsHtml}
+      </div>
+      <div class="row font-bold" style="font-size: 12px; margin-bottom: 8px;">
+        <span>TOTAL DUE:</span>
+        <span>${currencySymbol}${order.total.toFixed(2)}</span>
+      </div>
+      <div class="text-center" style="font-size: 9px; color: #555;">
+        Present this token at the register to resume your order.
+      </div>
+    `;
+
+    printThermalHtml(slipHtml, `Parked-Order-#${order.orderNumber}`);
+    setOrderToPrint(null);
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl">
+          {/* Header */}
+          <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+                  <PauseCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <DialogTitle className="text-base font-bold text-foreground leading-tight">
+                      Parked / Held Orders
+                    </DialogTitle>
+                    <Badge variant={heldOrders.length > 0 ? 'default' : 'secondary'} className="text-xs">
+                      {heldOrders.length} {heldOrders.length === 1 ? 'Order' : 'Orders'}
+                    </Badge>
+                  </div>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    Temporarily saved tickets waiting to be resumed or paid
+                  </DialogDescription>
+                </div>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Search & Filter Bar */}
+          {heldOrders.length > 0 && (
+            <div className="px-4 py-2.5 sm:px-5 bg-muted/30 border-b border-border flex items-center gap-2 shrink-0">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by order #, item name, note, or cashier..."
+                  className="pl-9 h-9 text-xs bg-background"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground font-bold cursor-pointer"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              {heldOrders.length > 1 && onClearAllHeld && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={onClearAllHeld}
+                  className="text-xs shrink-0"
                 >
-                  ×
-                </button>
+                  Clear All
+                </Button>
               )}
             </div>
+          )}
 
-            {heldOrders.length > 1 && onClearAllHeld && (
-              <button
-                onClick={onClearAllHeld}
-                className="text-xs font-bold text-destructive hover:bg-destructive/10 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0"
-              >
-                Clear All
-              </button>
+          {/* Informational Cart Notice */}
+          {currentCartCount > 0 && heldOrders.length > 0 && (
+            <div className="px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs text-primary flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4 text-primary" />
+                <span>
+                  Register currently has{' '}
+                  <strong className="font-bold">
+                    {currentCartCount} {currentCartCount === 1 ? 'item' : 'items'} ({currencySymbol}
+                    {currentCartTotal.toFixed(2)})
+                  </strong>
+                </span>
+              </div>
+              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 text-xs">
+                Safe Swap Available
+              </Badge>
+            </div>
+          )}
+
+          {/* Orders List Content */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-card">
+            {heldOrders.length === 0 ? (
+              <div className="py-12 sm:py-16 flex flex-col items-center justify-center text-center p-6 max-w-sm mx-auto">
+                <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center mb-3 text-muted-foreground">
+                  <PauseCircle className="w-6 h-6 stroke-[1.5]" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">
+                  No Orders Currently on Hold
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                  When a customer needs time to retrieve cash or an extra item, tap the{' '}
+                  <strong className="text-foreground font-semibold">Hold button</strong> in the bill
+                  terminal to park their ticket and immediately serve the next person in line.
+                </p>
+                <Card className="mt-5 text-left text-xs bg-muted/40 border-border w-full">
+                  <CardHeader className="p-3 pb-1.5">
+                    <CardTitle className="text-xs font-bold text-foreground">
+                      How Cashiers Use Hold:
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-0 text-muted-foreground">
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Cart is saved safely in memory & local storage</li>
+                      <li>Ticket counter advances for the next customer</li>
+                      <li>One-click resume restores items back to register</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <p className="text-sm font-semibold text-foreground">
+                  No parked orders match "{searchQuery}"
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Try searching by a different order number or cashier name
+                </p>
+              </div>
+            ) : (
+              filteredOrders.map((order) => {
+                const itemsCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
+                const relativeTime = formatRelativeTime(order.createdAt);
+                const exactTime = formatTime(order.createdAt);
+
+                return (
+                  <Card
+                    key={order.id}
+                    className="border-border hover:border-foreground/30 shadow-xs hover:shadow-sm transition-all"
+                  >
+                    <CardHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-border flex-row items-start justify-between gap-2 space-y-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="default" className="text-xs font-bold tracking-wider">
+                          Order #{order.orderNumber}
+                        </Badge>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                          <Clock className="w-3 h-3 text-muted-foreground" />
+                          <span>
+                            {relativeTime} ({exactTime})
+                          </span>
+                        </span>
+                        {order.staffName && (
+                          <Badge variant="secondary" className="text-xs gap-1 font-semibold">
+                            <User className="w-3 h-3 text-muted-foreground" />
+                            <span>{order.staffName}</span>
+                          </Badge>
+                        )}
+                        {(order as any).note && (
+                          <Badge variant="outline" className="text-xs font-medium">
+                            Note: {(order as any).note}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                          Total Due
+                        </span>
+                        <span className="text-base sm:text-lg font-extrabold text-foreground tabular-nums">
+                          {currencySymbol}
+                          {order.total.toFixed(2)}
+                        </span>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="p-3.5 sm:p-4 pt-3 space-y-3">
+                      {/* Items List Preview */}
+                      <div className="bg-muted/30 border border-border rounded-lg p-2.5">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground font-medium mb-1.5">
+                          <span>
+                            Items ({itemsCount} {itemsCount === 1 ? 'unit' : 'units'})
+                          </span>
+                          <span className="tabular-nums">
+                            Subtotal: {currencySymbol}
+                            {order.subtotal.toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          {order.items.map((item, idx) => (
+                            <span
+                              key={item.id || idx}
+                              className="bg-card border border-border rounded-md px-2 py-1 text-xs text-foreground font-medium flex items-center gap-1.5 shadow-2xs"
+                            >
+                              <Badge
+                                variant="default"
+                                className="h-4 w-4 p-0 text-[10px] font-bold flex items-center justify-center"
+                              >
+                                {item.quantity}
+                              </Badge>
+                              <span className="truncate max-w-[140px] sm:max-w-[200px]">
+                                {item.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {currencySymbol}
+                                {(item.unitPrice * item.quantity).toFixed(2)}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Card Actions Footer */}
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setOrderToDelete(order)}
+                            className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Discard</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setOrderToPrint(order)}
+                            className="text-xs text-muted-foreground hover:text-foreground gap-1"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Token</span>
+                          </Button>
+                        </div>
+
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleResumeClick(order)}
+                          className="gap-1.5 text-xs font-semibold shadow-xs"
+                        >
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Resume Ticket</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
-        )}
 
-        {/* Informational Cart Notice */}
-        {currentCartCount > 0 && heldOrders.length > 0 && (
-          <div className="px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs text-primary flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-1.5">
-              <ShoppingCart className="w-3.5 h-3.5 text-primary" />
-              <span>
-                Register currently has{' '}
-                <strong className="font-bold">
-                  {currentCartCount} {currentCartCount === 1 ? 'item' : 'items'} ({currencySymbol}
-                  {currentCartTotal.toFixed(2)})
-                </strong>
-              </span>
-            </div>
-            <span className="text-xs text-primary font-semibold bg-primary/20 px-2 py-0.5 rounded-md">
-              Safe Swap Available
-            </span>
-          </div>
-        )}
+          {/* Footer */}
+          <DialogFooter className="p-4 bg-muted/30 border-t border-border flex flex-row items-center justify-between shrink-0">
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Held orders are preserved in your station storage even if refreshed.
+            </p>
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Close (Esc)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Orders List Content */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 bg-card">
-          {heldOrders.length === 0 ? (
-            <div className="py-12 sm:py-16 flex flex-col items-center justify-center text-center p-6 max-w-sm mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-3.5 text-muted-foreground">
-                <PauseCircle className="w-7 h-7 stroke-[1.5]" />
-              </div>
-              <h3 className="text-sm sm:text-base font-extrabold text-foreground">
-                No Orders Currently on Hold
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                When a customer needs time to retrieve cash or an extra item, tap the{' '}
-                <strong className="text-foreground font-bold">Hold button</strong> in the bill
-                terminal to park their ticket and immediately serve the next person in line.
-              </p>
-              <div className="mt-5 p-3 rounded-xl bg-card border border-border text-left text-xs text-muted-foreground w-full">
-                <span className="font-bold text-foreground block mb-1">
-                  How Cashiers Use Hold:
-                </span>
-                <ul className="list-disc list-inside space-y-0.5 text-xs">
-                  <li>Cart is saved safely in memory & local storage</li>
-                  <li>Ticket counter advances for the next customer</li>
-                  <li>One-click resume restores items back to register</li>
-                </ul>
-              </div>
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <p className="text-xs font-bold text-foreground">
-                No parked orders match "{searchQuery}"
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Try searching by a different order number or cashier name
-              </p>
-            </div>
-          ) : (
-            filteredOrders.map((order) => {
-              const itemsCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
-              const relativeTime = formatRelativeTime(order.createdAt);
-              const exactTime = formatTime(order.createdAt);
-
-              return (
-                <div
-                  key={order.id}
-                  className="bg-card border border-border hover:border-foreground/30 rounded-2xl p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col gap-3"
-                >
-                  {/* Card Header: Order #, Time, Cashier, Amount */}
-                  <div className="flex items-start justify-between gap-2 border-b border-border pb-2.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="bg-primary text-primary-foreground font-bold text-xs px-2.5 py-1 rounded-lg tracking-wider">
-                        Order #{order.orderNumber}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
-                        <span>
-                          {relativeTime} ({exactTime})
-                        </span>
-                      </span>
-                      {order.staffName && (
-                        <span className="flex items-center gap-1 text-xs text-foreground bg-secondary px-2 py-0.5 rounded-md font-semibold">
-                          <User className="w-2.5 h-2.5 text-muted-foreground" />
-                          <span>{order.staffName}</span>
-                        </span>
-                      )}
-                      {(order as any).note && (
-                        <span className="text-xs bg-muted text-foreground border border-border px-2 py-0.5 rounded-md font-bold">
-                          Note: {(order as any).note}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-bold text-muted-foreground uppercase block">
-                        Total Due
-                      </span>
-                      <span className="text-base sm:text-lg font-black text-foreground tabular-nums">
-                        {currencySymbol}
-                        {order.total.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Items List Preview */}
-                  <div className="bg-muted/30 border border-border rounded-xl p-2.5">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground font-bold mb-1.5">
-                      <span>
-                        Items ({itemsCount} {itemsCount === 1 ? 'unit' : 'units'})
-                      </span>
-                      <span className="tabular-nums">
-                        Subtotal: {currencySymbol}
-                        {order.subtotal.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5">
-                      {order.items.map((item, idx) => (
-                        <span
-                          key={item.id || idx}
-                          className="bg-card border border-border rounded-lg px-2 py-1 text-xs text-foreground font-semibold flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <span className="bg-primary text-primary-foreground text-xs font-bold w-4 h-4 rounded flex items-center justify-center">
-                            {item.quantity}
-                          </span>
-                          <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                            {item.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground tabular-nums">
-                            {currencySymbol}
-                            {(item.unitPrice * item.quantity).toFixed(2)}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Card Actions Footer */}
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    {/* Left: Discard / Print Token */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setOrderToDelete(order)}
-                        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1"
-                        title="Discard held order"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Discard</span>
-                      </button>
-
-                      <button
-                        onClick={() => setOrderToPrint(order)}
-                        className="px-2.5 py-1.5 text-foreground hover:bg-muted rounded-xl transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1.5 border border-border"
-                        title="Print holding token slip for customer"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="hidden sm:inline">Holding Slip</span>
-                      </button>
-                    </div>
-
-                    {/* Right: Primary Resume Button */}
-                    <button
-                      onClick={() => handleTriggerResume(order)}
-                      className="px-3.5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Resume to Bill</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="px-4 py-3 bg-muted/50 border-t border-border flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-            Held orders are preserved in your station storage even if refreshed.
-          </span>
-          <button
-            onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 bg-white hover:bg-muted border border-border rounded-xl text-xs font-extrabold text-foreground transition-all cursor-pointer text-center"
-          >
-            Close (Esc)
-          </button>
-        </div>
-      </div>
-
-      {/* =========================================================================
-          SUB-MODAL: RESUME CONFLICT STRATEGY SELECTOR
-          Shown when active cart is NOT empty
-          ========================================================================= */}
-      {orderToResume && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-card rounded-2xl w-full max-w-md border border-border shadow-2xl p-5 text-foreground space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center gap-3 border-b border-border pb-3">
+      {/* Sub-Dialog: Cart Conflict (Swap / Merge / Discard) */}
+      <Dialog open={Boolean(orderToResume)} onOpenChange={(open) => !open && setOrderToResume(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl p-6">
+          <DialogHeader className="gap-2">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <AlertCircle className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm sm:text-base text-foreground">
+                <DialogTitle className="text-base font-bold text-foreground">
                   Active Cart is Not Empty
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                   You have <strong className="text-foreground">{currentCartCount} items ({currencySymbol}{currentCartTotal.toFixed(2)})</strong> currently in the register.
-                </p>
+                </DialogDescription>
               </div>
             </div>
+          </DialogHeader>
 
-            <p className="text-xs text-foreground font-medium leading-relaxed">
-              How would you like to handle your current cart when resuming{' '}
-              <strong className="text-foreground font-black">Order #{orderToResume.orderNumber}</strong>?
+          <div className="space-y-2.5 my-2">
+            <p className="text-xs text-muted-foreground">
+              Choose how to handle your active cart before resuming Order #{orderToResume?.orderNumber}:
             </p>
 
-            <div className="space-y-2">
-              {/* Option 1: Swap & Hold (Recommended) */}
-              <button
-                onClick={() => {
+            {/* Option 1: Swap & Hold */}
+            <Button
+              variant="default"
+              className="w-full h-auto p-3 flex items-start gap-3 text-left justify-start whitespace-normal"
+              onClick={() => {
+                if (orderToResume) {
                   onResumeOrder(orderToResume, 'swap');
                   setOrderToResume(null);
-                }}
-                className="w-full p-3 rounded-xl border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 text-left flex items-start gap-3 transition-all cursor-pointer shadow-xs group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-primary-foreground" />
+                }
+              }}
+            >
+              <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center shrink-0 mt-0.5">
+                <ArrowRightLeft className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider">
+                    Park Current & Resume #{orderToResume?.orderNumber}
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] ml-1">
+                    Recommended
+                  </Badge>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider">
-                      Park Current & Resume #{orderToResume.orderNumber}
-                    </span>
-                    <span className="text-xs font-bold bg-primary-foreground text-primary px-1.5 py-0.5 rounded">
-                      Recommended
-                    </span>
-                  </div>
-                  <p className="text-xs text-primary-foreground/80 mt-0.5">
-                    Your active cart of {currentCartCount} items will be safely placed on hold, and #{orderToResume.orderNumber} loaded immediately.
-                  </p>
-                </div>
-              </button>
+                <p className="text-xs text-primary-foreground/80 mt-1 font-normal leading-relaxed">
+                  Your active cart of {currentCartCount} items will be safely held, and #{orderToResume?.orderNumber} loaded immediately.
+                </p>
+              </div>
+            </Button>
 
-              {/* Option 2: Merge Carts */}
-              <button
-                onClick={() => {
+            {/* Option 2: Merge Carts */}
+            <Button
+              variant="outline"
+              className="w-full h-auto p-3 flex items-start gap-3 text-left justify-start whitespace-normal border-border"
+              onClick={() => {
+                if (orderToResume) {
                   onResumeOrder(orderToResume, 'merge');
                   setOrderToResume(null);
-                }}
-                className="w-full p-3 rounded-xl border border-border bg-card hover:bg-muted text-left flex items-start gap-3 transition-all cursor-pointer group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                  <Layers className="w-3.5 h-3.5 text-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-bold text-foreground block">
-                    Merge Items Together
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Combine the items from #{orderToResume.orderNumber} into your current cart into a single ticket.
-                  </p>
-                </div>
-              </button>
+                }
+              }}
+            >
+              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                <Layers className="w-4 h-4 text-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-bold text-foreground block">
+                  Merge Items Together
+                </span>
+                <p className="text-xs text-muted-foreground mt-1 font-normal leading-relaxed">
+                  Combine the items from #{orderToResume?.orderNumber} into your current cart into a single ticket.
+                </p>
+              </div>
+            </Button>
 
-              {/* Option 3: Discard Active Cart */}
-              <button
-                onClick={() => {
+            {/* Option 3: Discard Active Cart */}
+            <Button
+              variant="outline"
+              className="w-full h-auto p-3 flex items-start gap-3 text-left justify-start whitespace-normal border-destructive/30 hover:border-destructive hover:bg-destructive/10"
+              onClick={() => {
+                if (orderToResume) {
                   onResumeOrder(orderToResume, 'replace');
                   setOrderToResume(null);
-                }}
-                className="w-full p-3 rounded-xl border border-destructive/30 hover:border-destructive hover:bg-destructive/10 text-left flex items-start gap-3 transition-all cursor-pointer group"
-              >
-                <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-bold text-destructive block">
-                    Discard Current Cart & Resume
-                  </span>
-                  <p className="text-xs text-destructive/80 mt-0.5">
-                    Clear the current {currentCartCount} items permanently and load #{orderToResume.orderNumber}.
-                  </p>
-                </div>
-              </button>
-            </div>
-
-            <div className="pt-1 flex justify-end">
-              <button
-                onClick={() => setOrderToResume(null)}
-                className="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground rounded-xl transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
+                }
+              }}
+            >
+              <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-bold text-destructive block">
+                  Discard Current Cart & Resume
+                </span>
+                <p className="text-xs text-destructive/80 mt-1 font-normal leading-relaxed">
+                  Clear the current {currentCartCount} items permanently and load #{orderToResume?.orderNumber}.
+                </p>
+              </div>
+            </Button>
           </div>
-        </div>
-      )}
 
-      {/* =========================================================================
-          SUB-MODAL: CONFIRM DELETION
-          ========================================================================= */}
-      {orderToDelete && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-card rounded-2xl w-full max-w-sm border border-border shadow-2xl p-5 text-foreground space-y-3.5 animate-in zoom-in-95">
+          <DialogFooter className="mt-2">
+            <Button variant="ghost" size="sm" onClick={() => setOrderToResume(null)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sub-Dialog: Confirm Deletion */}
+      <Dialog open={Boolean(orderToDelete)} onOpenChange={(open) => !open && setOrderToDelete(null)}>
+        <DialogContent className="sm:max-w-sm bg-card border-border shadow-2xl p-5">
+          <DialogHeader className="gap-2">
             <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-foreground">
-                Discard Order #{orderToDelete.orderNumber}?
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                This will permanently delete the parked ticket with {orderToDelete.items.length} items ({currencySymbol}{orderToDelete.total.toFixed(2)}).
-              </p>
+              <DialogTitle className="text-base font-bold text-foreground">
+                Discard Order #{orderToDelete?.orderNumber}?
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground mt-1">
+                This will permanently delete the parked ticket with {orderToDelete?.items.length} items ({currencySymbol}{orderToDelete?.total.toFixed(2)}).
+              </DialogDescription>
             </div>
+          </DialogHeader>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-              <button
-                onClick={() => setOrderToDelete(null)}
-                className="px-3.5 py-2 text-xs font-bold text-muted-foreground hover:text-foreground rounded-xl hover:bg-secondary transition-colors cursor-pointer"
-              >
-                Keep Order
-              </button>
-              <button
-                onClick={() => handleConfirmDelete(orderToDelete.id)}
-                className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl text-xs font-extrabold shadow-xs transition-all cursor-pointer"
-              >
-                Yes, Discard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogFooter className="flex-row justify-end gap-2 mt-3">
+            <Button variant="outline" size="sm" onClick={() => setOrderToDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => orderToDelete && handleConfirmDelete(orderToDelete.id)}
+            >
+              Discard Order
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* =========================================================================
-          SUB-MODAL: PRINT HOLDING TOKEN SLIP
-          ========================================================================= */}
-      {orderToPrint && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-background/80 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-card rounded-2xl w-full max-w-xs border border-border shadow-2xl p-4 text-foreground space-y-3 animate-in zoom-in-95">
-            <div className="flex justify-between items-center border-b border-dashed border-border pb-2">
-              <div>
-                <h4 className="font-bold text-xs uppercase tracking-wider text-foreground">
-                  Holding Slip
-                </h4>
-                <p className="text-xs text-muted-foreground">Token for Customer</p>
-              </div>
-              <button
-                onClick={() => setOrderToPrint(null)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Sub-Dialog: Print Token Slip */}
+      <Dialog open={Boolean(orderToPrint)} onOpenChange={(open) => !open && setOrderToPrint(null)}>
+        <DialogContent className="sm:max-w-sm bg-card border-border shadow-2xl p-5">
+          <DialogHeader className="gap-1">
+            <DialogTitle className="text-base font-bold text-foreground">
+              Print Parked Order Token
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Thermal receipt slip for Order #{orderToPrint?.orderNumber}
+            </DialogDescription>
+          </DialogHeader>
 
-            {/* Thermal Ticket Preview */}
-            <div className="bg-muted/40 border border-border rounded-xl p-3 text-xs space-y-2 text-foreground">
+          {orderToPrint && (
+            <div className="bg-muted/40 border border-border rounded-xl p-3 text-xs space-y-2 text-foreground font-mono">
               <div className="text-center border-b border-dashed border-border pb-2">
-                <span className="font-bold text-xs block text-foreground">
+                <span className="font-bold text-xs block text-foreground font-sans">
                   {shopSettings.shopName}
                 </span>
-                <span className="text-xs text-muted-foreground block">PARKED ORDER TOKEN</span>
+                <span className="text-[10px] text-muted-foreground block">PARKED ORDER TOKEN</span>
                 <span className="text-base font-bold text-foreground block mt-1 bg-card border border-border rounded py-0.5">
                   #{orderToPrint.orderNumber}
                 </span>
@@ -582,7 +620,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                     <span className="truncate max-w-[150px]">
                       {i.quantity}x {i.name}
                     </span>
-                    <span className="tabular-nums">
+                    <span className="tabular-nums font-bold">
                       {currencySymbol}
                       {(i.unitPrice * i.quantity).toFixed(2)}
                     </span>
@@ -598,31 +636,28 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 </span>
               </div>
 
-              <p className="text-xs text-center text-muted-foreground italic pt-1">
+              <p className="text-[10px] text-center text-muted-foreground italic pt-1 font-sans">
                 Present this slip at register when ready to complete your purchase.
               </p>
             </div>
+          )}
 
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                onClick={() => setOrderToPrint(null)}
-                className="flex-1 py-2 text-xs font-bold text-muted-foreground hover:text-foreground border border-border rounded-xl cursor-pointer"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print Slip</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          <DialogFooter className="flex-row justify-end gap-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => setOrderToPrint(null)}>
+              Close
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => orderToPrint && handlePrintSlip(orderToPrint)}
+              className="gap-1.5"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print Slip</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
