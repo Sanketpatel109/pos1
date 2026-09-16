@@ -36,11 +36,6 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
-  private handleResetToDemo = () => {
-    localStorage.setItem('monopos_is_demo', 'true');
-    window.location.reload();
-  };
-
   public render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
@@ -78,22 +73,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 Resume Station
               </button>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  onClick={this.handleFullReload}
-                  className="py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Reload Page
-                </button>
-                <button
-                  onClick={this.handleResetToDemo}
-                  className="py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  Open Demo
-                </button>
-              </div>
+              <button
+                onClick={this.handleFullReload}
+                className="w-full py-2.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reload Page
+              </button>
             </div>
           </div>
         </div>

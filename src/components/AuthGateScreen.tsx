@@ -27,7 +27,6 @@ import { Badge } from '@/components/ui/badge';
 
 interface AuthGateScreenProps {
   onAuthenticated: () => void;
-  onDemoLogin?: () => void;
 }
 
 export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated }) => {

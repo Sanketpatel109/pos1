@@ -47,6 +47,7 @@ export interface AddProductModalProps {
     costPrice?: number;
     packagingOptions?: PackagingOption[];
   }) => void;
+  initialCategory?: string;
 }
 
 /**
@@ -115,6 +116,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   currencySymbol,
   canSeeCost,
   onSaveProduct,
+  initialCategory,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -289,6 +291,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       setProductType('packaged');
       setProdName('');
       const defaultCategory =
+        initialCategory ||
         categories.find((c) => c.name !== 'ALL' && c.name !== 'All Items')?.name || 'Fast Food';
       setProdCategory(defaultCategory);
       setProdPrice('');
@@ -305,7 +308,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     }
     setIsCompressing(false);
     setIsDragOver(false);
-  }, [isOpen, editingProduct, categories]);
+  }, [isOpen, editingProduct, categories, initialCategory]);
 
   if (!isOpen) return null;
 

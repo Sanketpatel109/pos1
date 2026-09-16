@@ -63,6 +63,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'categories' | 'products'>('categories');
   const [productFilter, setProductFilter] = useState<'ALL' | 'LOW_STOCK'>('ALL');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const isStaffRole = staffRole?.toUpperCase() === 'STAFF' || staffRole?.toUpperCase() === 'CASHIER';
   const canSeeCost = !isStaffRole && canViewCostPrice(staffRole, permissions);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -381,30 +382,49 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
           <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
             {categories.map((cat) => {
               const catName = (cat.name || '').trim();
-              const count =
-                catName.toUpperCase() === 'ALL' || catName.toLowerCase() === 'all items'
-                  ? catalog.length
-                  : catalog.filter((i) => (i.category || '').trim().toLowerCase() === catName.toLowerCase()).length;
+              const isAllCat = catName.toUpperCase() === 'ALL' || catName.toLowerCase() === 'all items';
+              const count = isAllCat
+                ? catalog.length
+                : catalog.filter((i) => (i.category || '').trim().toLowerCase() === catName.toLowerCase()).length;
+              const isSelected = selectedCategory
+                ? selectedCategory.toLowerCase() === catName.toLowerCase()
+                : isAllCat;
 
               return (
                 <Card
                   key={cat.id}
-                  className="p-3 flex items-center justify-between shadow-xs border-border hover:border-primary/50 transition-all bg-card"
+                  onClick={() => {
+                    if (isAllCat) {
+                      setSelectedCategory(null);
+                    } else {
+                      setSelectedCategory((prev) => (prev?.toLowerCase() === catName.toLowerCase() ? null : catName));
+                    }
+                    setActiveTab('products');
+                  }}
+                  className={`p-3 flex items-center justify-between shadow-xs border transition-all bg-card cursor-pointer ${
+                    isSelected
+                      ? 'border-primary ring-1 ring-primary/30 bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-md bg-muted text-foreground flex items-center justify-center font-bold text-xs shrink-0">
-                      <Layers className="w-4 h-4 text-muted-foreground" />
+                    <div className={`w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs shrink-0 ${
+                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                    }`}>
+                      <Layers className={`w-4 h-4 ${isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-xs text-foreground truncate">{cat.name}</h3>
+                      <h3 className={`font-semibold text-xs truncate ${isSelected ? 'text-primary font-bold' : 'text-foreground'}`}>
+                        {cat.name}
+                      </h3>
                       <p className="text-[10px] text-muted-foreground tabular-nums">
                         {count} items
                       </p>
                     </div>
                   </div>
 
-                  {cat.name !== 'ALL' && cat.name !== 'All Items' && (
-                    <div className="flex items-center gap-1 shrink-0">
+                  {!isAllCat && (
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="icon-xs"
                         variant="ghost"
@@ -548,11 +568,14 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
             </div>
 
             {/* Quick Stock Filters */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="xs"
-                variant={productFilter === 'ALL' ? 'default' : 'outline'}
-                onClick={() => setProductFilter('ALL')}
+                variant={productFilter === 'ALL' && !selectedCategory ? 'default' : 'outline'}
+                onClick={() => {
+                  setProductFilter('ALL');
+                  setSelectedCategory(null);
+                }}
                 className="h-7 px-3 text-xs font-medium cursor-pointer"
               >
                 All Items ({catalog.length})
@@ -569,6 +592,18 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Low Stock Alerts ({lowStockCount})</span>
               </Button>
+
+              {selectedCategory && (
+                <Badge
+                  variant="secondary"
+                  className="h-7 px-2.5 text-xs font-medium gap-1.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 cursor-pointer transition-colors"
+                  onClick={() => setSelectedCategory(null)}
+                  title="Click to clear category filter"
+                >
+                  <span>Category: {selectedCategory}</span>
+                  <X className="w-3.5 h-3.5" />
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -598,6 +633,13 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                       itemSku.includes(q);
 
                     if (!matchesSearch) return false;
+
+                    if (selectedCategory) {
+                      const isAll = selectedCategory.toUpperCase() === 'ALL' || selectedCategory.toLowerCase() === 'all items';
+                      if (!isAll && (item.category || '').trim().toLowerCase() !== selectedCategory.trim().toLowerCase()) {
+                        return false;
+                      }
+                    }
 
                     if (productFilter === 'LOW_STOCK') {
                       return (item.stock ?? 0) <= (item.lowStockThreshold ?? 5);
@@ -770,6 +812,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
         currencySymbol={currencySymbol}
         canSeeCost={canSeeCost}
         onSaveProduct={handleSaveProductModal}
+        initialCategory={selectedCategory || undefined}
       />
 
       {/* CSV Bulk Import Modal */}

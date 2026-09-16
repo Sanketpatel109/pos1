@@ -101,7 +101,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     const amountInRupees = billingCycle === 'ANNUAL' ? (planInfo?.annualPrice || 7999) : (planInfo?.price || 799);
 
     // If Razorpay key is configured, initiate real payment popup
-    if (razorpayKey.trim() && license.ownerUid !== 'demo_retail_owner') {
+    if (razorpayKey.trim()) {
       try {
         setIsProcessing(true);
         const scriptLoaded = await loadRazorpayCheckoutScript();

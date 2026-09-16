@@ -126,23 +126,8 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Firebase Auth & Cloud Sync State
-  const [isDemoUser, setIsDemoUser] = useState<boolean>(() => {
-    return localStorage.getItem('monopos_is_demo') === 'true';
-  });
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    if (localStorage.getItem('monopos_is_demo') === 'true') {
-      return {
-        uid: 'demo_retail_owner',
-        email: 'demo@monopos.retail',
-        displayName: 'Demo Retail Owner',
-        photoURL: '',
-      } as unknown as User;
-    }
-    return null;
-  });
-  const [authChecked, setAuthChecked] = useState<boolean>(() => {
-    return localStorage.getItem('monopos_is_demo') === 'true';
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
@@ -190,13 +175,11 @@ export default function App() {
   // Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!isDemoUser) {
-        setCurrentUser(user);
-      }
+      setCurrentUser(user);
       setAuthChecked(true);
     });
     return () => unsubscribe();
-  }, [isDemoUser]);
+  }, []);
 
   // When user signs in, fetch or create their tenant license
   useEffect(() => {
@@ -288,32 +271,14 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Handle demo store bypass for prospects & evaluators
-  const handleDemoLogin = () => {
-    localStorage.setItem('monopos_is_demo', 'true');
-    setIsDemoUser(true);
-    const demoUser = {
-      uid: 'demo_retail_owner',
-      email: 'demo@monopos.retail',
-      displayName: 'Demo Retail Owner',
-      photoURL: '',
-    } as unknown as User;
-    setCurrentUser(demoUser);
-    setAuthChecked(true);
-  };
+  // Clean up legacy demo key if present
+  useEffect(() => {
+    localStorage.removeItem('monopos_is_demo');
+  }, []);
 
   // Handle sign-out
   const handleSignOut = async () => {
     try {
-      if (isDemoUser) {
-        localStorage.removeItem('monopos_is_demo');
-        setIsDemoUser(false);
-        setCurrentUser(null);
-        clearCachedLicense();
-        setTenantLicense(null);
-        setLicenseStatus(null);
-        return;
-      }
       await signOut(auth);
       clearCachedLicense();
       setTenantLicense(null);
@@ -353,9 +318,6 @@ export default function App() {
 
   // Categories & Catalog State
   const [categories, setCategories] = useState<Category[]>(() => {
-    if (localStorage.getItem('monopos_is_demo') === 'true') {
-      return INITIAL_CATEGORIES;
-    }
     const saved = localStorage.getItem('monopos_categories');
     if (saved) {
       try {
@@ -367,14 +329,11 @@ export default function App() {
   });
 
   const [catalog, setCatalog] = useState<CatalogItem[]>(() => {
-    if (localStorage.getItem('monopos_is_demo') === 'true') {
-      return INITIAL_CATALOG;
-    }
     const saved = localStorage.getItem('monopos_live_catalog');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map((it: any) => ({
             ...it,
             price: Number(it.price !== undefined ? it.price : it.sellingPrice) || 0,
@@ -387,14 +346,11 @@ export default function App() {
 
   // Customers & Khata Ledger State
   const [customers, setCustomers] = useState<Customer[]>(() => {
-    if (localStorage.getItem('monopos_is_demo') === 'true') {
-      return SAMPLE_CUSTOMERS;
-    }
     const saved = localStorage.getItem('monopos_customers');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch {}
     }
     return [];
@@ -402,14 +358,11 @@ export default function App() {
 
   // Cash Drawer Entries
   const [cashEntries, setCashEntries] = useState<CashEntry[]>(() => {
-    if (localStorage.getItem('monopos_is_demo') === 'true') {
-      return SAMPLE_CASH_ENTRIES;
-    }
     const saved = localStorage.getItem('monopos_cash_entries');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch {}
     }
     return [];
@@ -444,9 +397,6 @@ export default function App() {
 
   // Orders and Invoices History
   const [orders, setOrders] = useState<Order[]>(() => {
-    if (localStorage.getItem('monopos_is_demo') === 'true') {
-      return SAMPLE_ORDERS;
-    }
     const saved = localStorage.getItem('monopos_orders');
     if (saved) {
       try {
@@ -552,6 +502,39 @@ export default function App() {
     localStorage.setItem('monopos_active_staff_id', activeStaffId);
   }, [activeStaffId]);
 
+  // Persist catalog, categories, customers, and cash entries locally for offline durability & instant reload
+  useEffect(() => {
+    try {
+      localStorage.setItem('monopos_live_catalog', JSON.stringify(catalog));
+    } catch (err) {
+      console.warn('Failed to persist live catalog:', err);
+    }
+  }, [catalog]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('monopos_categories', JSON.stringify(categories));
+    } catch (err) {
+      console.warn('Failed to persist categories:', err);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('monopos_customers', JSON.stringify(customers));
+    } catch (err) {
+      console.warn('Failed to persist customers:', err);
+    }
+  }, [customers]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('monopos_cash_entries', JSON.stringify(cashEntries));
+    } catch (err) {
+      console.warn('Failed to persist cash entries:', err);
+    }
+  }, [cashEntries]);
+
   // Real-time live Firestore synchronization across all 9 database points / collections
   useEffect(() => {
     testFirestoreConnection();
@@ -564,11 +547,19 @@ export default function App() {
     const unsubCatalog = listenToLiveCatalog((items) => {
       if (items.length > 0) {
         setCatalog(items);
+        try {
+          localStorage.setItem('monopos_live_catalog', JSON.stringify(items));
+        } catch {}
       }
     });
 
     const unsubCategories = listenToLiveCategories((cats) => {
-      if (cats.length > 0) setCategories(cats);
+      if (cats.length > 0) {
+        setCategories(cats);
+        try {
+          localStorage.setItem('monopos_categories', JSON.stringify(cats));
+        } catch {}
+      }
     });
 
     const unsubOrders = listenToLiveOrders((remoteOrders) => {
@@ -1414,13 +1405,25 @@ export default function App() {
       id: `cat-${Date.now()}`,
       name,
     };
-    setCategories((prev) => [...prev, newCat]);
+    setCategories((prev) => {
+      const updated = [...prev, newCat];
+      try {
+        localStorage.setItem('monopos_categories', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     liveSaveCategory(newCat).catch((err) => console.warn('Live save category:', err));
   };
 
   const handleUpdateCategory = (id: string, name: string) => {
     playSfx('tap');
-    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+    setCategories((prev) => {
+      const updated = prev.map((c) => (c.id === id ? { ...c, name } : c));
+      try {
+        localStorage.setItem('monopos_categories', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     const targetCat = categories.find((c) => c.id === id);
     if (targetCat) {
       liveSaveCategory({ ...targetCat, name }).catch((err) => console.warn('Live update category:', err));
@@ -1429,7 +1432,13 @@ export default function App() {
 
   const handleDeleteCategory = (id: string) => {
     playSfx('remove');
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    setCategories((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      try {
+        localStorage.setItem('monopos_categories', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     liveDeleteCategory(id).catch((err) => console.warn('Live delete category:', err));
   };
 
@@ -1439,7 +1448,13 @@ export default function App() {
       ...item,
       id: `item-${Date.now()}`,
     };
-    setCatalog((prev) => [newProd, ...prev]);
+    setCatalog((prev) => {
+      const updated = [newProd, ...prev];
+      try {
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     liveSaveProduct(newProd).catch((err) => console.warn('Live save product:', err));
   };
 
@@ -1485,7 +1500,13 @@ export default function App() {
       packagingOptions: packOption ? [packOption] : undefined,
       lowStockThreshold: 5,
     };
-    setCatalog((prev) => [newProd, ...prev]);
+    setCatalog((prev) => {
+      const updated = [newProd, ...prev];
+      try {
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     liveSaveProduct(newProd).catch((err) => console.warn('Live save quick product:', err));
     if (packOption) {
       handleAddItemWithPack(newProd, packOption);
@@ -1498,13 +1519,25 @@ export default function App() {
 
   const handleUpdateProduct = (item: CatalogItem) => {
     playSfx('tap');
-    setCatalog((prev) => prev.map((p) => (p.id === item.id ? item : p)));
+    setCatalog((prev) => {
+      const updated = prev.map((p) => (p.id === item.id ? item : p));
+      try {
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     liveSaveProduct(item).catch((err) => console.warn('Live update product:', err));
   };
 
   const handleDeleteProduct = (id: string) => {
     playSfx('remove');
-    setCatalog((prev) => prev.filter((p) => p.id !== id));
+    setCatalog((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     liveDeleteProduct(id).catch((err) => console.warn('Live delete product:', err));
   };
 
@@ -1525,7 +1558,11 @@ export default function App() {
           existingNames.add(catName.toLowerCase());
         }
       });
-      return [...prev, ...added];
+      const updatedCats = [...prev, ...added];
+      try {
+        localStorage.setItem('monopos_categories', JSON.stringify(updatedCats));
+      } catch {}
+      return updatedCats;
     });
 
     setCatalog((prev) => {
@@ -1579,7 +1616,11 @@ export default function App() {
         }
       });
 
-      return [...appendedItems, ...updatedList];
+      const finalItems = [...appendedItems, ...updatedList];
+      try {
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(finalItems));
+      } catch {}
+      return finalItems;
     });
   };
 
@@ -1919,7 +1960,6 @@ export default function App() {
     return (
       <AuthGateScreen
         onAuthenticated={() => {}}
-        onDemoLogin={handleDemoLogin}
       />
     );
   }
