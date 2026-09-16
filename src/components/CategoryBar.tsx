@@ -68,7 +68,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   return (
     <div
       id="category-search-bar"
-      className="w-full h-11 sm:h-12 px-2 sm:px-3 bg-accent border-b border-border flex items-center gap-1.5 sm:gap-2 shrink-0 select-none z-10"
+      className="w-full h-11 sm:h-12 px-2 sm:px-3 bg-card border-b border-border flex items-center gap-1.5 sm:gap-2 shrink-0 select-none z-10"
     >
       {isSearchOpen ? (
         /* ====================================================================

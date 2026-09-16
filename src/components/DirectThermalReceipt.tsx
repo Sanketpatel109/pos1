@@ -2,7 +2,6 @@ import React from 'react';
 import { Order, ShopSettings } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 import { printThermalHtml } from '../utils/thermalPrinter';
-import { Barcode128, generateBarcode128SvgString } from './Barcode128';
 
 export interface DirectThermalReceiptProps {
   order: Order | null;
@@ -254,17 +253,11 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
       </div>
 
       {/* Barcode & Footer */}
-      <div className="text-center pt-2 space-y-1 text-[10px]">
-        <div className="py-1 flex justify-center border-y border-dashed border-black">
-          <Barcode128
-            value={order.orderNumberFormatted ? `ORD-${order.orderNumberFormatted}` : `ORD-${order.orderNumber}`}
-            width={1.3}
-            height={32}
-            displayValue={true}
-            fontSize={10}
-          />
+      <div className="text-center pt-1 space-y-1 text-[10px]">
+        <div className="border-y border-black py-0.5 tracking-[0.2em] font-bold">
+          *ORD-{order.orderNumber}-2026*
         </div>
-        <p className="font-bold pt-1">*** THANK YOU, VISIT AGAIN ***</p>
+        <p className="font-bold">*** THANK YOU, VISIT AGAIN ***</p>
         {showCustomFooter && (
           <p className="text-[9px] text-zinc-600">{customFooter}</p>
         )}
@@ -476,12 +469,7 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
     </div>
 
     <div class="text-center" style="font-size: 9px; padding-top: 4px;">
-      <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 4px 0; display: flex; justify-content: center; align-items: center;">
-        ${generateBarcode128SvgString(
-          order.orderNumberFormatted ? `ORD-${order.orderNumberFormatted}` : `ORD-${order.orderNumber}`,
-          { width: 1.3, height: 32, displayValue: true, fontSize: 10 }
-        )}
-      </div>
+      <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 0; font-weight: bold; letter-spacing: 0.15em;">*ORD-${order.orderNumber}-2026*</div>
       <div style="font-weight: bold; margin-top: 4px;">*** THANK YOU, VISIT AGAIN ***</div>
       ${showCustomFooter ? `<div style="color: #666; margin-top: 2px;">${customFooter}</div>` : ''}
     </div>
