@@ -442,42 +442,28 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-6 gap-4 overflow-hidden">
           {/* Dialog Header */}
-          <DialogHeader className="p-5 pb-4 border-b border-border bg-card shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-base font-semibold text-foreground">
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  {editingProduct
-                    ? 'Update product specifications, pricing, tax rates, and inventory rules.'
-                    : 'Enter product details, pricing, tax rates, inventory, and packaging.'}
-                </DialogDescription>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="text-muted-foreground hover:text-foreground h-8 w-8"
-              >
-                <X className="w-4 h-4" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </div>
+          <DialogHeader>
+            <DialogTitle>
+              {editingProduct ? 'Edit Product' : 'Add New Product'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingProduct
+                ? 'Update product specifications, pricing, tax rates, and inventory rules.'
+                : 'Enter product details, pricing, tax rates, inventory, and packaging.'}
+            </DialogDescription>
           </DialogHeader>
 
           {/* Form Container */}
-          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 gap-4">
             {/* shadcn Tabs Navigation */}
             <Tabs
               value={activeTab}
               onValueChange={(val) => setActiveTab(val as any)}
               className="flex-1 flex flex-col min-h-0"
             >
-              <div className="px-5 pt-3 pb-0 border-b border-border bg-muted/20 shrink-0">
+              <div className="shrink-0">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="basic" className="text-xs font-medium gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
@@ -503,11 +489,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               </div>
 
               {/* Scrollable Tab Contents */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex-1 overflow-y-auto py-2 space-y-4">
                 {/* TAB 1: GENERAL & PRICING */}
                 <TabsContent value="basic" className="space-y-4 mt-0">
                   {/* Item Type Selector */}
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
                     <Button
                       type="button"
                       variant={productType === 'packaged' ? 'default' : 'ghost'}
@@ -538,7 +524,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                       onClick={() =>
                         setFieldScannerTarget({ type: 'primary', label: 'New Product' })
                       }
-                      className="w-full h-9 text-xs font-medium gap-2 border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
+                      className="w-full h-9 text-xs font-medium gap-2 border-dashed"
                     >
                       <Camera className="w-4 h-4" />
                       <span>Scan Barcode to Auto-Fill Details</span>
@@ -1054,7 +1040,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               </div>
 
               {/* Dialog Footer */}
-              <DialogFooter className="p-4 border-t border-border bg-card shrink-0 flex items-center justify-between gap-2">
+              <DialogFooter className="pt-2 flex items-center justify-between gap-2 sm:justify-between">
                 <Button
                   type="button"
                   variant="outline"
