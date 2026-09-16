@@ -58,7 +58,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         id={`product-card-${item.id}`}
         onClick={handleCardClick}
         disabled={disabled || (!hasPacks && isOutOfStock)}
-        aria-label={`Add ${item.name} to bill, ${currencySymbol}${item.price.toFixed(2)}`}
+        aria-label={`Add ${item.name} to bill, ${currencySymbol}${(Number(item.price) || 0).toFixed(2)}`}
         className={`group relative flex flex-col justify-between w-full p-1.5 sm:p-2 rounded-lg border border-border bg-card text-left transition-all active:scale-[0.98] select-none cursor-pointer shadow-xs ${
           isInCart
             ? 'border-primary ring-2 ring-primary/20 shadow-xs'
@@ -130,7 +130,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {item.category}
             </span>
             <div className="flex items-center gap-0.5 text-xs sm:text-sm font-medium text-foreground tabular-nums tracking-tight">
-              <span>{currencySymbol}{item.price.toFixed(2)}</span>
+              <span>{currencySymbol}{(Number(item.price) || 0).toFixed(2)}</span>
               {hasPacks && <ChevronDown className="w-3 h-3 text-muted-foreground" />}
             </div>
           </div>
@@ -214,7 +214,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm sm:text-base font-bold font-mono text-zinc-900 group-hover:text-blue-700">
-                    {currencySymbol}{item.price.toFixed(2)}
+                    {currencySymbol}{(Number(item.price) || 0).toFixed(2)}
                   </span>
                   <div className="w-7 h-7 rounded-xl bg-white border border-zinc-200 group-hover:border-blue-300 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center text-zinc-400 transition-all font-bold">
                     +
@@ -225,10 +225,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {/* Configured Packaging Options */}
               {item.packagingOptions!.map((pack) => {
                 const mult = pack.multiplier || 1;
-                const perUnit = pack.sellingPrice / mult;
+                const basePrice = Number(item.price) || 0;
+                const packPrice = Number(pack.sellingPrice) || 0;
+                const perUnit = mult > 0 ? packPrice / mult : packPrice;
                 const savingsPercent =
-                  item.price > 0 && pack.sellingPrice > 0
-                    ? Math.round(((item.price * mult - pack.sellingPrice) / (item.price * mult)) * 100)
+                  basePrice > 0 && packPrice > 0
+                    ? Math.round(((basePrice * mult - packPrice) / (basePrice * mult)) * 100)
                     : 0;
 
                 return (

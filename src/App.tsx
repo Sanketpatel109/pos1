@@ -374,7 +374,12 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.map((it: any) => ({
+            ...it,
+            price: Number(it.price !== undefined ? it.price : it.sellingPrice) || 0,
+          }));
+        }
       } catch {}
     }
     return [];
@@ -2548,7 +2553,7 @@ export default function App() {
               </span>
             </div>
             <p className="text-xs font-bold text-white truncate mt-0.5">
-              {laserScanNotification.productName} • {shopSettings.currencySymbol}{laserScanNotification.price.toFixed(2)}
+              {laserScanNotification.productName} • {shopSettings.currencySymbol}{(Number(laserScanNotification.price) || 0).toFixed(2)}
             </p>
             {laserScanNotification.stock !== undefined && (
               <p className="text-[11px] text-zinc-400 mt-0.5">

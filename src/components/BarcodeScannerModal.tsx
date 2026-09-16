@@ -1402,7 +1402,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         </h4>
                         <span className="text-xs font-extrabold text-primary">
                           {currencySymbol}
-                          {lastScannedResult.item.price.toFixed(2)}
+                          {(Number(lastScannedResult.item.price) || 0).toFixed(2)}
                         </span>
                         <span className="text-[10px] text-slate-500">
                           ({lastScannedResult.item.category})

@@ -149,7 +149,20 @@ export async function pullAllFromCloud(): Promise<Partial<CloudStoreData>> {
     if (!catalogSnap.empty) {
       const pulledCatalog: CatalogItem[] = [];
       catalogSnap.forEach((doc) => {
-        pulledCatalog.push(doc.data() as CatalogItem);
+        const raw = (doc.data() || {}) as any;
+        const rawPrice =
+          raw.price !== undefined
+            ? raw.price
+            : raw.sellingPrice !== undefined
+            ? raw.sellingPrice
+            : 0;
+        const parsedPrice = Number(rawPrice);
+        pulledCatalog.push({
+          ...raw,
+          id: doc.id,
+          name: raw.name || 'Unnamed Product',
+          price: isNaN(parsedPrice) ? 0 : parsedPrice,
+        } as CatalogItem);
       });
       result.catalog = pulledCatalog;
     }

@@ -172,7 +172,20 @@ export function listenToLiveCatalog(
     (snapshot) => {
       const items: CatalogItem[] = [];
       snapshot.forEach((d) => {
-        items.push({ id: d.id, ...d.data() } as CatalogItem);
+        const raw = (d.data() || {}) as any;
+        const rawPrice =
+          raw.price !== undefined
+            ? raw.price
+            : raw.sellingPrice !== undefined
+            ? raw.sellingPrice
+            : 0;
+        const parsedPrice = Number(rawPrice);
+        items.push({
+          ...raw,
+          id: d.id,
+          name: raw.name || 'Unnamed Product',
+          price: isNaN(parsedPrice) ? 0 : parsedPrice,
+        } as CatalogItem);
       });
       // Sort alphabetically by name
       items.sort((a, b) => a.name.localeCompare(b.name));

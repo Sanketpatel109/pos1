@@ -662,11 +662,11 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                           <div>
                             <span className="font-bold text-sm text-foreground tabular-nums tracking-tight font-medium">
                               {currencySymbol}
-                              {item.price.toFixed(2)}
+                              {(Number(item.price) || 0).toFixed(2)}
                             </span>
-                            {item.costPrice && canSeeCost && (
+                            {item.costPrice !== undefined && canSeeCost && (
                               <span className="text-[10px] text-muted-foreground block tabular-nums">
-                                Cost: {currencySymbol}{item.costPrice.toFixed(0)}
+                                Cost: {currencySymbol}{(Number(item.costPrice) || 0).toFixed(0)}
                               </span>
                             )}
                           </div>

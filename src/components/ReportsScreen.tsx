@@ -361,7 +361,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
         `"${item.unit || 'pcs'}"`,
         threshold,
         cost.toFixed(2),
-        item.price.toFixed(2),
+        (Number(item.price) || 0).toFixed(2),
         totalValuation.toFixed(2),
         status,
       ];

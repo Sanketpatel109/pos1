@@ -277,7 +277,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                 <div className="text-right shrink-0">
                   <div className="text-2xl font-black text-zinc-900">
                     {currencySymbol}
-                    {selectedProduct.price.toFixed(2)}
+                    {(Number(selectedProduct.price) || 0).toFixed(2)}
                   </div>
                   <span className="text-[10px] text-zinc-500 font-medium">Selling Price (incl. tax)</span>
                 </div>
@@ -517,7 +517,7 @@ export const PriceCheckModal: React.FC<PriceCheckModalProps> = ({
                 className="px-4 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
-                <span>Add to Bill ({currencySymbol}{selectedProduct.price.toFixed(2)})</span>
+                <span>Add to Bill ({currencySymbol}{(Number(selectedProduct.price) || 0).toFixed(2)})</span>
               </button>
             )}
           </div>
