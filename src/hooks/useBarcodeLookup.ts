@@ -11,6 +11,7 @@ export interface BarcodeLookupProduct {
   containerType?: string;
   packCount?: number;
   packName?: string;
+  suggestedPrice?: number;
 }
 
 export interface BarcodeLookupState {
@@ -211,6 +212,7 @@ export const useBarcodeLookup = (barcode?: string, enabled: boolean = true) => {
               packName: packInfo.packName,
               category: res.category || '',
               imageUrl: res.imageUrl || '',
+              suggestedPrice: res.suggestedPrice,
             },
             error: null,
           });

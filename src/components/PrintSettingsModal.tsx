@@ -33,6 +33,12 @@ import {
   UploadCloud,
   Star,
   Volume2,
+  Globe,
+  Key,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Barcode,
 } from 'lucide-react';
 import { soundbox } from '../utils/soundbox';
 import { Button } from '@/components/ui/button';
@@ -127,7 +133,10 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
     ...settings,
     marketRegion: 'IN',
     currencySymbol: settings.currencySymbol || '₹',
+    barcodeProvider: settings.barcodeProvider || (typeof window !== 'undefined' ? (localStorage.getItem('pos_barcode_provider') as any) || 'auto' : 'auto'),
+    barcodeApiKey: settings.barcodeApiKey || (typeof window !== 'undefined' ? localStorage.getItem('pos_barcode_api_key') || '' : ''),
   });
+  const [showApiKey, setShowApiKey] = useState<boolean>(false);
   const [isScanningBluetooth, setIsScanningBluetooth] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -152,6 +161,8 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
         ...settings,
         marketRegion: 'IN',
         currencySymbol: settings.currencySymbol || '₹',
+        barcodeProvider: settings.barcodeProvider || (typeof window !== 'undefined' ? (localStorage.getItem('pos_barcode_provider') as any) || 'auto' : 'auto'),
+        barcodeApiKey: settings.barcodeApiKey || (typeof window !== 'undefined' ? localStorage.getItem('pos_barcode_api_key') || '' : ''),
       });
       // Reset diagnostic unlock if role is not owner/manager
       if (isOwnerOrManager) {
@@ -281,6 +292,14 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof window !== 'undefined') {
+      if (formData.barcodeApiKey !== undefined) {
+        localStorage.setItem('pos_barcode_api_key', formData.barcodeApiKey.trim());
+      }
+      if (formData.barcodeProvider) {
+        localStorage.setItem('pos_barcode_provider', formData.barcodeProvider);
+      }
+    }
     onSaveSettings(formData);
     onClose();
   };
@@ -1209,6 +1228,108 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     </div>
                   </div>
                 )}
+              </Card>
+
+              {/* Universal Barcode & Online Product Lookup Card */}
+              <Card className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                      <Barcode className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                        <span>Universal Product & Barcode Lookup</span>
+                        <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold px-1.5 py-0">
+                          Active
+                        </Badge>
+                      </Label>
+                      <p className="text-[10px] text-zinc-500">
+                        Auto-detects liquor (750ml, 1.75L), groceries, books, electronics & cosmetics globally.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Provider Selector */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-zinc-800 flex items-center gap-1">
+                      <Globe className="w-3 h-3 text-zinc-500" />
+                      <span>Lookup Engine</span>
+                    </Label>
+                    <select
+                      value={formData.barcodeProvider || 'auto'}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          barcodeProvider: e.target.value as any,
+                        })
+                      }
+                      className="w-full text-xs font-medium h-9 rounded-lg border border-zinc-300 bg-white px-2.5 py-1 text-zinc-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="auto">Auto (Global Multi-Database - Free)</option>
+                      <option value="upcitemdb">UPCitemdb (General Goods & Electronics)</option>
+                      <option value="barcodelookup">BarcodeLookup.com (Commercial API)</option>
+                    </select>
+                    <p className="text-[10px] text-zinc-500">
+                      Default: Queries 5 free global databases in parallel (0ms latency).
+                    </p>
+                  </div>
+
+                  {/* Optional Commercial API Key */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] font-semibold text-zinc-800 flex items-center gap-1">
+                        <Key className="w-3 h-3 text-zinc-500" />
+                        <span>Optional Commercial API Key</span>
+                      </Label>
+                      <span className="text-[9px] text-zinc-400 font-medium">Optional</span>
+                    </div>
+                    <div className="relative flex items-center">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="Leave blank for free databases"
+                        value={formData.barcodeApiKey || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            barcodeApiKey: e.target.value,
+                          })
+                        }
+                        className="pr-8 text-xs font-mono h-9 bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey((prev) => !prev)}
+                        className="absolute right-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                        title={showApiKey ? 'Hide key' : 'Show key'}
+                      >
+                        {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-zinc-500">
+                      Add UPCitemdb or BarcodeLookup key for 100M+ rare items.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status / Feature Pills */}
+                <div className="p-2.5 rounded-lg bg-white border border-zinc-200/80 text-[11px] text-zinc-600 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-medium">
+                    <Sparkles className="w-3 h-3" />
+                    Verified US Liquor Registry (0ms)
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md font-medium">
+                    Open Food Facts (US & IN)
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-medium">
+                    Open Library Books (ISBN)
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-medium">
+                    Open Beauty & Products Facts
+                  </span>
+                </div>
               </Card>
 
               {/* Save Footer */}

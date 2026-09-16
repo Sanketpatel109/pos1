@@ -9,10 +9,13 @@ import {
   Package,
   Layers,
   Scale,
+  Globe,
+  ExternalLink,
 } from 'lucide-react';
 import { Category } from '../types';
 import { GST_SLABS } from '../constants/taxRates';
 import { useBarcodeLookup } from '../hooks/useBarcodeLookup';
+import { getWebSearchUrl } from '../services/barcodeLookup';
 
 export interface QuickAddProductModalProps {
   isOpen: boolean;
@@ -59,18 +62,21 @@ const PACK_PRESETS = [
 
 const WEIGHT_PRESETS = [
   '750ml',
+  '1.75L',
   '1L',
   '375ml',
-  '1.75L',
-  '500ml',
+  '50ml',
+  '200ml',
   '355ml',
+  '500ml',
   '12 oz',
   '16 oz',
+  '24 oz',
   '500g',
   '1kg',
 ];
 
-const CONTAINER_PRESETS = ['Bottle', 'Can', 'Pack', 'Pouch', 'Box', 'Jar', 'Case'];
+const CONTAINER_PRESETS = ['Bottle', 'Can', 'Pack', 'Case', 'Pouch', 'Box', 'Jar'];
 
 export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   isOpen,
@@ -153,6 +159,11 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
       }
       if (lookupProduct.containerType) {
         setContainerType(lookupProduct.containerType);
+        if (lookupProduct.containerType === 'Bottle') {
+          setUnit('bottle');
+        } else if (lookupProduct.containerType === 'Can') {
+          setUnit('can');
+        }
       }
 
       // Auto-populate Name
@@ -160,16 +171,37 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
         setProductName(lookupProduct.title);
         setFoundBadge(lookupProduct.brand || 'Product Found');
 
-        if (
-          lookupProduct.category &&
-          categories.some(
-            (c) => c.name.toLowerCase() === lookupProduct.category?.toLowerCase()
-          )
-        ) {
-          setCategory(lookupProduct.category);
+        // Pre-fill suggested retail price if available
+        if (lookupProduct.suggestedPrice) {
+          setSellingPrice(String(lookupProduct.suggestedPrice));
         }
 
-        // Auto-focus Selling Price input
+        // Match category with store POS categories
+        if (lookupProduct.category) {
+          const directMatch = categories.find(
+            (c) => c.name.toLowerCase() === lookupProduct.category?.toLowerCase()
+          );
+          if (directMatch) {
+            setCategory(directMatch.name);
+          } else {
+            const lowerCat = lookupProduct.category.toLowerCase();
+            const liquorCat = categories.find((c) => /liquor|spirits|alcohol/i.test(c.name));
+            const beerCat = categories.find((c) => /beer|wine/i.test(c.name));
+            const drinksCat = categories.find((c) => /drinks|beverages/i.test(c.name));
+
+            if (/liquor|spirits|whiskey|vodka|tequila|rum|cognac/i.test(lowerCat) && liquorCat) {
+              setCategory(liquorCat.name);
+            } else if (/beer|wine/i.test(lowerCat) && (beerCat || liquorCat)) {
+              setCategory(beerCat ? beerCat.name : liquorCat!.name);
+            } else if (drinksCat) {
+              setCategory(drinksCat.name);
+            } else {
+              setCategory(lookupProduct.category);
+            }
+          }
+        }
+
+        // Auto-focus Selling Price input if name is pre-filled, else focus name
         setTimeout(() => {
           if (priceInputRef.current) {
             priceInputRef.current.focus();
@@ -306,6 +338,19 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             <span className="font-mono font-medium tracking-wider tabular-nums">
               {activeBarcode || 'NO BARCODE'}
             </span>
+            {activeBarcode && (
+              <a
+                href={getWebSearchUrl(activeBarcode)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors ml-1 underline underline-offset-2"
+                title="Search web / Google for this barcode"
+              >
+                <Globe className="w-3 h-3" />
+                <span>Search Web</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            )}
           </div>
           {foundBadge && (
             <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium border border-primary/20">

@@ -25,12 +25,15 @@ import {
   WifiOff,
   ZoomIn,
   Loader2,
+  Globe,
+  ExternalLink,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { CatalogItem, BillItem, PackagingOption } from '../types';
 import { resolveBarcodeMatch } from '../utils/barcodeResolver';
-import { lookupBarcodeDetails, ProductLookupResult } from '../services/barcodeLookup';
+import { lookupBarcodeDetails, ProductLookupResult, getWebSearchUrl } from '../services/barcodeLookup';
 import { posSound } from '../utils/sound';
+import { hardware } from '../utils/hardware';
 import {
   getDeviceType,
   isMobileDevice,
@@ -44,6 +47,8 @@ import {
   toggleTorch as applyTorch,
   isZoomSupported,
   applyZoom,
+  applyCameraZoom,
+  getDefaultZoomForDevice,
   createHardwareBarcodeDetector,
   detectBarcodeFromImage,
   type CameraPermissionState,
@@ -135,8 +140,16 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [torchOn, setTorchOn] = useState<boolean>(false);
   const [torchSupported, setTorchSupported] = useState<boolean>(false);
-  const [zoomSupported, setZoomSupported] = useState<boolean>(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const isMobile = typeof window !== 'undefined' && isMobileDevice();
+  const [zoomSupported, setZoomSupported] = useState<boolean>(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(() =>
+    typeof window !== 'undefined' ? getDefaultZoomForDevice() : 1
+  );
+  const [zoomToast, setZoomToast] = useState<string | null>(null);
+  const zoomToastTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTapTimeRef = useRef<number>(0);
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialPinchZoomRef = useRef<number>(1);
   const [availableCameras, setAvailableCameras] = useState<CameraInfo[]>([]);
   const [hasMultipleCams, setHasMultipleCams] = useState<boolean>(false);
 
@@ -273,6 +286,15 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       });
     }
   }, [catalog, currentMode, currencySymbol, addItemCallback, searchItemCallback, onClose]);
+
+  // Listen to physical laser scanner guns & Bluetooth HID scanners while modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const unsubscribe = hardware.onLaserScan((scannedCode) => {
+      handleCodeDetected(scannedCode);
+    });
+    return () => unsubscribe();
+  }, [isOpen, handleCodeDetected]);
 
   // Helper to ensure video element plays inline with correct attributes on iOS Safari
   const enforceVideoPlayback = useCallback(() => {
@@ -486,18 +508,19 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               handleCodeDetected(result.rawValue);
             }
           }
-        }, 75);
+        }, 50);
         hardwareTimerRef.current = timer;
       });
 
-      // Step 4: Check Torch and Digital Zoom capabilities
+      // Step 4: Check Torch and Digital Zoom capabilities (Default 2x for phones, 1x for tablets/desktops)
       setTimeout(() => {
         const track = getActiveVideoTrack(scannerContainerId);
         setTorchSupported(checkTorchSupport(track));
-        const hasZoom = isZoomSupported(track);
-        setZoomSupported(hasZoom);
-        setZoomLevel(1);
-      }, 500);
+        setZoomSupported(true);
+        const defaultZoom = getDefaultZoomForDevice();
+        setZoomLevel(defaultZoom);
+        applyCameraZoom(scannerContainerId, track, defaultZoom);
+      }, 350);
 
       // Step 5: Enumerate cameras for toggle button
       try {
@@ -549,17 +572,82 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }
   }, [torchOn]);
 
-  // Toggle digital zoom (1x / 2x for small product barcodes)
-  const handleToggleZoom = useCallback(async () => {
-    const track = getActiveVideoTrack(scannerContainerId);
-    if (!track) return;
+  // Feedback toast banner for user zoom actions
+  const showZoomFeedback = useCallback((text: string) => {
+    if (zoomToastTimerRef.current) clearTimeout(zoomToastTimerRef.current);
+    setZoomToast(text);
+    zoomToastTimerRef.current = setTimeout(() => {
+      setZoomToast(null);
+    }, 850);
+  }, []);
 
+  // Set explicit digital zoom level (1x, 2x, 3x)
+  const handleSetZoom = useCallback(async (targetZoom: number) => {
+    const track = getActiveVideoTrack(scannerContainerId);
+    await applyCameraZoom(scannerContainerId, track, targetZoom);
+    setZoomLevel(targetZoom);
+  }, []);
+
+  // Toggle digital zoom (1x -> 2x -> 3x -> 1x)
+  const handleToggleZoom = useCallback(async () => {
+    const nextZoom = zoomLevel === 1 ? 2 : zoomLevel === 2 ? 3 : 1;
+    await handleSetZoom(nextZoom);
+    showZoomFeedback(`${nextZoom}x Zoom`);
+  }, [zoomLevel, handleSetZoom, showZoomFeedback]);
+
+  // Double-tap or double-click to toggle between 1x (wide) and 2x (sharp macro)
+  const handleViewfinderDoubleTap = useCallback(() => {
     const nextZoom = zoomLevel === 1 ? 2 : 1;
-    const ok = await applyZoom(track, nextZoom);
-    if (ok) {
-      setZoomLevel(nextZoom);
+    handleSetZoom(nextZoom);
+    showZoomFeedback(`${nextZoom}x Zoom`);
+  }, [zoomLevel, handleSetZoom, showZoomFeedback]);
+
+  // Touch gesture handlers for mobile pinch-to-zoom and double-tap
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialPinchDistRef.current = dist;
+      initialPinchZoomRef.current = zoomLevel;
     }
   }, [zoomLevel]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && initialPinchDistRef.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = dist / initialPinchDistRef.current;
+      const raw = Math.min(Math.max(initialPinchZoomRef.current * ratio, 1), 3);
+      const rounded = Math.round(raw * 10) / 10;
+      const track = getActiveVideoTrack(scannerContainerId);
+      applyCameraZoom(scannerContainerId, track, rounded);
+      setZoomLevel(rounded);
+    }
+  }, [zoomLevel]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (initialPinchDistRef.current !== null && e.touches.length < 2) {
+      initialPinchDistRef.current = null;
+      showZoomFeedback(`${Math.round(zoomLevel * 10) / 10}x Zoom`);
+      return;
+    }
+
+    // Single finger release: check for double tap (< 320ms between taps)
+    if (e.changedTouches.length === 1 && !initialPinchDistRef.current) {
+      const now = Date.now();
+      if (now - lastTapTimeRef.current < 320) {
+        e.preventDefault();
+        handleViewfinderDoubleTap();
+        lastTapTimeRef.current = 0;
+      } else {
+        lastTapTimeRef.current = now;
+      }
+    }
+  }, [zoomLevel, handleViewfinderDoubleTap, showZoomFeedback]);
 
   // Stop Camera Scanner with explicit track cleanup
   const stopCameraScanner = useCallback(async () => {
@@ -570,6 +658,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (hardwareTimerRef.current) {
       clearInterval(hardwareTimerRef.current);
       hardwareTimerRef.current = null;
+    }
+    if (zoomToastTimerRef.current) {
+      clearTimeout(zoomToastTimerRef.current);
+      zoomToastTimerRef.current = null;
     }
     isScanningRef.current = false;
 
@@ -587,6 +679,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     releaseAllCameraTracks();
     setTorchOn(false);
     setZoomLevel(1);
+    setZoomToast(null);
     setCameraActive(false);
     setIsScanning(false);
   }, []);
@@ -794,12 +887,27 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-[#F8FAFC]">
           {/* Camera Viewfinder Box */}
-          <div className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[280px]">
+          <div
+            className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[280px] select-none cursor-pointer touch-none"
+            onDoubleClick={handleViewfinderDoubleTap}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            title="Double-tap to toggle 1x/2x zoom, or pinch to zoom"
+          >
             {/* HTML5 QR Container */}
             <div
               id={scannerContainerId}
               className="w-full h-full min-h-[220px] max-h-[280px] flex items-center justify-center overflow-hidden relative [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[280px] [&_video]:!object-cover [&_video]:!rounded-xl [&_video]:!block [&#qr-shaded-region]:!hidden"
             ></div>
+
+            {/* Transient Zoom Toast Badge */}
+            {zoomToast && (
+              <div className="absolute z-25 pointer-events-none px-3.5 py-1.5 rounded-full bg-black/90 border border-white/30 text-white font-bold text-xs backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-90 duration-150 flex items-center gap-1.5">
+                <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
+                <span>{zoomToast}</span>
+              </div>
+            )}
 
             {/* Overlaid Animated Targeting Reticle */}
             {cameraActive && isScanning && (
@@ -918,21 +1026,47 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   </button>
                 )}
 
-                {/* Digital Zoom toggle (1x / 2x for small product barcodes) */}
+                {/* Digital Zoom toggle (1x, 2x Default for phone, 3x) */}
                 {zoomSupported && (
-                  <button
-                    type="button"
-                    onClick={handleToggleZoom}
-                    className={`text-white text-[10px] px-2 py-1 rounded-md font-bold border backdrop-blur-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all ${
-                      zoomLevel > 1
-                        ? 'bg-blue-600 border-blue-400 text-white'
-                        : 'bg-black/75 hover:bg-black border-white/20'
-                    }`}
-                    title={zoomLevel > 1 ? 'Reset to 1x Zoom' : 'Zoom 2x for small barcodes'}
-                  >
-                    <ZoomIn className="w-3 h-3" />
-                    <span>{zoomLevel}x</span>
-                  </button>
+                  <div className="flex items-center bg-black/80 rounded-md border border-white/20 p-0.5 backdrop-blur-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleSetZoom(1)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                        zoomLevel === 1
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                      title="1x Zoom"
+                    >
+                      1x
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetZoom(2)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
+                        zoomLevel === 2
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                      title="2x Zoom (Recommended for Phone Barcode Scanning)"
+                    >
+                      <span>2x</span>
+                      <span className="text-[8px] opacity-75 hidden sm:inline">Def</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetZoom(3)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                        zoomLevel === 3
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                      title="3x Zoom for small/dense barcodes"
+                    >
+                      3x
+                    </button>
+                  </div>
                 )}
 
                 {/* Only show camera toggle on devices with multiple cameras */}
@@ -962,11 +1096,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               </div>
             )}
 
-            {/* Micro-tip for focal distance on iPhone & mobile cameras */}
+            {/* Micro-tip for focal distance & double-tap shortcut */}
             {cameraActive && isScanning && (
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center pointer-events-none z-15">
-                <span className="bg-black/75 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/10 shadow-xs">
-                  💡 Hold 6-8 in (15-20 cm) away for sharp focus
+                <span className="bg-black/80 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/15 shadow-sm flex items-center gap-1.5">
+                  <span>💡 Hold 8-12 in away</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-emerald-400 font-semibold">Double-tap video for 1x/2x</span>
                 </span>
               </div>
             )}
@@ -1118,6 +1254,19 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     <p className="text-slate-300 text-xs mt-1 max-w-[280px]">
                       Barcode <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-sm">{unrecognizedPromptCode}</span> is not in your POS catalog.
                     </p>
+                    {unrecognizedPromptCode && (
+                      <a
+                        href={getWebSearchUrl(unrecognizedPromptCode)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] text-blue-400 hover:text-blue-300 mt-2 underline underline-offset-2 transition-colors cursor-pointer"
+                        title="Search web / Google for this barcode"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>Search Web for Barcode</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                     <div className="flex items-center gap-2 mt-3.5 w-full max-w-xs">
                       <button
                         type="button"

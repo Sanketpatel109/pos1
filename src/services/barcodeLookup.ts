@@ -13,6 +13,8 @@
  */
 
 import { INITIAL_CATALOG } from '../data/catalog';
+import { LIQUOR_AND_FMCG_REGISTRY } from '../data/liquorAndFMCGRegistry';
+import { getBarcodeVariants } from '../utils/barcodeResolver';
 
 export interface PackagingDetectionResult {
   isMultiPack: boolean;
@@ -162,11 +164,22 @@ export function mapToStoreCategory(categoriesStr: string, existingCategories: { 
     }
   }
 
-  // 2. Semantic matching for typical POS departments
-  if (/beverage|drink|soda|water|juice|coffee|tea|cola|beer|wine|milk|seltzer/i.test(lower)) {
+  // 2. Liquor, Spirits, Wine & Beer for Liquor Store POS
+  if (/liquor|spirits|whiskey|whisky|vodka|tequila|rum|gin|cognac|brandy|bourbon|scotch|liqueur|alcoholic/i.test(lower)) {
+    return findCategory(existingCategories, ['liquor', 'spirits', 'alcohol', 'drinks', 'beverages']) || 'Liquor';
+  }
+  if (/beer|lager|ale|cider|seltzer|malt|pilsner|stout/i.test(lower)) {
+    return findCategory(existingCategories, ['beer & wine', 'beer', 'drinks', 'beverages']) || 'Beer & Wine';
+  }
+  if (/wine|champagne|prosecco|cabernet|chardonnay|merlot|pinot|sauvignon|moscato|rose|red wine|white wine/i.test(lower)) {
+    return findCategory(existingCategories, ['beer & wine', 'wine', 'drinks', 'beverages']) || 'Beer & Wine';
+  }
+
+  // 3. Semantic matching for typical POS departments
+  if (/beverage|drink|soda|water|juice|coffee|tea|cola|milk|seltzer/i.test(lower)) {
     return findCategory(existingCategories, ['drinks', 'beverages']) || 'Drinks';
   }
-  if (/snack|biscuit|cookie|chips|crisps|crackers|fast food|burger|pizza|nacho|pretzel/i.test(lower)) {
+  if (/snack|biscuit|cookie|chips|crisps|crackers|fast food|burger|pizza|nacho|pretzel|namkeen/i.test(lower)) {
     return findCategory(existingCategories, ['fast food', 'snacks']) || 'Fast Food';
   }
   if (/dessert|chocolate|sweet|ice cream|candy|cake|pastry|bakery/i.test(lower)) {
@@ -175,10 +188,10 @@ export function mapToStoreCategory(categoriesStr: string, existingCategories: { 
   if (/fruit|vegetable|produce|salad|organic/i.test(lower)) {
     return findCategory(existingCategories, ['produce', 'vegetables', 'fruits']) || 'Produce';
   }
-  if (/dairy|cheese|yogurt|butter/i.test(lower)) {
+  if (/dairy|cheese|yogurt|butter|ghee/i.test(lower)) {
     return findCategory(existingCategories, ['dairy', 'groceries']) || 'Groceries';
   }
-  if (/cereal|breakfast|oatmeal|condiment|sauce|ketchup|mustard|spice/i.test(lower)) {
+  if (/cereal|breakfast|oatmeal|condiment|sauce|ketchup|mustard|spice|pantry|grain|flour|atta/i.test(lower)) {
     return findCategory(existingCategories, ['groceries', 'pantry']) || 'Groceries';
   }
 
@@ -196,62 +209,24 @@ function findCategory(categories: { name: string }[], matches: string[]): string
   return null;
 }
 
-/**
- * Generates barcode variants to handle US UPC-A (12-digit) and EAN-13 (13-digit) normalization.
- *
- * In retail:
- * - A US UPC-A is 12 digits (e.g. 049000000443).
- * - When scanned as an EAN-13, a leading 0 is added (e.g. 004900000443).
- * - Some databases store items under the 12-digit key, others under the 13-digit key.
- */
-export function getBarcodeVariants(barcode: string): string[] {
-  const clean = barcode.replace(/[\s-]/g, '').trim();
-  const variants = new Set<string>();
-  variants.add(clean);
-
-  // If 13-digit starting with 0, add stripped 12-digit UPC-A
-  if (clean.length === 13 && clean.startsWith('0')) {
-    variants.add(clean.slice(1));
-  }
-
-  // If 12-digit (standard US UPC-A), add 13-digit EAN-13 with leading 0
-  if (clean.length === 12) {
-    variants.add(`0${clean}`);
-  }
-
-  // If string starts with 0 and has >= 8 characters, also add version without leading zero
-  if (clean.startsWith('0') && clean.length >= 8) {
-    variants.add(clean.replace(/^0+/, ''));
-    variants.add(clean.slice(1));
-  }
-
-  // If 11-digit, add padded 12-digit and 13-digit versions
-  if (clean.length === 11) {
-    variants.add(`0${clean}`);
-    variants.add(`00${clean}`);
-  }
-
-  return Array.from(variants);
-}
+export { getBarcodeVariants };
 
 /**
- * Multi-source product lookup service:
- * 1. Checks local initial preset catalog for instant offline hit.
- * 2. Generates UPC/EAN variants (12-digit UPC-A and 13-digit EAN-13).
- * 3. Dynamically queries US and global registries:
- *    - For US / Global barcodes: us.openfoodfacts.org, world.openfoodfacts.org,
- *      world.openbeautyfacts.org, world.openproductsfacts.org.
- *    - For Indian barcodes (890 GS1 prefix): in.openfoodfacts.org prioritized.
- * 4. Extracts packaging tiers, units, and retail prices.
+ * High-Speed Multi-Source Product Lookup Service:
+ * 1. Checks local initial preset catalog for instant offline hit (0ms).
+ * 2. Checks built-in Liquor Store & FMCG verified registry (0ms).
+ * 3. Normalizes UPC-A, EAN-13, 890 GS1 India, and UPC-E variations.
+ * 4. Queries global registries in parallel with fast 2.5s racing.
+ * 5. Generates clean branded display titles (e.g. "Jack Daniel's Old No. 7 Tennessee Whiskey 750ml").
  */
 export async function lookupBarcodeDetails(
   barcode: string,
   existingCategories: { name: string }[] = []
 ): Promise<ProductLookupResult | null> {
   const cleanCode = barcode.replace(/[\s-]/g, '').trim();
-  if (!cleanCode || cleanCode.length < 4) return null;
+  if (!cleanCode || cleanCode.length < 3) return null;
 
-  // 1. Try local sample preset match (Kinley water, beverages, snacks)
+  // 1. Check local catalog hit
   const localHit = INITIAL_CATALOG.find((item) => {
     if (item.barcode === cleanCode) return true;
     if (item.packagingOptions?.some((p) => p.barcode === cleanCode)) return true;
@@ -266,113 +241,268 @@ export async function lookupBarcodeDetails(
       imageUrl: localHit.image,
       unit: localHit.unit || 'pcs',
       suggestedPrice: localHit.price,
-      sourceRegistry: 'Local Store Catalog',
+      sourceRegistry: 'Store Catalog',
     };
   }
 
-  // 2. Generate normalized barcode variations (12-digit UPC <-> 13-digit EAN)
+  // 2. Generate normalized barcode variations
   const variants = getBarcodeVariants(cleanCode);
-  const isIndianCode = cleanCode.startsWith('890');
 
-  // 3. Query prioritized endpoints across all variants
-  for (const queryCode of variants) {
-    const endpoints: { url: string; registryName: string }[] = isIndianCode
-      ? [
-          {
-            url: `https://in.openfoodfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Food Facts (India)',
-          },
-          {
-            url: `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Food Facts (Global)',
-          },
-          {
-            url: `https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Beauty Facts',
-          },
-          {
-            url: `https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Products Facts',
-          },
-        ]
-      : [
-          {
-            url: `https://us.openfoodfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Food Facts (USA)',
-          },
-          {
-            url: `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Food Facts (Global)',
-          },
-          {
-            url: `https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Beauty Facts (Cosmetics & Personal Care)',
-          },
-          {
-            url: `https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Products Facts (General Merchandise)',
-          },
-          {
-            url: `https://in.openfoodfacts.org/api/v2/product/${encodeURIComponent(queryCode)}.json`,
-            registryName: 'Open Food Facts',
-          },
-        ];
+  // 3. Instant 0ms Offline Liquor & FMCG Verified Registry Hit
+  for (const variant of variants) {
+    const presetHit = LIQUOR_AND_FMCG_REGISTRY.find((item) => {
+      const itemVariants = getBarcodeVariants(item.barcode);
+      return itemVariants.includes(variant);
+    });
 
-    for (const { url, registryName } of endpoints) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4500);
-
-        const response = await fetch(url, {
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-          },
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) continue;
-
-        const data = await response.json();
-        if (data.status === 1 && data.product) {
-          const p = data.product;
-          const rawName = (
-            p.product_name_en ||
-            p.product_name ||
-            p.product_name_en_imported ||
-            p.generic_name ||
-            p.brands ||
-            ''
-          ).trim();
-
-          if (!rawName) continue;
-
-          const brand = p.brands ? p.brands.split(',')[0].trim() : undefined;
-          const packaging = detectPackagingTier(rawName, p.quantity, p.packaging_text);
-          const category = mapToStoreCategory(p.categories || '', existingCategories);
-          const imageUrl = p.image_front_url || p.image_url || p.image_front_small_url || p.image_small_url;
-          const suggestedPrice = extractPriceFromTitle(rawName);
-
-          const finalName = packaging.isMultiPack ? packaging.cleanedBaseName : rawName;
-
-          return {
-            barcode: cleanCode,
-            name: finalName,
-            brand,
-            category,
-            imageUrl,
-            unit: packaging.detectedUnit,
-            suggestedPrice,
-            packaging,
-            sourceRegistry: registryName,
-          };
-        }
-      } catch {
-        // Continue seamlessly to next registry on timeout or network hiccup
-      }
+    if (presetHit) {
+      return {
+        barcode: cleanCode,
+        name: presetHit.name,
+        brand: presetHit.brand,
+        category: mapToStoreCategory(presetHit.category, existingCategories),
+        unit: presetHit.unit,
+        suggestedPrice: presetHit.suggestedPrice,
+        sourceRegistry: 'Verified Product Registry',
+        packaging: presetHit.packCount && presetHit.packCount > 1
+          ? {
+              isMultiPack: true,
+              multiplier: presetHit.packCount,
+              packName: presetHit.packName || `${presetHit.packCount}-Pack`,
+              cleanedBaseName: presetHit.name,
+              detectedUnit: presetHit.unit,
+            }
+          : undefined,
+      };
     }
   }
 
-  return null;
+  // 4. Books & Publications via Open Library (ISBN GS1 Prefix 978 / 979)
+  if (cleanCode.startsWith('978') || cleanCode.startsWith('979')) {
+    try {
+      const bookCtrl = new AbortController();
+      const bookTimer = setTimeout(() => bookCtrl.abort(), 2500);
+      const bookResp = await fetch(`https://openlibrary.org/isbn/${encodeURIComponent(cleanCode)}.json`, {
+        signal: bookCtrl.signal,
+        headers: { Accept: 'application/json' },
+      });
+      clearTimeout(bookTimer);
+      if (bookResp.ok) {
+        const bookData = await bookResp.json();
+        if (bookData.title) {
+          const bookTitle = bookData.subtitle ? `${bookData.title}: ${bookData.subtitle}` : bookData.title;
+          return {
+            barcode: cleanCode,
+            name: bookTitle,
+            category: mapToStoreCategory('book publication reading education', existingCategories),
+            unit: 'pcs',
+            sourceRegistry: 'Open Library Books',
+          };
+        }
+      }
+    } catch {}
+  }
+
+  // 5. Check for Optional Commercial Barcode API Key (UPCitemdb / BarcodeLookup)
+  let userApiKey = '';
+  let userProvider = 'auto';
+  if (typeof window !== 'undefined' && window.localStorage) {
+    userApiKey = localStorage.getItem('pos_barcode_api_key') || '';
+    userProvider = localStorage.getItem('pos_barcode_provider') || 'auto';
+  }
+
+  // 5a. If BarcodeLookup.com API key is provided, query directly
+  if (userApiKey && (userProvider === 'barcodelookup' || userApiKey.length === 24 || userApiKey.length === 32)) {
+    try {
+      const blCtrl = new AbortController();
+      const blTimer = setTimeout(() => blCtrl.abort(), 3000);
+      const blResp = await fetch(
+        `https://api.barcodelookup.com/v3/products?barcode=${encodeURIComponent(cleanCode)}&formatted=y&key=${encodeURIComponent(userApiKey)}`,
+        { signal: blCtrl.signal }
+      );
+      clearTimeout(blTimer);
+      if (blResp.ok) {
+        const blData = await blResp.json();
+        const p = blData.products?.[0];
+        if (p && p.title) {
+          return {
+            barcode: cleanCode,
+            name: p.title,
+            brand: p.brand || undefined,
+            category: mapToStoreCategory(p.category || '', existingCategories),
+            imageUrl: p.images?.[0] || undefined,
+            unit: 'pcs',
+            sourceRegistry: 'BarcodeLookup Premium',
+          };
+        }
+      }
+    } catch {}
+  }
+
+  // 6. Online Cloud Multi-Registry Query (Parallelized with 2.8s Timeout)
+  const isIndianCode = cleanCode.startsWith('890');
+
+  // Build target candidate URLs across Food, Beauty, Products, and UPC registries
+  const candidateUrls: { url: string; registry: string; isUpcDb?: boolean }[] = [];
+
+  for (const queryCode of variants.slice(0, 3)) {
+    const encoded = encodeURIComponent(queryCode);
+    if (isIndianCode) {
+      candidateUrls.push({
+        url: `https://in.openfoodfacts.org/api/v2/product/${encoded}.json`,
+        registry: 'Open Food Facts (India)',
+      });
+      candidateUrls.push({
+        url: `https://world.openfoodfacts.org/api/v2/product/${encoded}.json`,
+        registry: 'Open Food Facts (Global)',
+      });
+    } else {
+      candidateUrls.push({
+        url: `https://world.openfoodfacts.org/api/v2/product/${encoded}.json`,
+        registry: 'Open Food Facts (Global)',
+      });
+      candidateUrls.push({
+        url: `https://us.openfoodfacts.org/api/v2/product/${encoded}.json`,
+        registry: 'Open Food Facts (USA)',
+      });
+    }
+    candidateUrls.push({
+      url: `https://world.openfoodfacts.org/api/v0/product/${encoded}.json`,
+      registry: 'Open Food Facts',
+    });
+    candidateUrls.push({
+      url: `https://world.openproductsfacts.org/api/v2/product/${encoded}.json`,
+      registry: 'Open Products Facts (General Goods)',
+    });
+    candidateUrls.push({
+      url: `https://world.openbeautyfacts.org/api/v2/product/${encoded}.json`,
+      registry: 'Open Beauty Facts (Cosmetics & Toiletries)',
+    });
+
+    // Universal Merchandise & Electronics registry
+    candidateUrls.push({
+      url: `https://api.upcitemdb.com/prod/trial/lookup?upc=${encoded}`,
+      registry: 'UPCitemdb Universal Registry',
+      isUpcDb: true,
+    });
+  }
+
+  // Query candidate endpoints in parallel
+  const fetchProduct = async (endpoint: { url: string; registry: string; isUpcDb?: boolean }): Promise<ProductLookupResult> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2800);
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (endpoint.isUpcDb && userApiKey) {
+        headers['user_key'] = userApiKey;
+        headers['key_type'] = '3scale';
+      }
+
+      const resp = await fetch(endpoint.url, {
+        signal: controller.signal,
+        headers,
+      });
+      clearTimeout(timer);
+      if (!resp.ok) throw new Error('HTTP status ' + resp.status);
+      const data = await resp.json();
+
+      // UPCitemdb response format
+      if (endpoint.isUpcDb && data.code === 'OK' && data.items && data.items.length > 0) {
+        const item = data.items[0];
+        const rawName = (item.title || '').trim();
+        if (!rawName) throw new Error('No product title');
+
+        const brand = (item.brand || '').trim();
+        const packaging = detectPackagingTier(rawName);
+        const category = mapToStoreCategory(item.category || '', existingCategories);
+        const imageUrl = item.images?.[0] || undefined;
+        const suggestedPrice = extractPriceFromTitle(rawName) || (item.lowest_recorded_price ? Number(item.lowest_recorded_price) : undefined);
+
+        return {
+          barcode: cleanCode,
+          name: rawName,
+          brand: brand || undefined,
+          category,
+          imageUrl,
+          unit: packaging.detectedUnit,
+          suggestedPrice,
+          packaging,
+          sourceRegistry: endpoint.registry,
+        };
+      }
+
+      // Open Food / Products / Beauty Facts response format
+      if ((data.status === 1 || data.status_verbose === 'product found') && data.product) {
+        const p = data.product;
+        const rawName = (
+          p.product_name_en ||
+          p.product_name ||
+          p.product_name_en_imported ||
+          p.generic_name ||
+          p.brands ||
+          ''
+        ).trim();
+
+        if (!rawName) throw new Error('No product name');
+
+        const brand = (p.brands || p.brand_owner || '').split(',')[0].trim();
+        const quantity = (p.quantity || '').trim();
+
+        // Assemble clean branded commercial title: "Brand + Name + Quantity"
+        let fullTitle = rawName;
+        if (brand && !fullTitle.toLowerCase().includes(brand.toLowerCase())) {
+          fullTitle = `${brand} ${fullTitle}`;
+        }
+        if (quantity && !fullTitle.toLowerCase().includes(quantity.toLowerCase())) {
+          fullTitle = `${fullTitle} ${quantity}`;
+        }
+        fullTitle = fullTitle.replace(/\s+/g, ' ').trim();
+
+        const packaging = detectPackagingTier(fullTitle, p.quantity, p.packaging_text);
+        const category = mapToStoreCategory(p.categories || '', existingCategories);
+        const imageUrl = p.image_front_url || p.image_url || p.image_front_small_url || p.image_small_url;
+        const suggestedPrice = extractPriceFromTitle(fullTitle);
+
+        return {
+          barcode: cleanCode,
+          name: fullTitle,
+          brand: brand || undefined,
+          category,
+          imageUrl,
+          unit: packaging.detectedUnit,
+          suggestedPrice,
+          packaging,
+          sourceRegistry: endpoint.registry,
+        };
+      }
+      throw new Error('Product not found in registry');
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  try {
+    // Race first successful response
+    const firstFound = await Promise.any(candidateUrls.map((item) => fetchProduct(item)));
+    return firstFound;
+  } catch {
+    // All endpoints completed without hit or timed out
+    return null;
+  }
+}
+
+/**
+ * Generates direct Google Web Search URL for any barcode
+ */
+export function getWebSearchUrl(barcode: string): string {
+  const clean = barcode.replace(/[\s-]/g, '').trim();
+  return `https://www.google.com/search?q=${encodeURIComponent(clean + ' UPC barcode')}`;
+}
+
+/**
+ * Generates direct Amazon search URL for any barcode
+ */
+export function getAmazonSearchUrl(barcode: string): string {
+  const clean = barcode.replace(/[\s-]/g, '').trim();
+  return `https://www.amazon.com/s?k=${encodeURIComponent(clean)}`;
 }

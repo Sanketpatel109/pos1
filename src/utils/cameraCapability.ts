@@ -57,6 +57,17 @@ export function isMobileDevice(): boolean {
 }
 
 /**
+ * Optimal default camera zoom level for barcode scanning:
+ * - Phone: 2x (eliminates minimum focal distance macro blur on modern large camera sensors at 25-35cm)
+ * - Tablet: 1x (wider field of view for countertop stands and 2-hand holding)
+ * - Desktop: 1x (prevents pixelation on 720p/1080p webcams)
+ */
+export function getDefaultZoomForDevice(): number {
+  return getDeviceType() === 'phone' ? 2 : 1;
+}
+
+
+/**
  * Returns true if the current device is running iOS (iPhone, iPad, iPod).
  */
 export function isIOS(): boolean {
@@ -484,13 +495,53 @@ export async function applyZoom(
 ): Promise<boolean> {
   if (!videoTrack) return false;
   try {
+    const caps = (videoTrack.getCapabilities?.() as any) || {};
+    const min = caps.zoom?.min || 1;
+    const max = caps.zoom?.max || 10;
+    const targetZoom = Math.min(Math.max(zoomLevel, min), max);
     await (videoTrack as any).applyConstraints({
-      advanced: [{ zoom: zoomLevel } as any],
+      advanced: [{ zoom: targetZoom } as any],
     });
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Universal zoom applicator for mobile phones & desktop.
+ * Applies hardware digital zoom via MediaStreamTrack where supported (Android, Desktop),
+ * and seamlessly layers smooth CSS transform scale for iOS Safari / WebKit.
+ */
+export async function applyCameraZoom(
+  containerId: string,
+  videoTrack: MediaStreamTrack | null,
+  zoomLevel: number
+): Promise<{ hardware: boolean; css: boolean }> {
+  let hardware = false;
+  let css = false;
+
+  if (videoTrack) {
+    hardware = await applyZoom(videoTrack, zoomLevel);
+  }
+
+  if (typeof document !== 'undefined') {
+    const container = document.getElementById(containerId);
+    if (container) {
+      const video = container.querySelector('video');
+      if (video) {
+        // If hardware zoom is active, video track already zooms.
+        // If hardware zoom is unsupported (like iOS Safari), scale CSS to 2x for sharp focus distance.
+        const scaleVal = hardware ? 1 : Math.max(1, zoomLevel);
+        video.style.transform = scaleVal > 1 ? `scale(${scaleVal})` : '';
+        video.style.transformOrigin = 'center center';
+        video.style.transition = 'transform 0.15s ease-out';
+        css = true;
+      }
+    }
+  }
+
+  return { hardware, css };
 }
 
 // ---------------------------------------------------------------------------
@@ -527,7 +578,19 @@ export async function createHardwareBarcodeDetector(): Promise<
 
     // Default fallback format list if getSupportedFormats is not implemented
     if (!formats || formats.length === 0) {
-      formats = ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e'];
+      formats = [
+        'qr_code',
+        'ean_13',
+        'ean_8',
+        'code_128',
+        'code_39',
+        'upc_a',
+        'upc_e',
+        'itf',
+        'data_matrix',
+        'codabar',
+        'aztec',
+      ];
     }
 
     const detector = new BarcodeDetectorClass({ formats });

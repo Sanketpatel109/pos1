@@ -206,8 +206,9 @@ class HardwarePeripherals {
         return;
       }
 
-      // If time between keystrokes is too long (> 120ms), it's human typing - reset buffer
-      if (timeDiff > 120) {
+      // If time between keystrokes is too long (> 250ms), it's human typing - reset buffer
+      // 250ms tolerance allows reliable support for Bluetooth handheld guns and wireless scanners on phones/tablets
+      if (timeDiff > 250) {
         this.laserBuffer = '';
       }
 

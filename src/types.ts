@@ -239,6 +239,8 @@ export interface ShopSettings {
   soundboxLanguage?: 'en' | 'hi';
   onboarded?: boolean;
   businessType?: string;
+  barcodeApiKey?: string;
+  barcodeProvider?: 'auto' | 'upcitemdb' | 'barcodelookup';
 }
 
 
