@@ -68,6 +68,8 @@ export function printThermalHtml(htmlContent: string, title: string = 'MonoPOS R
             .double-divider { border-bottom: 2px solid #000000; margin: 6px 0; }
             .dotted-divider { border-bottom: 1px dotted #000000; margin: 5px 0; }
             .row { display: flex; justify-content: space-between; align-items: baseline; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th, td { padding: 2px 0; vertical-align: top; }
             .mt-1 { margin-top: 4px; }
             .mb-1 { margin-bottom: 4px; }
             .py-1 { padding: 3px 0; }

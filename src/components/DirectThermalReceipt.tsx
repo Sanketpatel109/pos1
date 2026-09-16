@@ -36,11 +36,9 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
     taxSnapshotTotals.taxableSubtotal > 0 ? taxSnapshotTotals.taxableSubtotal : order.subtotal;
   const totalTax =
     taxSnapshotTotals.totalTax > 0 ? taxSnapshotTotals.totalTax : (order.taxAmount || 0);
-  const cgstAmount =
-    taxSnapshotTotals.totalCgst > 0 ? taxSnapshotTotals.totalCgst : totalTax / 2;
-  const sgstAmount =
-    taxSnapshotTotals.totalSgst > 0 ? taxSnapshotTotals.totalSgst : totalTax / 2;
   const taxRate = order.taxRate || 0;
+  const hasMultipleTaxes =
+    taxSnapshotTotals.taxRateBreakdown.filter((b) => b.totalTax > 0).length > 1;
 
   const totalBaseUnitsSold = order.items.reduce(
     (sum, item) => sum + item.quantity * (item.multiplier || 1),
@@ -48,10 +46,13 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
   );
   const totalPacksSold = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
+  const customFooter = shopSettings.receiptFooterNote?.trim();
+  const showCustomFooter = customFooter && customFooter !== '*** THANK YOU, VISIT AGAIN ***';
+
   return (
     <div
       id="direct-thermal-receipt"
-      className="direct-thermal-receipt-print-only print:m-0 w-full max-w-[320px] mx-auto bg-white text-black text-[11px] leading-tight p-2"
+      className="direct-thermal-receipt-print-only print:m-0 w-full max-w-[320px] mx-auto bg-white text-black text-[11px] leading-tight p-2 font-mono"
     >
       {/* Store Header */}
       <div className="text-center space-y-0.5 border-b border-dashed border-black pb-2 mb-2">
@@ -70,145 +71,165 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
         {shopSettings.tagline && (
           <p className="text-[10px] text-zinc-600">{shopSettings.tagline}</p>
         )}
-        <p className="text-[10px] text-zinc-700">{shopSettings.address}</p>
-        <p className="text-[10px] text-zinc-700">Tel: {shopSettings.phone}</p>
+        {shopSettings.address && (
+          <p className="text-[10px] text-zinc-700">{shopSettings.address}</p>
+        )}
+        {shopSettings.phone && (
+          <p className="text-[10px] text-zinc-700">Tel: {shopSettings.phone.trim()}</p>
+        )}
         {shopSettings.gstin && (
           <p className="text-[10px] font-bold text-black">GSTIN: {shopSettings.gstin}</p>
         )}
       </div>
 
-      {/* Invoice Meta */}
-      <div className="space-y-0.5 border-b border-dashed border-black pb-2 mb-2 text-[10px]">
+      {/* Invoice Meta Table */}
+      <div className="border-b border-dashed border-black pb-2 mb-2 text-[10px]">
         {Boolean(shopSettings.enableDailyToken) && (
-          <div className="my-1 py-1 px-2 border border-black rounded text-center flex justify-between items-center font-bold">
+          <div className="mb-2 py-1 px-2 border border-black rounded flex justify-between items-center font-bold">
             <span>PICKUP TOKEN:</span>
             <span className="text-base font-black">
               #{String(order.tokenNumber || ((order.orderNumber - 1) % 99999) + 1).padStart(2, '0')}
             </span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="text-zinc-600">Invoice No:</span>
-          <span className="font-bold">#{invoiceNo}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-600">Date & Time:</span>
-          <span>{formattedDate} {formattedTime}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-600">Customer:</span>
-          <span>{order.customerName || 'Walk-in'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-600">Payment Mode:</span>
-          <span className="font-bold uppercase">{order.paymentMethod}</span>
-        </div>
-        {order.staffName && (
-          <div className="flex justify-between">
-            <span className="text-zinc-600">Cashier:</span>
-            <span>{order.staffName}</span>
-          </div>
-        )}
+        <table className="w-full table-fixed border-collapse">
+          <tbody>
+            <tr>
+              <td className="w-[35%] text-zinc-600 py-0.5">Invoice No:</td>
+              <td className="w-[65%] text-right font-bold py-0.5">#{invoiceNo}</td>
+            </tr>
+            <tr>
+              <td className="text-zinc-600 py-0.5">Date & Time:</td>
+              <td className="text-right py-0.5">{formattedDate} {formattedTime}</td>
+            </tr>
+            <tr>
+              <td className="text-zinc-600 py-0.5">Customer:</td>
+              <td className="text-right py-0.5">{order.customerName || 'Walk-in Customer'}</td>
+            </tr>
+            <tr>
+              <td className="text-zinc-600 py-0.5">Payment Mode:</td>
+              <td className="text-right font-bold uppercase py-0.5">{order.paymentMethod}</td>
+            </tr>
+            {order.staffName && (
+              <tr>
+                <td className="text-zinc-600 py-0.5">Cashier:</td>
+                <td className="text-right py-0.5">{order.staffName}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Itemized Table */}
-      <div className="space-y-1 border-b border-dashed border-black pb-2 mb-2">
-        <div className="grid grid-cols-12 text-[10px] font-bold border-b border-black pb-1 uppercase">
-          <span className="col-span-6">Item</span>
-          <span className="col-span-2 text-center">Qty</span>
-          <span className="col-span-2 text-right">Rate</span>
-          <span className="col-span-2 text-right">Total</span>
-        </div>
-
-        {order.items.map((item, idx) => (
-          <div key={idx} className="py-0.5 border-b border-dotted border-zinc-200 last:border-0">
-            <div className="grid grid-cols-12 text-[10px]">
-              <span className="col-span-6 truncate font-medium">{item.name}</span>
-              <span className="col-span-2 text-center font-semibold">{item.quantity}</span>
-              <span className="col-span-2 text-right">{item.unitPrice.toFixed(0)}</span>
-              <span className="col-span-2 text-right font-bold">
-                {(item.unitPrice * item.quantity).toFixed(0)}
-              </span>
-            </div>
-            {item.selectedPackName && (
-              <div className="text-[8.5px] text-zinc-600 pl-1 font-mono">
-                * {item.selectedPackName} (@ {currencySymbol}{(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)
-              </div>
-            )}
-          </div>
-        ))}
+      <div className="border-b border-dashed border-black pb-2 mb-2">
+        <table className="w-full table-fixed border-collapse text-[10px]">
+          <thead>
+            <tr className="border-b border-black font-bold uppercase text-[9.5px]">
+              <th className="w-[46%] text-left pb-1 font-bold">Item</th>
+              <th className="w-[14%] text-center pb-1 font-bold">Qty</th>
+              <th className="w-[20%] text-right pb-1 font-bold">Rate</th>
+              <th className="w-[20%] text-right pb-1 font-bold">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((item, idx) => (
+              <React.Fragment key={idx}>
+                <tr className="border-b border-dotted border-zinc-200 last:border-0">
+                  <td className="text-left py-1 pr-1 truncate font-medium">{item.name}</td>
+                  <td className="text-center py-1 font-semibold">{item.quantity}</td>
+                  <td className="text-right py-1">{item.unitPrice.toFixed(0)}</td>
+                  <td className="text-right py-1 font-bold">
+                    {(item.unitPrice * item.quantity).toFixed(0)}
+                  </td>
+                </tr>
+                {item.selectedPackName && (
+                  <tr>
+                    <td colSpan={4} className="text-[8.5px] text-zinc-600 pl-1 pb-1 font-mono">
+                      * {item.selectedPackName} (@ {currencySymbol}{(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Calculations & Totals */}
-      <div className="space-y-1 border-b border-dashed border-black pb-2 mb-2 text-[10px]">
-        <div className="flex justify-between">
-          <span>Subtotal:</span>
-          <span>{currencySymbol}{displaySubtotal.toFixed(2)}</span>
-        </div>
+      {/* Calculations & Totals Table */}
+      <div className="border-b border-dashed border-black pb-2 mb-2 text-[10px]">
+        <table className="w-full table-fixed border-collapse">
+          <tbody>
+            <tr>
+              <td className="w-[60%] text-left py-0.5">Subtotal:</td>
+              <td className="w-[40%] text-right py-0.5">{currencySymbol}{displaySubtotal.toFixed(2)}</td>
+            </tr>
+            {order.discount > 0 && (
+              <tr>
+                <td className="text-left py-0.5">Discount:</td>
+                <td className="text-right py-0.5">-{currencySymbol}{order.discount.toFixed(2)}</td>
+              </tr>
+            )}
+            {taxSnapshotTotals.taxRateBreakdown.filter(
+              (b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0)
+            ).length > 0 ? (
+              taxSnapshotTotals.taxRateBreakdown
+                .filter((b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0))
+                .map((b) => (
+                  <tr key={b.rate} className="text-zinc-700">
+                    <td className="text-left py-0.5">
+                      GST {b.rate}% (CGST {(b.rate / 2).toFixed(1)}% + SGST {(b.rate / 2).toFixed(1)}%):
+                    </td>
+                    <td className="text-right py-0.5">{currencySymbol}{b.totalTax.toFixed(2)}</td>
+                  </tr>
+                ))
+            ) : totalTax > 0 ? (
+              <tr className="text-zinc-700">
+                <td className="text-left py-0.5">
+                  GST {taxRate}% (CGST {(taxRate / 2).toFixed(1)}% + SGST {(taxRate / 2).toFixed(1)}%):
+                </td>
+                <td className="text-right py-0.5">{currencySymbol}{totalTax.toFixed(2)}</td>
+              </tr>
+            ) : null}
 
-        {order.discount > 0 && (
-          <div className="flex justify-between">
-            <span>Discount:</span>
-            <span>-{currencySymbol}{order.discount.toFixed(2)}</span>
-          </div>
-        )}
+            {hasMultipleTaxes && totalTax > 0 && (
+              <tr className="font-bold border-t border-dotted border-zinc-400">
+                <td className="text-left py-0.5">Total Tax:</td>
+                <td className="text-right py-0.5">{currencySymbol}{totalTax.toFixed(2)}</td>
+              </tr>
+            )}
 
-        {taxSnapshotTotals.taxRateBreakdown.filter(
-          (b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0)
-        ).length > 0 ? (
-          taxSnapshotTotals.taxRateBreakdown
-            .filter((b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0))
-            .map((b) => (
-              <div key={b.rate} className="flex justify-between text-zinc-700">
-                <span>GST {b.rate}% (CGST {(b.rate / 2).toFixed(1)}% + SGST {(b.rate / 2).toFixed(1)}%):</span>
-                <span>+{currencySymbol}{b.totalTax.toFixed(2)}</span>
-              </div>
-            ))
-        ) : totalTax > 0 ? (
-          <div className="flex justify-between text-zinc-700">
-            <span>GST {taxRate}% (CGST {(taxRate / 2).toFixed(1)}% + SGST {(taxRate / 2).toFixed(1)}%):</span>
-            <span>+{currencySymbol}{totalTax.toFixed(2)}</span>
-          </div>
-        ) : null}
+            <tr className="border-t border-black font-bold text-xs">
+              <td className="text-left pt-1">GRAND TOTAL:</td>
+              <td className="text-right pt-1 font-black">{currencySymbol}{order.total.toFixed(2)}</td>
+            </tr>
 
-        {totalTax > 0 && (
-          <div className="flex justify-between font-bold border-t border-dotted border-zinc-400 pt-0.5">
-            <span>Total Tax:</span>
-            <span>+{currencySymbol}{totalTax.toFixed(2)}</span>
-          </div>
-        )}
+            {totalBaseUnitsSold !== totalPacksSold && (
+              <tr className="text-[9px] text-zinc-600">
+                <td className="text-left py-0.5">Total Base Units:</td>
+                <td className="text-right py-0.5 font-semibold">{totalBaseUnitsSold} units</td>
+              </tr>
+            )}
 
-        <div className="flex justify-between text-xs font-black border-t border-black pt-1">
-          <span>GRAND TOTAL:</span>
-          <span>{currencySymbol}{order.total.toFixed(2)}</span>
-        </div>
-
-        {totalBaseUnitsSold !== totalPacksSold && (
-          <div className="flex justify-between text-[9px] text-zinc-600 pt-0.5">
-            <span>Total Base Units:</span>
-            <span className="font-semibold">{totalBaseUnitsSold} units</span>
-          </div>
-        )}
-
-        {/* Cash Tender & Change Info */}
-        {order.paymentMethod === 'CASH' && order.tenderedAmount !== undefined && order.tenderedAmount > 0 && (
-          <div className="pt-1 border-t border-dotted border-zinc-500 space-y-0.5">
-            <div className="flex justify-between">
-              <span>Cash Received:</span>
-              <span className="font-bold">{currencySymbol}{order.tenderedAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold">
-              <span>Change Returned:</span>
-              <span className="font-black">
-                {currencySymbol}
-                {(order.changeDue !== undefined
-                  ? order.changeDue
-                  : Math.max(0, order.tenderedAmount - order.total)
-                ).toFixed(2)}
-              </span>
-            </div>
-          </div>
-        )}
+            {order.paymentMethod === 'CASH' && order.tenderedAmount !== undefined && order.tenderedAmount > 0 && (
+              <>
+                <tr className="border-t border-dotted border-zinc-400">
+                  <td className="text-left pt-1">Cash Received:</td>
+                  <td className="text-right pt-1 font-bold">{currencySymbol}{order.tenderedAmount.toFixed(2)}</td>
+                </tr>
+                <tr className="font-bold">
+                  <td className="text-left py-0.5">Change Returned:</td>
+                  <td className="text-right py-0.5 font-black">
+                    {currencySymbol}
+                    {(order.changeDue !== undefined
+                      ? order.changeDue
+                      : Math.max(0, order.tenderedAmount - order.total)
+                    ).toFixed(2)}
+                  </td>
+                </tr>
+              </>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Payment Settlement Note */}
@@ -218,9 +239,7 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
             <div className="font-bold uppercase tracking-wider">
               PAID IN FULL • VERIFIED UPI
             </div>
-            {order.upiRefNumber && (
-              <div>UTR / Ref: {order.upiRefNumber}</div>
-            )}
+            {order.upiRefNumber && <div>UTR / Ref: {order.upiRefNumber}</div>}
           </>
         ) : order.paymentMethod === 'CASH' ? (
           <div className="font-bold uppercase tracking-wider">
@@ -239,8 +258,8 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
           *ORD-{order.orderNumber}-2026*
         </div>
         <p className="font-bold">*** THANK YOU, VISIT AGAIN ***</p>
-        {shopSettings.receiptFooterNote && (
-          <p className="text-[9px] text-zinc-600">{shopSettings.receiptFooterNote}</p>
+        {showCustomFooter && (
+          <p className="text-[9px] text-zinc-600">{customFooter}</p>
         )}
       </div>
     </div>
@@ -270,6 +289,8 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
   const totalTax =
     taxSnapshotTotals.totalTax > 0 ? taxSnapshotTotals.totalTax : (order.taxAmount || 0);
   const taxRate = order.taxRate || 0;
+  const hasMultipleTaxes =
+    taxSnapshotTotals.taxRateBreakdown.filter((b) => b.totalTax > 0).length > 1;
 
   const totalBaseUnitsSold = order.items.reduce(
     (sum, item) => sum + item.quantity * (item.multiplier || 1),
@@ -277,26 +298,27 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
   );
   const totalPacksSold = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const itemsHtml = order.items
+  const customFooter = shopSettings.receiptFooterNote?.trim();
+  const showCustomFooter = customFooter && customFooter !== '*** THANK YOU, VISIT AGAIN ***';
+
+  const itemsRowsHtml = order.items
     .map((item) => {
       const packRow = item.selectedPackName
-        ? `<div style="font-size: 9px; color: #555; padding-left: 4px;">* ${item.selectedPackName} (@ ${currencySymbol}${(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)</div>`
+        ? `<tr><td colspan="4" style="font-size: 8.5px; color: #555; padding-left: 4px; padding-bottom: 2px;">* ${item.selectedPackName} (@ ${currencySymbol}${(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)</td></tr>`
         : '';
       return `
-        <div style="padding: 2px 0; border-bottom: 1px dotted #e5e5e5;">
-          <div class="row">
-            <span style="max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</span>
-            <span style="text-align: center;">${item.quantity}</span>
-            <span style="text-align: right;">${item.unitPrice.toFixed(0)}</span>
-            <span style="text-align: right; font-weight: bold;">${(item.unitPrice * item.quantity).toFixed(0)}</span>
-          </div>
-          ${packRow}
-        </div>
+        <tr style="border-bottom: 1px dotted #d0d0d0;">
+          <td style="width: 46%; text-align: left; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</td>
+          <td style="width: 14%; text-align: center; padding: 3px 0;">${item.quantity}</td>
+          <td style="width: 20%; text-align: right; padding: 3px 0;">${item.unitPrice.toFixed(0)}</td>
+          <td style="width: 20%; text-align: right; padding: 3px 0; font-weight: bold;">${(item.unitPrice * item.quantity).toFixed(0)}</td>
+        </tr>
+        ${packRow}
       `;
     })
     .join('');
 
-  const gstBreakdownHtml =
+  const gstRowsHtml =
     taxSnapshotTotals.taxRateBreakdown.filter(
       (b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0)
     ).length > 0
@@ -304,46 +326,43 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
           .filter((b) => b.rate > 0 && (b.totalTax > 0 || b.cgst > 0 || b.sgst > 0))
           .map(
             (b) => `
-              <div class="row" style="color: #444;">
-                <span>GST ${b.rate}% (CGST ${(b.rate / 2).toFixed(1)}% + SGST ${(b.rate / 2).toFixed(1)}%):</span>
-                <span>+${currencySymbol}${b.totalTax.toFixed(2)}</span>
-              </div>
+              <tr style="color: #444;">
+                <td style="width: 60%; text-align: left; padding: 1.5px 0;">GST ${b.rate}% (CGST ${(b.rate / 2).toFixed(1)}% + SGST ${(b.rate / 2).toFixed(1)}%):</td>
+                <td style="width: 40%; text-align: right; padding: 1.5px 0;">${currencySymbol}${b.totalTax.toFixed(2)}</td>
+              </tr>
             `
           )
           .join('')
       : totalTax > 0
       ? `
-          <div class="row" style="color: #444;">
-            <span>GST ${taxRate}% (CGST ${(taxRate / 2).toFixed(1)}% + SGST ${(taxRate / 2).toFixed(1)}%):</span>
-            <span>+${currencySymbol}${totalTax.toFixed(2)}</span>
-          </div>
+          <tr style="color: #444;">
+            <td style="width: 60%; text-align: left; padding: 1.5px 0;">GST ${taxRate}% (CGST ${(taxRate / 2).toFixed(1)}% + SGST ${(taxRate / 2).toFixed(1)}%):</td>
+            <td style="width: 40%; text-align: right; padding: 1.5px 0;">${currencySymbol}${totalTax.toFixed(2)}</td>
+          </tr>
         `
       : '';
 
-  const tokenHtml = Boolean(shopSettings.enableDailyToken)
-    ? `
-      <div style="margin: 4px 0; padding: 4px 8px; border: 1px solid #000; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
-        <span>PICKUP TOKEN:</span>
-        <span style="font-size: 14px; font-weight: 900;">#${String(
-          order.tokenNumber || ((order.orderNumber - 1) % 99999) + 1
-        ).padStart(2, '0')}</span>
-      </div>
-    `
-    : '';
+  const totalTaxRowHtml =
+    hasMultipleTaxes && totalTax > 0
+      ? `
+        <tr style="font-weight: bold; border-top: 1px dotted #888;">
+          <td style="width: 60%; text-align: left; padding: 2px 0;">Total Tax:</td>
+          <td style="width: 40%; text-align: right; padding: 2px 0;">${currencySymbol}${totalTax.toFixed(2)}</td>
+        </tr>
+      `
+      : '';
 
-  const cashInfoHtml =
+  const cashInfoRowsHtml =
     order.paymentMethod === 'CASH' && order.tenderedAmount !== undefined && order.tenderedAmount > 0
       ? `
-        <div style="border-top: 1px dotted #888; padding-top: 4px; margin-top: 4px;">
-          <div class="row">
-            <span>Cash Received:</span>
-            <span class="font-bold">${currencySymbol}${order.tenderedAmount.toFixed(2)}</span>
-          </div>
-          <div class="row font-bold">
-            <span>Change Returned:</span>
-            <span style="font-weight: 900;">${currencySymbol}${(order.changeDue !== undefined ? order.changeDue : Math.max(0, order.tenderedAmount - order.total)).toFixed(2)}</span>
-          </div>
-        </div>
+        <tr style="border-top: 1px dotted #888;">
+          <td style="width: 60%; text-align: left; padding: 2px 0;">Cash Received:</td>
+          <td style="width: 40%; text-align: right; padding: 2px 0; font-weight: bold;">${currencySymbol}${order.tenderedAmount.toFixed(2)}</td>
+        </tr>
+        <tr style="font-weight: bold;">
+          <td style="width: 60%; text-align: left; padding: 2px 0;">Change Returned:</td>
+          <td style="width: 40%; text-align: right; padding: 2px 0; font-weight: 900;">${currencySymbol}${(order.changeDue !== undefined ? order.changeDue : Math.max(0, order.tenderedAmount - order.total)).toFixed(2)}</td>
+        </tr>
       `
       : '';
 
@@ -352,46 +371,94 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
       ? `<div style="text-align: center; margin-bottom: 4px;"><img src="${shopSettings.logoUrl}" alt="${shopSettings.shopName}" style="max-height: 48px; max-width: 130px; object-fit: contain; filter: grayscale(100%) contrast(200%);" /></div>`
       : '';
 
+  const tokenHtml = Boolean(shopSettings.enableDailyToken)
+    ? `
+      <div style="margin: 4px 0 6px 0; padding: 4px 8px; border: 1px solid #000; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
+        <span>PICKUP TOKEN:</span>
+        <span style="font-size: 15px; font-weight: 900;">#${String(
+          order.tokenNumber || ((order.orderNumber - 1) % 99999) + 1
+        ).padStart(2, '0')}</span>
+      </div>
+    `
+    : '';
+
   return `
     <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
       ${logoHtml}
       <h3 class="font-extrabold uppercase" style="font-size: 13px;">${shopSettings.shopName || 'MonoPOS'}</h3>
       ${shopSettings.tagline ? `<div style="font-size: 9px; color: #555;">${shopSettings.tagline}</div>` : ''}
-      <div style="font-size: 9px; color: #555;">${shopSettings.address || ''}</div>
-      <div style="font-size: 9px; color: #555;">Tel: ${shopSettings.phone || ''}</div>
+      ${shopSettings.address ? `<div style="font-size: 9px; color: #555;">${shopSettings.address}</div>` : ''}
+      ${shopSettings.phone ? `<div style="font-size: 9px; color: #555;">Tel: ${shopSettings.phone.trim()}</div>` : ''}
       ${shopSettings.gstin ? `<div style="font-size: 9px; font-weight: bold;">GSTIN: ${shopSettings.gstin}</div>` : ''}
     </div>
 
     <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
       ${tokenHtml}
-      <div class="row"><span style="color: #666;">Invoice No:</span><span class="font-bold">#${invoiceNo}</span></div>
-      <div class="row"><span style="color: #666;">Date & Time:</span><span>${formattedDate} ${formattedTime}</span></div>
-      <div class="row"><span style="color: #666;">Customer:</span><span>${order.customerName || 'Walk-in'}</span></div>
-      <div class="row"><span style="color: #666;">Payment Mode:</span><span class="font-bold uppercase">${order.paymentMethod}</span></div>
-      ${order.staffName ? `<div class="row"><span style="color: #666;">Cashier:</span><span>${order.staffName}</span></div>` : ''}
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+        <tr>
+          <td style="width: 35%; color: #666; padding: 1px 0;">Invoice No:</td>
+          <td style="width: 65%; text-align: right; font-weight: bold;">#${invoiceNo}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Date & Time:</td>
+          <td style="text-align: right;">${formattedDate} ${formattedTime}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Customer:</td>
+          <td style="text-align: right;">${order.customerName || 'Walk-in Customer'}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Payment Mode:</td>
+          <td style="text-align: right; font-weight: bold; text-transform: uppercase;">${order.paymentMethod}</td>
+        </tr>
+        ${order.staffName ? `
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Cashier:</td>
+          <td style="text-align: right;">${order.staffName}</td>
+        </tr>` : ''}
+      </table>
     </div>
 
     <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
-      <div class="row font-bold uppercase" style="border-bottom: 1px solid #000; padding-bottom: 3px; font-size: 9px;">
-        <span style="width: 55%;">Item</span>
-        <span style="width: 15%; text-align: center;">Qty</span>
-        <span style="width: 15%; text-align: right;">Rate</span>
-        <span style="width: 15%; text-align: right;">Total</span>
-      </div>
-      ${itemsHtml}
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid #000; font-size: 9.5px; font-weight: bold; text-transform: uppercase;">
+            <th style="width: 46%; text-align: left; padding-bottom: 3px;">Item</th>
+            <th style="width: 14%; text-align: center; padding-bottom: 3px;">Qty</th>
+            <th style="width: 20%; text-align: right; padding-bottom: 3px;">Rate</th>
+            <th style="width: 20%; text-align: right; padding-bottom: 3px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsRowsHtml}
+        </tbody>
+      </table>
     </div>
 
     <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
-      <div class="row"><span>Subtotal:</span><span>${currencySymbol}${displaySubtotal.toFixed(2)}</span></div>
-      ${order.discount > 0 ? `<div class="row"><span>Discount:</span><span>-${currencySymbol}${order.discount.toFixed(2)}</span></div>` : ''}
-      ${gstBreakdownHtml}
-      ${totalTax > 0 ? `<div class="row font-bold" style="border-top: 1px dotted #888; padding-top: 2px;"><span>Total Tax:</span><span>+${currencySymbol}${totalTax.toFixed(2)}</span></div>` : ''}
-      <div class="row font-bold" style="border-top: 1px solid #000; padding-top: 4px; font-size: 12px;">
-        <span>GRAND TOTAL:</span>
-        <span>${currencySymbol}${order.total.toFixed(2)}</span>
-      </div>
-      ${totalBaseUnitsSold !== totalPacksSold ? `<div class="row" style="font-size: 9px; color: #666;"><span>Total Base Units:</span><span>${totalBaseUnitsSold} units</span></div>` : ''}
-      ${cashInfoHtml}
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+        <tr>
+          <td style="width: 60%; text-align: left; padding: 1.5px 0;">Subtotal:</td>
+          <td style="width: 40%; text-align: right; padding: 1.5px 0;">${currencySymbol}${displaySubtotal.toFixed(2)}</td>
+        </tr>
+        ${order.discount > 0 ? `
+        <tr>
+          <td style="text-align: left; padding: 1.5px 0;">Discount:</td>
+          <td style="text-align: right; padding: 1.5px 0;">-${currencySymbol}${order.discount.toFixed(2)}</td>
+        </tr>` : ''}
+        ${gstRowsHtml}
+        ${totalTaxRowHtml}
+        <tr style="border-top: 1px solid #000; font-size: 12px; font-weight: bold;">
+          <td style="text-align: left; padding: 4px 0;">GRAND TOTAL:</td>
+          <td style="text-align: right; padding: 4px 0; font-weight: 900;">${currencySymbol}${order.total.toFixed(2)}</td>
+        </tr>
+        ${totalBaseUnitsSold !== totalPacksSold ? `
+        <tr style="font-size: 9px; color: #666;">
+          <td style="text-align: left; padding: 1.5px 0;">Total Base Units:</td>
+          <td style="text-align: right; padding: 1.5px 0;">${totalBaseUnitsSold} units</td>
+        </tr>` : ''}
+        ${cashInfoRowsHtml}
+      </table>
     </div>
 
     <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
@@ -404,7 +471,7 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
     <div class="text-center" style="font-size: 9px; padding-top: 4px;">
       <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 0; font-weight: bold; letter-spacing: 0.15em;">*ORD-${order.orderNumber}-2026*</div>
       <div style="font-weight: bold; margin-top: 4px;">*** THANK YOU, VISIT AGAIN ***</div>
-      ${shopSettings.receiptFooterNote ? `<div style="color: #666; margin-top: 2px;">${shopSettings.receiptFooterNote}</div>` : ''}
+      ${showCustomFooter ? `<div style="color: #666; margin-top: 2px;">${customFooter}</div>` : ''}
     </div>
   `;
 }
