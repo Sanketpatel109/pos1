@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, PauseCircle, CheckCircle, BarChart3, Settings, Play, Trash2, Printer, Volume2, VolumeX } from 'lucide-react';
+import { X, PauseCircle, CheckCircle, BarChart3, Settings, Play, Trash2, Printer, Volume2, VolumeX, Search } from 'lucide-react';
 import { Order, ShopSettings } from '../types';
+import { Input } from '@/components/ui/input';
 
 interface OrdersDrawerProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
   onUpdateSettings,
 }) => {
   const [activeTab, setActiveTab] = useState<DrawerTab>('held');
+  const [historySearch, setHistorySearch] = useState('');
   const [settingsForm, setSettingsForm] = useState<ShopSettings>(shopSettings);
 
   if (!isOpen) return null;
@@ -191,7 +193,27 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
 
           {/* TAB 2: COMPLETED ORDERS */}
           {activeTab === 'history' && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
+              {/* Scan / Search Barcode Input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Scan receipt barcode or search #..."
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  className="h-8 pl-8 pr-7 text-xs bg-background"
+                />
+                {historySearch && (
+                  <button
+                    onClick={() => setHistorySearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
               {completedOrders.length === 0 ? (
                 <div className="py-12 text-center text-zinc-400">
                   <CheckCircle className="w-9 h-9 mx-auto stroke-1 mb-1.5 text-zinc-300" />
@@ -201,7 +223,24 @@ export const OrdersDrawer: React.FC<OrdersDrawerProps> = ({
                   </p>
                 </div>
               ) : (
-                completedOrders.slice().reverse().map((order) => (
+                completedOrders
+                  .filter((order) => {
+                    if (!historySearch.trim()) return true;
+                    const q = historySearch.trim().toLowerCase();
+                    const cleanQ = q.replace(/^ord-/, '').replace(/^#/, '');
+                    return (
+                      order.id?.toLowerCase().includes(q) ||
+                      order.orderNumber.toString().includes(q) ||
+                      order.orderNumber.toString().includes(cleanQ) ||
+                      (order.orderNumberFormatted && order.orderNumberFormatted.toLowerCase().includes(q)) ||
+                      (order.orderNumberFormatted && order.orderNumberFormatted.toLowerCase().includes(cleanQ)) ||
+                      (order.customerName && order.customerName.toLowerCase().includes(q)) ||
+                      (order.customerPhone && order.customerPhone.includes(q))
+                    );
+                  })
+                  .slice()
+                  .reverse()
+                  .map((order) => (
                   <div
                     key={order.id}
                     className="border border-zinc-200 rounded-lg p-2.5 bg-white hover:border-zinc-400 transition-all space-y-1.5"
