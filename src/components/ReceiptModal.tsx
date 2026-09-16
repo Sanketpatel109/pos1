@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Order, ShopSettings, BillItem } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
+import { printDirectThermalReceipt } from './DirectThermalReceipt';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -80,7 +81,23 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   });
 
   const handlePrint = () => {
-    window.print();
+    const resolvedOrder: Order = order || {
+      id: `rcpt-${Date.now()}`,
+      orderNumber: activeOrderNum,
+      orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${activeOrderNum}`,
+      createdAt: activeDate.toISOString(),
+      items: activeItems,
+      status: 'active',
+      subtotal: activeSubtotal,
+      taxRate: activeTaxRate,
+      taxAmount: activeTaxAmount,
+      discount: activeDiscount,
+      total: activeTotal,
+      paymentMethod: (activePaymentMethod as any) || 'CASH',
+      customerName: activeCustomerName,
+      customerPhone: activeCustomerPhone,
+    };
+    printDirectThermalReceipt(resolvedOrder, shopSettings);
   };
 
   const handleShareWhatsApp = () => {

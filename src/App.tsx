@@ -115,7 +115,7 @@ import {
   getTenantDoc,
 } from './services/liveSync';
 import { useCart } from './context/CartContext';
-import { DirectThermalReceipt } from './components/DirectThermalReceipt';
+import { DirectThermalReceipt, printDirectThermalReceipt } from './components/DirectThermalReceipt';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { StoreOnboardingModal } from './components/StoreOnboardingModal';
 import { soundbox } from './utils/soundbox';
@@ -1216,10 +1216,7 @@ export default function App() {
         handleShareOrderWhatsApp(newOrder);
       } else if (data.printReceipt) {
         setDirectPrintOrder(newOrder);
-        setTimeout(() => {
-          window.print();
-          setTimeout(() => setDirectPrintOrder(null), 1000);
-        }, 50);
+        printDirectThermalReceipt(newOrder, shopSettings);
       }
     }
   };
@@ -1294,12 +1291,7 @@ export default function App() {
     // 4. Trigger printer directly in the background using the bill that was just paid
     if (orderToPrint) {
       setDirectPrintOrder(orderToPrint);
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          setDirectPrintOrder(null);
-        }, 1000);
-      }, 50);
+      printDirectThermalReceipt(orderToPrint, shopSettings);
     }
   };
 
@@ -1412,10 +1404,7 @@ export default function App() {
       staffName: activeStaff.name,
     };
     setDirectPrintOrder(draftOrder);
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setDirectPrintOrder(null), 1000);
-    }, 50);
+    printDirectThermalReceipt(draftOrder, shopSettings);
   };
 
   // CATEGORY & PRODUCT MANAGEMENT
@@ -2033,10 +2022,7 @@ export default function App() {
                   staffName: activeStaff.name,
                 };
                 setDirectPrintOrder(draftOrder);
-                setTimeout(() => {
-                  window.print();
-                  setTimeout(() => setDirectPrintOrder(null), 1000);
-                }, 50);
+                printDirectThermalReceipt(draftOrder, shopSettings);
               }}
               onSaveBill={() => setIsPaymentModalOpen(true)}
               onSwitchMode={() => {

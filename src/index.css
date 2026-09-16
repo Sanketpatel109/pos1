@@ -104,8 +104,7 @@ body {
 }
 
 @media screen {
-  .direct-thermal-receipt-print-only,
-  .z-report-print-slip {
+  .direct-thermal-receipt-print-only {
     display: none !important;
   }
 }
@@ -118,13 +117,11 @@ body {
     visibility: visible;
   }
   .direct-thermal-receipt-print-only,
-  .direct-thermal-receipt-print-only *,
-  .z-report-print-slip,
-  .z-report-print-slip * {
+  .direct-thermal-receipt-print-only * {
     display: block !important;
     visibility: visible !important;
   }
-  .z-report-print-slip {
+  .direct-thermal-receipt-print-only {
     position: absolute;
     left: 0;
     top: 0;

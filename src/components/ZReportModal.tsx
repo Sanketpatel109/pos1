@@ -279,15 +279,10 @@ export const ZReportModal: React.FC<ZReportModalProps> = ({
     if (onSaveZReport) onSaveZReport(report);
   };
 
+  if (!isOpen) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      {/* Printable Z-Slip DOM backup for direct spoolers */}
-      <div
-        id="printable-z-report-slip"
-        className="z-report-print-slip print:m-0 w-full max-w-[320px] mx-auto bg-white text-black text-[11px] leading-tight font-mono"
-        dangerouslySetInnerHTML={{ __html: generateZSlipHtml() }}
-      />
-
       <DialogContent className="sm:max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl">
         {/* Header */}
         <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
