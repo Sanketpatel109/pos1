@@ -159,7 +159,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   }, [currentBillItems]);
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-background overflow-hidden select-none">
+    <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-accent overflow-hidden select-none">
       {/* 
         ========================================================================
         MOBILE LAYOUT (order-1 md:order-2):
@@ -202,7 +202,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
         - 3-column touch-friendly product catalog grid on mobile (grid-cols-3)
         ========================================================================
       */}
-      <div className="order-2 md:order-1 w-full md:w-[60%] lg:w-[64%] xl:w-[66%] flex flex-col min-h-0 bg-background md:border-r border-border flex-1 overflow-hidden">
+      <div className="order-2 md:order-1 w-full md:w-[60%] lg:w-[64%] xl:w-[66%] flex flex-col min-h-0 bg-accent md:border-r border-border flex-1 overflow-hidden">
         <ProductCatalog
           catalog={catalog}
           categories={categories}

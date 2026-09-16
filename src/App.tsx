@@ -2003,7 +2003,7 @@ export default function App() {
         />
 
         {/* Active Screen Surface */}
-        <div className="flex-1 flex flex-col min-h-0 bg-zinc-50">
+        <div className="flex-1 flex flex-col min-h-0 bg-accent">
           {(activeScreen === 'item-wise' ||
             ![
               'quick-bill',

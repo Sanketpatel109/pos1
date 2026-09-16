@@ -59,7 +59,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   return (
     <div
       id="product-catalog-container"
-      className={`flex flex-col h-full w-full bg-background overflow-hidden min-h-0 ${className}`}
+      className={`flex flex-col h-full w-full bg-accent overflow-hidden min-h-0 ${className}`}
     >
       {/* 
         ========================================================================
