@@ -199,7 +199,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
           >
             <PauseCircle className="size-4" />
             {heldOrdersCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground font-semibold text-[9px] size-4 rounded-full flex items-center justify-center shadow-xs tabular-nums tracking-tight">
+              <span className="absolute -top-1 -right-1 bg-blue-600 text-white font-semibold text-[9px] size-4 rounded-full flex items-center justify-center shadow-xs tabular-nums tracking-tight">
                 {heldOrdersCount}
               </span>
             )}
@@ -252,9 +252,9 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
           variant="default"
           onClick={onPay}
           disabled={disabled || totalItemCount === 0}
-          className="flex-[1.6] h-10 sm:h-11 text-xs sm:text-sm font-semibold tracking-wide"
+          className="flex-[1.6] h-10 sm:h-11 text-xs sm:text-sm font-semibold tracking-wide bg-blue-600 hover:bg-blue-700 text-white shadow-xs disabled:bg-blue-600/40 disabled:text-white/70 active:scale-[0.99] transition-all"
         >
-          <span className="tabular-nums tracking-tight font-medium">
+          <span className="tabular-nums tracking-tight font-semibold">
             Pay {currencySymbol}{finalTotal.toFixed(2)} →
           </span>
         </Button>
