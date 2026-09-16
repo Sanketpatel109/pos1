@@ -4,6 +4,26 @@ import { CatalogItem, Category, PackagingOption } from '../types';
 import { GST_SLABS } from '../constants/taxRates';
 import { FieldBarcodeScannerModal } from './FieldBarcodeScannerModal';
 import { lookupBarcodeDetails } from '../services/barcodeLookup';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface AddProductModalProps {
   isOpen: boolean;
@@ -395,640 +415,691 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-card text-card-foreground rounded-xl w-full max-w-sm sm:max-w-lg border border-border shadow-xl p-5 space-y-3.5 my-auto overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between pb-3 border-b border-border">
-          <h3 className="font-bold text-sm text-foreground">
-            {editingProduct ? 'Edit Product' : 'Add New Product'}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3 overflow-y-auto pr-1 flex-1">
-          {/* Segmented Mode Selector: Packaged Goods vs Loose / By Weight */}
-          <div className="p-1 bg-zinc-100 rounded-2xl border border-zinc-200/90 grid grid-cols-2 gap-1 text-xs">
-            <button
-              type="button"
-              id="tab-type-packaged"
-              onClick={() => handleSwitchProductType('packaged')}
-              className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all cursor-pointer ${
-                productType === 'packaged'
-                  ? 'bg-white text-zinc-900 shadow-xs border border-zinc-200/80'
-                  : 'text-zinc-500 hover:text-zinc-800'
-              }`}
-            >
-              <Package className={`w-4 h-4 ${productType === 'packaged' ? 'text-blue-600' : 'text-zinc-400'}`} />
-              <span>Packaged Item</span>
-            </button>
-
-            <button
-              type="button"
-              id="tab-type-loose"
-              onClick={() => handleSwitchProductType('loose')}
-              className={`py-2 px-2.5 rounded-xl flex items-center justify-center gap-2 font-bold transition-all cursor-pointer ${
-                productType === 'loose'
-                  ? 'bg-white text-emerald-950 shadow-xs border border-emerald-200'
-                  : 'text-zinc-500 hover:text-zinc-800'
-              }`}
-            >
-              <Scale className={`w-4 h-4 ${productType === 'loose' ? 'text-emerald-600' : 'text-zinc-400'}`} />
-              <span>Loose / By Weight</span>
-            </button>
-          </div>
-
-          {/* Quick Scan Action (Only for Packaged Items) */}
-          {productType === 'packaged' && !editingProduct && (
-            <button
-              type="button"
-              id="btn-quick-scan-product"
-              onClick={() => setFieldScannerTarget({ type: 'primary', label: 'New Product' })}
-              className="w-full py-2 px-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs text-xs active:scale-[0.99]"
-            >
-              <Camera className="w-4 h-4 text-blue-600" />
-              <span>Scan Barcode to Auto-Fill Name & Details</span>
-            </button>
-          )}
-
-          {/* Loose Produce Unit Selector Bar (Only for Loose Items) */}
-          {productType === 'loose' && (
-            <div className="p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex items-center justify-between gap-2 text-xs">
-              <span className="text-[11px] font-medium text-emerald-900 flex items-center gap-1.5">
-                <Scale className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Sold by weight/volume:</span>
-              </span>
-              <div className="flex gap-1.5">
-                {(['kg', 'gm', 'ltr', 'pcs'] as const).map((unitOpt) => (
-                  <button
-                    key={unitOpt}
-                    type="button"
-                    onClick={() => setProdUnit(unitOpt)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      prodUnit === unitOpt
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-                    }`}
-                  >
-                    {unitOpt}
-                  </button>
-                ))}
-              </div>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent
+          className="sm:max-w-lg max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl"
+          showCloseButton={false}
+        >
+          <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-base font-bold text-foreground">
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </DialogTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={onClose}
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+                <span className="sr-only">Close</span>
+              </Button>
             </div>
-          )}
+            <DialogDescription className="sr-only">
+              {editingProduct ? 'Update product details in your catalog' : 'Add a new product to your catalog'}
+            </DialogDescription>
+          </DialogHeader>
 
-          <div>
-            <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              {productType === 'loose' ? 'Item Name *' : 'Product Name *'}
-            </label>
-            <input
-              type="text"
-              placeholder={productType === 'loose' ? 'e.g. Fresh Red Onions, Organic Apples' : 'e.g. Coca-Cola 330ml Can, Paneer Tikka Burger'}
-              value={prodName}
-              onChange={(e) => setProdName(e.target.value)}
-              className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all"
-              autoFocus
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 no-scrollbar">
+              {/* Segmented Mode Selector: Packaged Goods vs Loose / By Weight */}
+              <div className="p-1 bg-muted rounded-xl border border-border grid grid-cols-2 gap-1 text-xs">
+                <Button
+                  type="button"
+                  id="tab-type-packaged"
+                  variant={productType === 'packaged' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleSwitchProductType('packaged')}
+                  className="h-8 gap-2 font-semibold text-xs shadow-none cursor-pointer"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Packaged Item</span>
+                </Button>
 
-          <div>
-            <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              Category
-            </label>
-            <select
-              value={prodCategory}
-              onChange={(e) => setProdCategory(e.target.value)}
-              className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all cursor-pointer"
-            >
-              {categories
-                .filter((c) => c.name !== 'ALL' && c.name !== 'All Items')
-                .map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              {productType === 'loose' ? `Price per ${prodUnit} (${currencySymbol}) *` : `Unit Price (${currencySymbol}) *`}
-            </label>
-            <input
-              type="number"
-              placeholder="0.00"
-              value={prodPrice}
-              onChange={(e) => setProdPrice(e.target.value)}
-              required
-              min="0"
-              step="any"
-              className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
-            />
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              GST Slab (%) *
-            </label>
-            <select
-              value={prodGstRate}
-              onChange={(e) => setProdGstRate(e.target.value)}
-              required
-              className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all cursor-pointer"
-            >
-              {GST_SLABS.map((slab) => (
-                <option key={slab.label} value={slab.isCustom ? 'custom' : String(slab.rate)}>
-                  {slab.label}
-                </option>
-              ))}
-            </select>
-            {isCustom && (
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  placeholder="Enter custom GST % (e.g. 7.5)"
-                  value={customGstRate}
-                  onChange={(e) => setCustomGstRate(e.target.value)}
-                  required
-                  autoFocus
-                  className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
-                />
-                <span className="text-xs font-bold text-zinc-500 shrink-0">%</span>
+                <Button
+                  type="button"
+                  id="tab-type-loose"
+                  variant={productType === 'loose' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleSwitchProductType('loose')}
+                  className="h-8 gap-2 font-semibold text-xs shadow-none cursor-pointer"
+                >
+                  <Scale className="w-4 h-4" />
+                  <span>Loose / By Weight</span>
+                </Button>
               </div>
-            )}
-          </div>
 
-          {/* Barcode & SKU - Differentiated by Product Type */}
-          {productType === 'packaged' ? (
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-semibold text-zinc-700">
-                    Barcode / EAN (Optional)
-                  </label>
-                  {prodBarcode.trim().length >= 6 && !isLookingUpBarcode && (
-                    <button
-                      type="button"
-                      onClick={() => handleProcessBarcodeLookup(prodBarcode)}
-                      className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <Sparkles className="w-2.5 h-2.5" />
-                      <span>Auto-Fill</span>
-                    </button>
-                  )}
-                </div>
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    id="input-prod-barcode"
-                    placeholder="e.g. 5449000000996"
-                    value={prodBarcode}
-                    onChange={(e) => {
-                      setProdBarcode(e.target.value);
-                      if (lookupFeedback) setLookupFeedback(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleProcessBarcodeLookup(prodBarcode);
-                      }
-                    }}
-                    className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl pl-3.5 pr-10 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight font-mono"
-                  />
-                  <button
-                    type="button"
-                    id="btn-scan-prod-barcode"
-                    onClick={() => setFieldScannerTarget({
-                      type: 'primary',
-                      label: prodName || 'Product',
-                    })}
-                    title="Scan barcode with phone camera"
-                    aria-label="Scan barcode with phone camera"
-                    className="absolute right-1.5 w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-colors cursor-pointer"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </button>
-                </div>
+              {/* Quick Scan Action (Only for Packaged Items) */}
+              {productType === 'packaged' && !editingProduct && (
+                <Button
+                  type="button"
+                  id="btn-quick-scan-product"
+                  variant="outline"
+                  onClick={() => setFieldScannerTarget({ type: 'primary', label: 'New Product' })}
+                  className="w-full h-9 gap-2 font-semibold text-xs border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                >
+                  <Camera className="w-4 h-4 text-primary" />
+                  <span>Scan Barcode to Auto-Fill Name & Details</span>
+                </Button>
+              )}
 
-                {/* Status Feedback */}
-                {isLookingUpBarcode && (
-                  <div className="mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-blue-50 text-blue-800 border border-blue-200/80 flex items-center gap-1.5 animate-pulse">
-                    <Loader2 className="w-3 h-3 animate-spin text-blue-600 shrink-0" />
-                    <span>Looking up product in registry...</span>
-                  </div>
-                )}
-                {lookupFeedback && !isLookingUpBarcode && (
-                  <div className={`mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1.5 ${
-                    lookupFeedback.isMultiPack
-                      ? 'bg-amber-50 text-amber-900 border border-amber-200'
-                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  }`}>
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                    <span className="truncate">{lookupFeedback.message}</span>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-                  SKU Code (Optional)
-                </label>
-                <input
+              {/* Loose Produce Unit Selector Bar (Only for Loose Items) */}
+              {productType === 'loose' && (
+                <Card className="bg-muted/30 border-border shadow-none">
+                  <CardContent className="p-2.5 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                      <Scale className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>Sold by weight/volume:</span>
+                    </span>
+                    <div className="flex gap-1.5">
+                      {(['kg', 'gm', 'ltr', 'pcs'] as const).map((unitOpt) => (
+                        <Button
+                          key={unitOpt}
+                          type="button"
+                          variant={prodUnit === unitOpt ? 'default' : 'outline'}
+                          size="xs"
+                          onClick={() => setProdUnit(unitOpt)}
+                          className="h-7 px-2.5 text-xs font-semibold"
+                        >
+                          {unitOpt}
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="input-prod-name" className="text-xs font-semibold text-foreground">
+                  {productType === 'loose' ? 'Item Name' : 'Product Name'} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="input-prod-name"
                   type="text"
-                  placeholder="e.g. COCA-CAN-330"
-                  value={prodSku}
-                  onChange={(e) => setProdSku(e.target.value)}
-                  className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:bg-white focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 focus:outline-hidden transition-all tabular-nums tracking-tight"
+                  placeholder={productType === 'loose' ? 'e.g. Fresh Red Onions, Organic Apples' : 'e.g. Coca-Cola 330ml Can, Paneer Tikka Burger'}
+                  value={prodName}
+                  onChange={(e) => setProdName(e.target.value)}
+                  className="h-9 text-xs"
+                  autoFocus
+                  required
                 />
               </div>
-            </div>
-          ) : (
-            /* Loose produce: Display Store PLU lookup code and auto-generate */
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] font-semibold text-zinc-700">
-                  Item PLU / Quick Lookup Code *
-                </label>
-                <button
-                  type="button"
-                  onClick={generateNewPlu}
-                  className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <RefreshCw className="w-2.5 h-2.5" />
-                  <span>Generate New PLU</span>
-                </button>
-              </div>
-              <input
-                type="text"
-                placeholder="e.g. PLU-4011"
-                value={prodSku}
-                onChange={(e) => setProdSku(e.target.value)}
-                required
-                className="w-full h-11 bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 text-xs font-semibold text-zinc-900 font-mono focus:bg-white focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 focus:outline-hidden transition-all"
-              />
-              <p className="text-[10px] text-zinc-400 mt-1">
-                Loose items use store PLU codes on the register instead of factory barcodes.
-              </p>
-            </div>
-          )}
 
-          {/* Packaging Tiers & Multi-Barcodes (Only for Packaged Items) */}
-          {productType === 'packaged' && (
-            <div className="bg-zinc-50/80 p-3.5 rounded-2xl border border-zinc-200 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-bold text-zinc-900">Packaging Tiers & Multi-Barcodes</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddPackagingRow}
-                  className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer"
+              <div className="space-y-1.5">
+                <Label htmlFor="select-prod-category" className="text-xs font-semibold text-foreground">
+                  Category
+                </Label>
+                <Select
+                  value={prodCategory}
+                  onValueChange={(val) => val && setProdCategory(val)}
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Tier</span>
-                </button>
+                  <SelectTrigger id="select-prod-category" className="w-full h-9 text-xs">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories
+                      .filter((c) => c.name !== 'ALL' && c.name !== 'All Items')
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-[10px] text-zinc-500">
-                Link case/box barcodes and custom pack prices while tracking total inventory in base {prodUnit || 'units'}.
-              </p>
 
-              {packagingOptions.length === 0 ? (
-                <div className="text-center py-2.5 px-2 bg-white rounded-xl border border-dashed border-zinc-200 text-zinc-400 text-xs">
-                  No packaging tiers configured. Standard single {prodUnit || 'unit'} pricing applies.
+              <div className="space-y-1.5">
+                <Label htmlFor="input-prod-price" className="text-xs font-semibold text-foreground">
+                  {productType === 'loose' ? `Price per ${prodUnit} (${currencySymbol})` : `Unit Price (${currencySymbol})`} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="input-prod-price"
+                  type="number"
+                  placeholder="0.00"
+                  value={prodPrice}
+                  onChange={(e) => setProdPrice(e.target.value)}
+                  required
+                  min="0"
+                  step="any"
+                  className="h-9 text-xs tabular-nums"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="select-prod-gst" className="text-xs font-semibold text-foreground">
+                  GST Slab (%) <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={prodGstRate}
+                  onValueChange={(val) => val && setProdGstRate(val)}
+                >
+                  <SelectTrigger id="select-prod-gst" className="w-full h-9 text-xs">
+                    <SelectValue placeholder="Select GST rate" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GST_SLABS.map((slab) => (
+                      <SelectItem key={slab.label} value={slab.isCustom ? 'custom' : String(slab.rate)}>
+                        {slab.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isCustom && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="Enter custom GST % (e.g. 7.5)"
+                      value={customGstRate}
+                      onChange={(e) => setCustomGstRate(e.target.value)}
+                      required
+                      autoFocus
+                      className="h-9 text-xs tabular-nums"
+                    />
+                    <span className="text-xs font-bold text-muted-foreground shrink-0">%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Barcode & SKU - Differentiated by Product Type */}
+              {productType === 'packaged' ? (
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="input-prod-barcode" className="text-xs font-semibold text-foreground">
+                        Barcode / EAN (Optional)
+                      </Label>
+                      {prodBarcode.trim().length >= 6 && !isLookingUpBarcode && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="xs"
+                          onClick={() => handleProcessBarcodeLookup(prodBarcode)}
+                          className="text-[10px] font-semibold text-primary p-0 h-auto gap-1"
+                        >
+                          <Sparkles className="w-2.5 h-2.5" />
+                          <span>Auto-Fill</span>
+                        </Button>
+                      )}
+                    </div>
+                    <div className="relative flex items-center">
+                      <Input
+                        type="text"
+                        id="input-prod-barcode"
+                        placeholder="e.g. 5449000000996"
+                        value={prodBarcode}
+                        onChange={(e) => {
+                          setProdBarcode(e.target.value);
+                          if (lookupFeedback) setLookupFeedback(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleProcessBarcodeLookup(prodBarcode);
+                          }
+                        }}
+                        className="h-9 pr-9 text-xs font-mono tabular-nums"
+                      />
+                      <Button
+                        type="button"
+                        id="btn-scan-prod-barcode"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setFieldScannerTarget({
+                          type: 'primary',
+                          label: prodName || 'Product',
+                        })}
+                        title="Scan barcode with phone camera"
+                        aria-label="Scan barcode with phone camera"
+                        className="absolute right-1 text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    {/* Status Feedback */}
+                    {isLookingUpBarcode && (
+                      <div className="mt-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5 animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />
+                        <span>Looking up product in registry...</span>
+                      </div>
+                    )}
+                    {lookupFeedback && !isLookingUpBarcode && (
+                      <div className={`mt-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium flex items-center gap-1.5 ${
+                        lookupFeedback.isMultiPack
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                          : 'bg-primary/10 text-primary border border-primary/20'
+                      }`}>
+                        <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                        <span className="truncate">{lookupFeedback.message}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="input-prod-sku" className="text-xs font-semibold text-foreground">
+                      SKU Code (Optional)
+                    </Label>
+                    <Input
+                      type="text"
+                      id="input-prod-sku"
+                      placeholder="e.g. COCA-CAN-330"
+                      value={prodSku}
+                      onChange={(e) => setProdSku(e.target.value)}
+                      className="h-9 text-xs tabular-nums"
+                    />
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
-                  {packagingOptions.map((pack, idx) => {
-                    const basePrice = parseFloat(prodPrice) || 0;
-                    const packPrice = pack.sellingPrice || 0;
-                    const mult = pack.multiplier || 1;
-                    const perUnitPrice = packPrice / mult;
-                    const savings =
-                      basePrice > 0 && packPrice > 0
-                        ? Math.round(((basePrice * mult - packPrice) / (basePrice * mult)) * 100)
-                        : 0;
-
-                    return (
-                      <div
-                        key={pack.id || idx}
-                        className="p-2.5 bg-white rounded-xl border border-zinc-200 shadow-2xs space-y-2"
-                      >
-                        <div className="grid grid-cols-12 gap-2 items-center">
-                          {/* Pack Name */}
-                          <div className="col-span-5">
-                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-0.5">
-                              Pack Name
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Box of 6"
-                              value={pack.packName}
-                              onChange={(e) => handleUpdatePackagingRow(pack.id, 'packName', e.target.value)}
-                              required
-                              className="w-full h-8 px-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium text-zinc-900 focus:bg-white focus:ring-1 focus:ring-primary focus:outline-hidden"
-                            />
-                          </div>
-
-                          {/* Multiplier */}
-                          <div className="col-span-3">
-                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-0.5">
-                              Multiplier
-                            </label>
-                            <div className="relative">
-                              <input
-                                type="number"
-                                min="1"
-                                step="1"
-                                placeholder="6"
-                                value={pack.multiplier || ''}
-                                onChange={(e) =>
-                                  handleUpdatePackagingRow(
-                                    pack.id,
-                                    'multiplier',
-                                    parseInt(e.target.value, 10) || 1
-                                  )
-                                }
-                                required
-                                className="w-full h-8 px-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-semibold text-zinc-900 focus:bg-white focus:ring-1 focus:ring-primary focus:outline-hidden tabular-nums"
-                              />
-                              <span className="absolute right-1.5 top-2 text-[9px] font-semibold text-zinc-400 pointer-events-none">
-                                {prodUnit}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Selling Price */}
-                          <div className="col-span-3">
-                            <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-0.5">
-                              Price ({currencySymbol})
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="110"
-                              value={pack.sellingPrice || ''}
-                              onChange={(e) =>
-                                handleUpdatePackagingRow(
-                                  pack.id,
-                                  'sellingPrice',
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              required
-                              className="w-full h-8 px-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-bold text-zinc-900 focus:bg-white focus:ring-1 focus:ring-primary focus:outline-hidden tabular-nums"
-                            />
-                          </div>
-
-                          {/* Remove Button */}
-                          <div className="col-span-1 flex justify-end pt-3.5">
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePackagingRow(pack.id)}
-                              title="Delete pack option"
-                              className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Barcode & Live Savings breakdown */}
-                        <div className="grid grid-cols-12 gap-2 items-center pt-1 border-t border-zinc-100">
-                          <div className="col-span-7">
-                            <div className="relative flex items-center">
-                              <input
-                                type="text"
-                                id={`input-pack-barcode-${pack.id}`}
-                                placeholder="Scan or enter pack barcode (EAN)..."
-                                value={pack.barcode || ''}
-                                onChange={(e) => handleUpdatePackagingRow(pack.id, 'barcode', e.target.value)}
-                                className="w-full h-7 pl-2 pr-7 bg-zinc-50 border border-zinc-200 rounded-md text-[11px] font-mono text-zinc-800 placeholder:text-zinc-400 focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-hidden"
-                              />
-                              <button
-                                type="button"
-                                id={`btn-scan-pack-barcode-${pack.id}`}
-                                onClick={() => setFieldScannerTarget({
-                                  type: 'pack',
-                                  packId: pack.id,
-                                  label: pack.packName || 'Packaging Tier',
-                                })}
-                                title="Scan pack barcode with phone camera"
-                                aria-label="Scan pack barcode with phone camera"
-                                className="absolute right-0.5 top-0.5 bottom-0.5 w-6 flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer"
-                              >
-                                <Camera className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="col-span-5 text-right text-[10px] text-zinc-500 font-medium">
-                            {packPrice > 0 && mult > 0 ? (
-                              <span>
-                                {currencySymbol}{perUnitPrice.toFixed(2)} / ea
-                                {savings > 0 && (
-                                  <span className="ml-1 text-emerald-600 font-bold">
-                                    ({savings}% off)
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-zinc-400">Unit rate preview</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                /* Loose produce: Display Store PLU lookup code and auto-generate */
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="input-prod-sku" className="text-xs font-semibold text-foreground">
+                      Item PLU / Quick Lookup Code <span className="text-destructive">*</span>
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="xs"
+                      onClick={generateNewPlu}
+                      className="text-[10px] font-semibold text-primary p-0 h-auto gap-1"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                      <span>Generate New PLU</span>
+                    </Button>
+                  </div>
+                  <Input
+                    type="text"
+                    id="input-prod-sku"
+                    placeholder="e.g. PLU-4011"
+                    value={prodSku}
+                    onChange={(e) => setProdSku(e.target.value)}
+                    required
+                    className="h-9 text-xs font-mono font-semibold"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Loose items use store PLU codes on the register instead of factory barcodes.
+                  </p>
                 </div>
               )}
-            </div>
-          )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-zinc-50 p-3 rounded-2xl border border-zinc-200/80">
-            <div>
-              <label className="text-[10px] font-semibold text-zinc-600 block mb-1">
-                Stock on Hand
-              </label>
-              <input
-                type="number"
-                value={prodStock}
-                onChange={(e) => setProdStock(e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-900 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-zinc-600 block mb-1">
-                Reorder Alert (&lt;)
-              </label>
-              <input
-                type="number"
-                value={prodThreshold}
-                onChange={(e) => setProdThreshold(e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-900 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-zinc-600 block mb-1">
-                Inventory Unit
-              </label>
-              <select
-                value={prodUnit}
-                onChange={(e) => setProdUnit(e.target.value)}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-900 focus:border-primary focus:outline-hidden cursor-pointer"
-              >
-                <option value="pcs">pcs (Pieces)</option>
-                <option value="kg">kg (Kilograms)</option>
-                <option value="gm">gm (Grams)</option>
-                <option value="ltr">ltr (Liters)</option>
-                <option value="box">box (Boxes)</option>
-                <option value="pack">pack (Packs)</option>
-                <option value="plate">plate / portion</option>
-              </select>
-            </div>
-            {canSeeCost ? (
-              <div>
-                <label className="text-[10px] font-semibold text-zinc-600 block mb-1">
-                  Cost Price ({currencySymbol})
-                </label>
+              {/* Packaging Tiers & Multi-Barcodes (Only for Packaged Items) */}
+              {productType === 'packaged' && (
+                <Card className="bg-muted/20 border-border shadow-none space-y-2.5">
+                  <CardHeader className="p-3 pb-0 flex-row items-center justify-between space-y-0">
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-primary" />
+                      <CardTitle className="text-xs font-bold text-foreground">
+                        Packaging Tiers & Multi-Barcodes
+                      </CardTitle>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="xs"
+                      onClick={handleAddPackagingRow}
+                      className="text-xs font-semibold text-primary p-0 h-auto gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Tier</span>
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-0 space-y-2">
+                    <CardDescription className="text-[10px] text-muted-foreground">
+                      Link case/box barcodes and custom pack prices while tracking total inventory in base {prodUnit || 'units'}.
+                    </CardDescription>
+
+                    {packagingOptions.length === 0 ? (
+                      <div className="text-center py-3 px-2 bg-background rounded-lg border border-dashed border-border text-muted-foreground text-xs">
+                        No packaging tiers configured. Standard single {prodUnit || 'unit'} pricing applies.
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
+                        {packagingOptions.map((pack, idx) => {
+                          const basePrice = parseFloat(prodPrice) || 0;
+                          const packPrice = pack.sellingPrice || 0;
+                          const mult = pack.multiplier || 1;
+                          const perUnitPrice = packPrice / mult;
+                          const savings =
+                            basePrice > 0 && packPrice > 0
+                              ? Math.round(((basePrice * mult - packPrice) / (basePrice * mult)) * 100)
+                              : 0;
+
+                          return (
+                            <Card
+                              key={pack.id || idx}
+                              className="p-2.5 bg-background border-border shadow-none space-y-2"
+                            >
+                              <div className="grid grid-cols-12 gap-2 items-center">
+                                {/* Pack Name */}
+                                <div className="col-span-5 space-y-1">
+                                  <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                                    Pack Name
+                                  </Label>
+                                  <Input
+                                    type="text"
+                                    placeholder="e.g. Box of 6"
+                                    value={pack.packName}
+                                    onChange={(e) => handleUpdatePackagingRow(pack.id, 'packName', e.target.value)}
+                                    required
+                                    className="h-8 text-xs font-medium"
+                                  />
+                                </div>
+
+                                {/* Multiplier */}
+                                <div className="col-span-3 space-y-1">
+                                  <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                                    Multiplier
+                                  </Label>
+                                  <div className="relative">
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      step="1"
+                                      placeholder="6"
+                                      value={pack.multiplier || ''}
+                                      onChange={(e) =>
+                                        handleUpdatePackagingRow(
+                                          pack.id,
+                                          'multiplier',
+                                          parseInt(e.target.value, 10) || 1
+                                        )
+                                      }
+                                      required
+                                      className="h-8 text-xs font-semibold tabular-nums pr-7"
+                                    />
+                                    <span className="absolute right-1.5 top-2 text-[9px] font-semibold text-muted-foreground pointer-events-none">
+                                      {prodUnit}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Selling Price */}
+                                <div className="col-span-3 space-y-1">
+                                  <Label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                                    Price ({currencySymbol})
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="110"
+                                    value={pack.sellingPrice || ''}
+                                    onChange={(e) =>
+                                      handleUpdatePackagingRow(
+                                        pack.id,
+                                        'sellingPrice',
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                    required
+                                    className="h-8 text-xs font-bold tabular-nums"
+                                  />
+                                </div>
+
+                                {/* Remove Button */}
+                                <div className="col-span-1 flex justify-end pt-4">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    onClick={() => handleRemovePackagingRow(pack.id)}
+                                    title="Delete pack option"
+                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Barcode & Live Savings breakdown */}
+                              <div className="grid grid-cols-12 gap-2 items-center pt-1 border-t border-border">
+                                <div className="col-span-7">
+                                  <div className="relative flex items-center">
+                                    <Input
+                                      type="text"
+                                      id={`input-pack-barcode-${pack.id}`}
+                                      placeholder="Scan or enter pack barcode (EAN)..."
+                                      value={pack.barcode || ''}
+                                      onChange={(e) => handleUpdatePackagingRow(pack.id, 'barcode', e.target.value)}
+                                      className="h-7 pr-7 text-[11px] font-mono"
+                                    />
+                                    <Button
+                                      type="button"
+                                      id={`btn-scan-pack-barcode-${pack.id}`}
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      onClick={() => setFieldScannerTarget({
+                                        type: 'pack',
+                                        packId: pack.id,
+                                        label: pack.packName || 'Packaging Tier',
+                                      })}
+                                      title="Scan pack barcode with phone camera"
+                                      aria-label="Scan pack barcode with phone camera"
+                                      className="absolute right-0.5 text-primary hover:text-primary hover:bg-primary/10"
+                                    >
+                                      <Camera className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="col-span-5 text-right text-[10px] text-muted-foreground font-medium">
+                                  {packPrice > 0 && mult > 0 ? (
+                                    <span>
+                                      {currencySymbol}{perUnitPrice.toFixed(2)} / ea
+                                      {savings > 0 && (
+                                        <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 text-primary">
+                                          {savings}% off
+                                        </Badge>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">Unit rate preview</span>
+                                  )}
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="bg-muted/20 border-border shadow-none">
+                <CardContent className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground">
+                      Stock on Hand
+                    </Label>
+                    <Input
+                      type="number"
+                      value={prodStock}
+                      onChange={(e) => setProdStock(e.target.value)}
+                      className="h-8 text-xs font-medium tabular-nums"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground">
+                      Reorder Alert (&lt;)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={prodThreshold}
+                      onChange={(e) => setProdThreshold(e.target.value)}
+                      className="h-8 text-xs font-medium tabular-nums"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-semibold text-muted-foreground">
+                      Inventory Unit
+                    </Label>
+                    <Select
+                      value={prodUnit}
+                      onValueChange={(val) => val && setProdUnit(val)}
+                    >
+                      <SelectTrigger className="w-full h-8 text-xs">
+                        <SelectValue placeholder="Unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pcs">pcs (Pieces)</SelectItem>
+                        <SelectItem value="kg">kg (Kilograms)</SelectItem>
+                        <SelectItem value="gm">gm (Grams)</SelectItem>
+                        <SelectItem value="ltr">ltr (Liters)</SelectItem>
+                        <SelectItem value="box">box (Boxes)</SelectItem>
+                        <SelectItem value="pack">pack (Packs)</SelectItem>
+                        <SelectItem value="plate">plate / portion</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {canSeeCost ? (
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-semibold text-muted-foreground">
+                        Cost Price ({currencySymbol})
+                      </Label>
+                      <Input
+                        type="number"
+                        placeholder="Optional"
+                        value={prodCostPrice}
+                        onChange={(e) => setProdCostPrice(e.target.value)}
+                        className="h-8 text-xs font-medium tabular-nums"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-semibold text-muted-foreground">
+                        Cost Price
+                      </Label>
+                      <div className="h-8 text-[11px] font-medium text-muted-foreground flex items-center px-2 bg-muted/50 rounded-md border border-border">
+                        Restricted (Owner only)
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Photo Upload / Camera Dropzone */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  Product Photo (Camera or Upload)
+                </Label>
+
+                {/* Hidden file input supporting camera capture & gallery */}
                 <input
-                  type="number"
-                  placeholder="Optional"
-                  value={prodCostPrice}
-                  onChange={(e) => setProdCostPrice(e.target.value)}
-                  className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:border-primary focus:outline-hidden tabular-nums tracking-tight"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  id="product-photo-input"
+                  className="hidden"
+                  onChange={handleImageCapture}
                 />
-              </div>
-            ) : (
-              <div>
-                <label className="text-[10px] font-semibold text-zinc-600 block mb-1">
-                  Cost Price
-                </label>
-                <div className="text-[11px] font-medium text-zinc-400 py-1.5 px-2 bg-zinc-100 rounded-lg border border-zinc-200">
-                  Restricted (Owner only)
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Photo Upload / Camera Dropzone */}
-          <div>
-            <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-              Product Photo (Camera or Upload)
-            </label>
-
-            {/* Hidden file input supporting camera capture & gallery */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              id="product-photo-input"
-              className="hidden"
-              onChange={handleImageCapture}
-            />
-
-            {isCompressing ? (
-              <div className="w-full py-6 flex flex-col items-center justify-center gap-2 border border-zinc-200 rounded-2xl bg-zinc-50 text-zinc-500">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <span className="text-xs font-medium">Optimizing and compressing photo...</span>
-              </div>
-            ) : !prodImageUrl ? (
-              /* Dropzone when no image is selected */
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    fileInputRef.current?.click();
-                  }
-                }}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`w-full py-4 px-3 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                  isDragOver
-                    ? 'border-primary bg-blue-50/60 scale-[0.99]'
-                    : 'border-zinc-300 hover:border-zinc-400 bg-zinc-50/60 hover:bg-zinc-50'
-                }`}
-              >
-                <div className="w-9 h-9 rounded-full bg-white shadow-xs border border-zinc-200 flex items-center justify-center mb-1.5 text-zinc-600">
-                  <Camera className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-semibold text-zinc-800">
-                  Take Photo or Upload Image
-                </span>
-                <span className="text-[10px] text-zinc-500 mt-0.5">
-                  Tap for Camera / Gallery or Drag & Drop (Max 400x400 auto-compressed)
-                </span>
-              </div>
-            ) : (
-              /* Selected Image Preview (64x64) with Change & Remove */
-              <div className="w-full p-2.5 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <img
-                    src={prodImageUrl}
-                    alt="Product preview"
-                    className="w-16 h-16 rounded-xl object-cover border border-zinc-200 shadow-xs shrink-0 bg-white"
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-zinc-800 truncate">
-                      Photo Added
+                {isCompressing ? (
+                  <div className="w-full py-6 flex flex-col items-center justify-center gap-2 border border-border rounded-xl bg-muted/20 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <span className="text-xs font-medium">Optimizing and compressing photo...</span>
+                  </div>
+                ) : !prodImageUrl ? (
+                  /* Dropzone when no image is selected */
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => fileInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`w-full py-4 px-3 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+                      isDragOver
+                        ? 'border-primary bg-primary/5 scale-[0.99]'
+                        : 'border-border hover:border-primary/50 bg-muted/20 hover:bg-muted/40'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-card shadow-xs border border-border flex items-center justify-center mb-1.5 text-muted-foreground">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">
+                      Take Photo or Upload Image
                     </span>
-                    <span className="text-[10px] text-primary font-medium flex items-center gap-1">
-                      <Check className="w-2.5 h-2.5" />
-                      <span>Optimized & Ready</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">
+                      Tap for Camera / Gallery or Drag & Drop (Max 400x400 auto-compressed)
                     </span>
                   </div>
-                </div>
+                ) : (
+                  /* Selected Image Preview with Change & Remove */
+                  <Card className="w-full p-2.5 bg-muted/20 border-border shadow-none flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img
+                        src={prodImageUrl}
+                        alt="Product preview"
+                        className="w-14 h-14 rounded-lg object-cover border border-border shadow-xs shrink-0 bg-background"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold text-foreground truncate">
+                          Photo Added
+                        </span>
+                        <span className="text-[10px] text-primary font-medium flex items-center gap-1">
+                          <Check className="w-2.5 h-2.5" />
+                          <span>Optimized & Ready</span>
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-2.5 py-1.5 bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-xl text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Change</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setProdImageUrl('')}
-                    className="px-2.5 py-1.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                    title="Remove Photo"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Remove</span>
-                  </button>
-                </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-8 text-xs font-semibold gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Change</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setProdImageUrl('')}
+                        className="h-8 text-xs font-semibold text-destructive hover:text-destructive gap-1"
+                        title="Remove Photo"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </Button>
+                    </div>
+                  </Card>
+                )}
               </div>
-            )}
-          </div>
+            </div>
 
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 h-11 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-medium rounded-xl text-xs transition-all cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-xs shadow-xs transition-all active:scale-[0.98] cursor-pointer"
-            >
-              Save Product
-            </button>
-          </div>
-        </form>
-      </div>
+            <DialogFooter className="p-4 border-t border-border bg-card shrink-0 flex-row items-center gap-2 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="flex-1 h-10 text-xs font-semibold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="default"
+                className="flex-1 h-10 text-xs font-semibold"
+              >
+                Save Product
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Phone Camera Barcode Scanner Dialog for Fields */}
       <FieldBarcodeScannerModal
@@ -1047,7 +1118,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           setFieldScannerTarget(null);
         }}
       />
-    </div>
+    </>
   );
 };
 
