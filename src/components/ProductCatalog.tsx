@@ -37,16 +37,16 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         !selectedCategory ||
         selectedCategory === 'All Items' ||
         selectedCategory === 'All' ||
-        item.category?.toLowerCase() === selectedCategory.toLowerCase();
+        (item.category || '').toLowerCase() === selectedCategory.toLowerCase();
 
       // Search query filter (matches name, barcode, sku, category)
       const q = searchQuery.trim().toLowerCase();
       const matchesSearch =
         !q ||
-        item.name.toLowerCase().includes(q) ||
+        (item.name || '').toLowerCase().includes(q) ||
         (item.barcode && item.barcode.toLowerCase() === cleanQ(q)) ||
-        (item.sku && item.sku.toLowerCase().includes(q)) ||
-        (item.category && item.category.toLowerCase().includes(q));
+        (item.sku && (item.sku || '').toLowerCase().includes(q)) ||
+        ((item.category || '').toLowerCase().includes(q));
 
       return matchesCategory && matchesSearch;
     });

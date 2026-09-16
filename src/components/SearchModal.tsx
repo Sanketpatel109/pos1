@@ -36,11 +36,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     const q = query.trim().toLowerCase();
     return catalog.filter(
       (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q) ||
+        (item.name || '').toLowerCase().includes(q) ||
+        (item.category || '').toLowerCase().includes(q) ||
         (item.barcode && item.barcode.toLowerCase().includes(q)) ||
-        (item.sku && item.sku.toLowerCase().includes(q)) ||
-        (item.description && item.description.toLowerCase().includes(q))
+        (item.sku && (item.sku || '').toLowerCase().includes(q)) ||
+        (item.description && (item.description || '').toLowerCase().includes(q))
     );
   }, [catalog, query]);
 

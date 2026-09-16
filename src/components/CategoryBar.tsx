@@ -46,7 +46,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
       return catalog.length;
     }
     return catalog.filter(
-      (item) => item.category?.toLowerCase() === categoryName.toLowerCase()
+      (item) => (item.category || '').toLowerCase() === (categoryName || '').toLowerCase()
     ).length;
   };
 

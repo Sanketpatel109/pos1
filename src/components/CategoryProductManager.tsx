@@ -380,10 +380,11 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
           {/* Categories List */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
             {categories.map((cat) => {
+              const catName = (cat.name || '').trim();
               const count =
-                cat.name === 'ALL' || cat.name === 'All Items'
+                catName.toUpperCase() === 'ALL' || catName.toLowerCase() === 'all items'
                   ? catalog.length
-                  : catalog.filter((i) => i.category.toLowerCase() === cat.name.toLowerCase()).length;
+                  : catalog.filter((i) => (i.category || '').trim().toLowerCase() === catName.toLowerCase()).length;
 
               return (
                 <Card
@@ -583,11 +584,18 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {catalog
                   .filter((item) => {
+                    const q = (searchQuery || '').trim().toLowerCase();
+                    const itemName = (item.name || '').toLowerCase();
+                    const itemCat = (item.category || '').toLowerCase();
+                    const itemBarcode = item.barcode || '';
+                    const itemSku = (item.sku || '').toLowerCase();
+
                     const matchesSearch =
-                      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (item.barcode && item.barcode.includes(searchQuery)) ||
-                      (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+                      !q ||
+                      itemName.includes(q) ||
+                      itemCat.includes(q) ||
+                      itemBarcode.includes(searchQuery.trim()) ||
+                      itemSku.includes(q);
 
                     if (!matchesSearch) return false;
 
