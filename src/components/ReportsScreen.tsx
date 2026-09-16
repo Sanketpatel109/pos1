@@ -77,12 +77,18 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
     const matchesFilter =
       selectedFilter === 'ALL' || order.paymentMethod === selectedFilter;
 
+    const q = searchQuery.trim().toLowerCase();
+    const cleanQ = q.replace(/^ord-/, '').replace(/^#/, '');
     const matchesSearch =
-      searchQuery.trim() === '' ||
-      order.orderNumber.toString().includes(searchQuery) ||
+      !q ||
+      order.orderNumber.toString().includes(q) ||
+      order.orderNumber.toString().includes(cleanQ) ||
+      (order.orderNumberFormatted && order.orderNumberFormatted.toLowerCase().includes(q)) ||
+      (order.orderNumberFormatted && order.orderNumberFormatted.toLowerCase().includes(cleanQ)) ||
+      (order.id && order.id.toLowerCase().includes(q)) ||
       (order.customerName &&
-        order.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (order.customerPhone && order.customerPhone.includes(searchQuery));
+        order.customerName.toLowerCase().includes(q)) ||
+      (order.customerPhone && order.customerPhone.includes(q));
 
     return matchesFilter && matchesSearch;
   });

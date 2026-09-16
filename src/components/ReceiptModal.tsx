@@ -11,6 +11,7 @@ import {
 import { Order, ShopSettings, BillItem } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 import { printDirectThermalReceipt } from './DirectThermalReceipt';
+import { Barcode128 } from './Barcode128';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -400,9 +401,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             )}
 
             {/* Barcode & Footer Note */}
-            <div className="text-center pt-1 space-y-1">
-              <div className="h-9 bg-repeating-linear-gradient flex items-center justify-center text-[10px] tracking-[0.25em] text-foreground border-y border-border py-1">
-                *ORD-{activeOrderNum}-2026*
+            <div className="text-center pt-2 space-y-1.5">
+              <div className="py-2 px-3 flex flex-col items-center justify-center border-y border-dashed border-border bg-white rounded-lg">
+                <Barcode128
+                  value={
+                    order?.orderNumberFormatted
+                      ? `ORD-${order.orderNumberFormatted.replace(/^#/, '')}`
+                      : `ORD-${activeOrderNum}`
+                  }
+                  width={1.4}
+                  height={38}
+                  displayValue={true}
+                  fontSize={10}
+                />
               </div>
               {shopSettings.returnPolicyNote && (
                 <p className="text-[9px] text-muted-foreground pt-1 leading-tight italic">
