@@ -53,6 +53,8 @@ export interface PaymentModalProps {
   customers?: Customer[];
   storeVpa?: string;
   storeName?: string;
+  upiVerificationMode?: 'manual' | 'auto';
+  razorpayKeyId?: string;
   discount?: number;
   discountType?: 'percentage' | 'flat';
   discountAmount?: number;
@@ -99,6 +101,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   customers = [],
   storeVpa = 'anandsupermarket@okaxis',
   storeName = 'Anand Supermarket',
+  upiVerificationMode = 'manual',
+  razorpayKeyId,
   discount = 0,
   discountType = 'percentage',
   discountAmount = 0,
@@ -969,6 +973,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   currencySymbol={currencySymbol}
                   storeVpa={storeVpa}
                   storeName={storeName}
+                  verificationMode={upiVerificationMode}
+                  razorpayKeyId={razorpayKeyId}
                   onConfirmPayment={handleCompleteUpiSale}
                   isSubmitting={isSubmitting}
                 />

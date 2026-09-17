@@ -328,6 +328,8 @@ export const DEFAULT_SHOP_SETTINGS: ShopSettings = {
   upiId: 'monopos.merchant@okhdfcbank',
   upiPayeeName: 'MonoPOS Express',
   upiVerificationMode: 'manual',
+  razorpayKeyId: '',
+  upiAutoDetectTimeoutSec: 5,
   currencySymbol: '₹',
   taxRate: 5,
   taxLabel: 'GST (2.5% CGST + 2.5% SGST)',

@@ -2613,8 +2613,10 @@ export default function App() {
         taxRate={shopSettings.taxRate}
         currencySymbol={shopSettings.currencySymbol}
         customers={customers}
-        storeVpa="anandsupermarket@okaxis"
+        storeVpa={shopSettings.upiId || 'anandsupermarket@okaxis'}
         storeName={shopSettings.shopName || 'Anand Supermarket'}
+        upiVerificationMode={shopSettings.upiVerificationMode || 'manual'}
+        razorpayKeyId={shopSettings.razorpayKeyId}
         discount={discount}
         discountType={discountType}
         discountAmount={discountAmount}

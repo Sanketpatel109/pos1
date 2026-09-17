@@ -895,12 +895,39 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                           <SelectValue placeholder="Verification Mode" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="manual">Soundbox / Manual UTR</SelectItem>
-                          <SelectItem value="auto">Auto-Verify (Gateway / Webhook)</SelectItem>
+                          <SelectItem value="manual">Manual (Soundbox / Tap)</SelectItem>
+                          <SelectItem value="auto">Auto-Detect (Hands-Free)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
+
+                  {formData.upiVerificationMode === 'auto' && (
+                    <div className="pt-1.5 border-t border-border/60 space-y-2 animate-in fade-in duration-150">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
+                          <span>Razorpay Key ID (Optional)</span>
+                          <span className="text-[10px] text-muted-foreground font-normal">e.g. rzp_live_xxx</span>
+                        </Label>
+                        <Input
+                          type="text"
+                          placeholder="rzp_live_... or rzp_test_... (or leave blank for auto-polling)"
+                          value={formData.razorpayKeyId || ''}
+                          onChange={(e) => setFormData({ ...formData, razorpayKeyId: e.target.value })}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                        ⚡ <strong>Auto-Detect Active:</strong> The POS counter will automatically detect customer payment, trigger phone haptic vibration, speak the soundbox chime, and close the bill with zero clicks.
+                      </p>
+                    </div>
+                  )}
+
+                  {formData.upiVerificationMode !== 'auto' && (
+                    <p className="text-[10px] text-muted-foreground leading-relaxed pt-1">
+                      ℹ️ <strong>Manual Mode Active:</strong> Direct zero-fee bank transfer. Cashier confirms via Paytm/PhonePe soundbox or SMS alert and taps "Payment Received".
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 

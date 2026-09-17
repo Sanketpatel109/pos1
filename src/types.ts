@@ -214,6 +214,8 @@ export interface ShopSettings {
   upiId?: string; // UPI ID for India (e.g. store@upi)
   upiPayeeName?: string;
   upiVerificationMode?: 'manual' | 'auto';
+  razorpayKeyId?: string;
+  upiAutoDetectTimeoutSec?: number;
   currencySymbol: string;
   taxRate: number; // percentage, e.g. 5
   taxLabel?: string; // 'GST' or 'Sales Tax'
