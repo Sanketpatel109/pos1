@@ -22,9 +22,18 @@ import { Order, PaymentMethod, CatalogItem, ShopSettings } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 import { downloadTallyXml } from '../utils/tallyExport';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import { ProcessReturnModal, RefundResult } from './ProcessReturnModal';
 
 interface ReportsScreenProps {
@@ -384,54 +393,52 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background text-foreground overflow-hidden">
-      {/* Top Metrics Summary Strip */}
-      <div className="bg-muted/40 border-b border-border p-3 sm:p-4 shrink-0">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-          <Card className="p-3 border-border shadow-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              TOTAL SALES
+      {/* Top Metrics Summary Strip - Clean default shadcn Cards */}
+      <div className="bg-muted/30 border-b border-border p-3 sm:p-4 shrink-0">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="p-4 gap-1 border-border shadow-xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              Total Sales
             </span>
-            <span className="text-xl sm:text-2xl font-bold text-foreground tabular-nums tracking-tight">
-              {currencySymbol}
-              {totalSales.toFixed(2)}
+            <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
+              {currencySymbol}{totalSales.toFixed(2)}
             </span>
           </Card>
 
-          <Card className="p-3 border-border shadow-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              TOTAL BILLS
+          <Card className="p-4 gap-1 border-border shadow-xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              Total Bills
             </span>
-            <span className="text-xl sm:text-2xl font-bold text-foreground tabular-nums tracking-tight">
+            <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
               {totalBillsCount} Bills
             </span>
           </Card>
 
-          <Card className="p-3 border-border shadow-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              AVG BILL VALUE
+          <Card className="p-4 gap-1 border-border shadow-xs">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              Avg. Bill Value
             </span>
-            <span className="text-xl sm:text-2xl font-bold text-foreground tabular-nums tracking-tight">
-              {currencySymbol}
-              {avgOrderValue.toFixed(2)}
+            <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
+              {currencySymbol}{avgOrderValue.toFixed(2)}
             </span>
           </Card>
 
-          <Card className="p-3 border-border shadow-xs flex flex-col justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
-              PAYMENT BREAKDOWN
+          <Card className="p-4 gap-1 border-border shadow-xs flex flex-col justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
+              Payment Breakdown
             </span>
-            <div className="space-y-0.5 text-xs ">
+            <div className="space-y-1 text-xs">
               <div className="flex justify-between text-foreground">
                 <span className="text-muted-foreground">Cash:</span>
-                <span className="font-bold tabular-nums tracking-tight">{currencySymbol}{cashSales.toFixed(2)}</span>
+                <span className="font-semibold tabular-nums">{currencySymbol}{cashSales.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-foreground">
                 <span className="text-muted-foreground">UPI:</span>
-                <span className="font-bold tabular-nums tracking-tight">{currencySymbol}{onlineSales.toFixed(2)}</span>
+                <span className="font-semibold tabular-nums">{currencySymbol}{onlineSales.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-foreground">
                 <span className="text-muted-foreground">Khata:</span>
-                <span className="font-bold tabular-nums tracking-tight">{currencySymbol}{creditSales.toFixed(2)}</span>
+                <span className="font-semibold tabular-nums">{currencySymbol}{creditSales.toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -439,40 +446,38 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
       </div>
 
       {/* CA / GST Monthly Sales Export Bar (GSTR-1 for Tax Consultant) */}
-      <div className="bg-card border-b border-border px-3 sm:px-4 py-2.5 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary">
-            <Receipt className="w-4 h-4" />
+      <div className="bg-card border-b border-border px-3 sm:px-4 py-2.5 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-8 rounded-md bg-muted border border-border flex items-center justify-center shrink-0 text-foreground">
+            <Receipt className="size-4" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-foreground">CA / GST Monthly Sales (GSTR-1)</span>
+              <span className="text-sm font-semibold text-foreground">CA / GST Monthly Sales (GSTR-1)</span>
               <Badge variant="secondary" className="text-[10px] py-0">
                 {monthlyOrdersCount} {monthlyOrdersCount === 1 ? 'bill' : 'bills'} in {gstMonth}
               </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground truncate">One-tap GSTR-1 preparation for the store's tax consultant</p>
+            <p className="text-xs text-muted-foreground truncate">One-tap GSTR-1 preparation for the store's tax consultant</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="relative">
-            <input
-              type="month"
-              id="gst-month-selector"
-              value={gstMonth}
-              onChange={(e) => setGstMonth(e.target.value)}
-              className="h-8 px-2.5 bg-background border border-input focus:border-ring rounded-md text-xs font-medium text-foreground outline-hidden transition-all shadow-xs cursor-pointer"
-              title="Select Month (YYYY-MM)"
-            />
-          </div>
+          <Input
+            type="month"
+            id="gst-month-selector"
+            value={gstMonth}
+            onChange={(e) => setGstMonth(e.target.value)}
+            className="h-8 w-auto px-2.5 text-xs font-medium bg-background"
+            title="Select Month (YYYY-MM)"
+          />
           <Button
             type="button"
             id="btn-export-gst-report"
             onClick={handleExportMonthlyGSTR1CSV}
             className="h-8 px-3 gap-1.5 text-xs font-medium cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="size-3.5" />
             <span>Export GST Report (CSV)</span>
           </Button>
         </div>
@@ -480,14 +485,14 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
 
       {/* Main Responsive Body */}
       <div className="flex-1 flex flex-col md:flex-row min-h-0">
-        {/* Left Column: Filter + Invoices List */}
-        <div className="flex-1 md:w-3/5 flex flex-col min-h-0 bg-card md:border-r border-border">
+        {/* Left Column: Filter + Invoices List in Default shadcn Table */}
+        <div className="flex-1 flex flex-col min-h-0 bg-card md:border-r border-border">
           {/* Filter and Search Bar */}
           <div className="p-3 border-b border-border bg-card flex flex-col gap-2.5 shrink-0">
             <div className="flex items-center gap-2">
               {/* Search Box */}
               <div className="flex-1 relative">
-                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <Input
                   type="text"
                   placeholder="Search by Bill # or customer name..."
@@ -505,9 +510,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                   variant="outline"
                   className="h-8 px-3 text-xs font-medium gap-1.5 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="size-3.5" />
                   <span>Export</span>
-                  <ChevronDown className="w-3 h-3 opacity-70" />
+                  <ChevronDown className="size-3 opacity-70" />
                 </Button>
 
                 {isExportMenuOpen && (
@@ -523,9 +528,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                       <button
                         type="button"
                         onClick={handleExportMonthlyGSTR1CSV}
-                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-primary border-b border-border"
+                        className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground border-b border-border"
                       >
-                        <Receipt className="w-4 h-4 text-primary" />
+                        <Receipt className="size-4 text-foreground" />
                         <div>
                           <div className="leading-tight">CA Monthly GSTR-1 ({gstMonth})</div>
                           <div className="text-[10px] text-muted-foreground font-normal">Monthly tax consultant CSV ({monthlyOrdersCount} bills)</div>
@@ -537,7 +542,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         onClick={handleExportSalesCSV}
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground"
                       >
-                        <FileSpreadsheet className="w-4 h-4 text-primary" />
+                        <FileSpreadsheet className="size-4 text-foreground" />
                         <div>
                           <div className="leading-tight">Sales Orders Report</div>
                           <div className="text-[10px] text-muted-foreground font-normal">Detailed customer bills & taxes</div>
@@ -549,7 +554,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         onClick={handleExportGSTR1CSV}
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground"
                       >
-                        <Receipt className="w-4 h-4 text-indigo-600" />
+                        <Receipt className="size-4 text-foreground" />
                         <div>
                           <div className="leading-tight">GSTR-1 Tax Summary</div>
                           <div className="text-[10px] text-muted-foreground font-normal">CGST & SGST sales tax breakdown</div>
@@ -561,7 +566,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         onClick={handleExportItemWiseCSV}
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground"
                       >
-                        <BarChart3 className="w-4 h-4 text-blue-600" />
+                        <BarChart3 className="size-4 text-foreground" />
                         <div>
                           <div className="leading-tight">Item-Wise Sales Breakdown</div>
                           <div className="text-[10px] text-muted-foreground font-normal">Units sold & revenue per dish</div>
@@ -573,7 +578,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         onClick={handleExportInventoryCSV}
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground"
                       >
-                        <Layers className="w-4 h-4 text-amber-600" />
+                        <Layers className="size-4 text-foreground" />
                         <div>
                           <div className="leading-tight">Inventory & Valuation</div>
                           <div className="text-[10px] text-muted-foreground font-normal">Current stock & low stock alerts</div>
@@ -585,11 +590,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         onClick={handleExportTallyXML}
                         className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 cursor-pointer font-bold text-foreground border-t border-border"
                       >
-                        <FileText className="w-4 h-4 text-emerald-600" />
+                        <FileText className="size-4 text-foreground" />
                         <div>
                           <div className="leading-tight flex items-center gap-1.5">
                             <span>Tally Prime & ERP 9 (XML)</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold border border-emerald-500/30 text-emerald-600 bg-emerald-500/10">Official</span>
+                            <Badge variant="secondary" className="text-[9px] px-1 py-0">Official</Badge>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-normal">Importable Sales Vouchers XML</div>
                         </div>
@@ -611,7 +616,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
               ].map((filterItem) => (
                 <Button
                   key={filterItem.key}
-                  size="xs"
+                  size="sm"
                   variant={selectedFilter === filterItem.key ? 'default' : 'outline'}
                   onClick={() => setSelectedFilter(filterItem.key as 'ALL' | PaymentMethod)}
                   className="h-7 px-3 text-xs font-medium cursor-pointer"
@@ -622,103 +627,123 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
             </div>
           </div>
 
-          {/* Invoices List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
-            {filteredOrders.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-muted-foreground text-xs">
-                No bills found matching your filter criteria
-              </div>
-            ) : (
-              filteredOrders.map((order) => {
-                const dateObj = new Date(order.createdAt);
-                const formattedTime = dateObj.toLocaleTimeString('en-GB', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                });
-                const formattedDate = dateObj.toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                });
-                const isSelected = activeSelectedOrder?.id === order.id;
+          {/* Invoices List - Rendered with clean default shadcn Table */}
+          <div className="flex-1 overflow-auto">
+            <Table>
+              <TableHeader className="bg-muted/40 sticky top-0 z-10 backdrop-blur-xs">
+                <TableRow>
+                  <TableHead className="w-[85px]">Bill #</TableHead>
+                  <TableHead className="min-w-[130px]">Date & Time</TableHead>
+                  <TableHead className="min-w-[140px]">Customer</TableHead>
+                  <TableHead className="w-[80px]">Items</TableHead>
+                  <TableHead className="w-[90px]">Payment</TableHead>
+                  <TableHead className="w-[95px]">Status</TableHead>
+                  <TableHead className="text-right w-[110px]">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-36 text-center text-muted-foreground text-xs">
+                      No bills found matching your filter criteria
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredOrders.map((order) => {
+                    const dateObj = new Date(order.createdAt);
+                    const formattedTime = dateObj.toLocaleTimeString('en-GB', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    });
+                    const formattedDate = dateObj.toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                    });
+                    const isSelected = activeSelectedOrder?.id === order.id;
 
-                const paymentModeLabel =
-                  order.paymentMethod === 'ONLINE'
-                    ? 'UPI'
-                    : order.paymentMethod === 'CREDIT'
-                    ? 'KHATA'
-                    : order.paymentMethod;
+                    const paymentModeLabel =
+                      order.paymentMethod === 'ONLINE'
+                        ? 'UPI'
+                        : order.paymentMethod === 'CREDIT'
+                        ? 'Khata'
+                        : order.paymentMethod === 'CASH'
+                        ? 'Cash'
+                        : order.paymentMethod;
 
-                return (
-                  <Card
-                    key={order.id}
-                    onClick={() => {
-                      setSelectedOrderId(order.id);
-                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                        onViewOrder(order);
-                      }
-                    }}
-                    className={`p-3 flex items-center justify-between gap-2 transition-all cursor-pointer shadow-xs ${
-                      isSelected
-                        ? 'bg-muted/80 border-primary ring-1 ring-primary'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    {/* Left: Bill Meta */}
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-xs sm:text-sm text-foreground tabular-nums">
-                          #{order.orderNumber}
-                        </span>
-                        {shopSettings?.enableDailyToken && order.tokenNumber && (
-                          <Badge variant="secondary" className="text-[10px] py-0 text-primary bg-primary/10 border-primary/20">
-                            TOKEN #{String(order.tokenNumber).padStart(2, '0')}
-                          </Badge>
-                        )}
-                        {order.status === 'refunded' ? (
-                          <Badge variant="destructive" className="text-[10px] py-0 font-bold">
-                            REFUNDED
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] py-0">
+                    const itemsCount = order.items.reduce((sum, it) => sum + it.quantity, 0);
+
+                    return (
+                      <TableRow
+                        key={order.id}
+                        data-state={isSelected ? 'selected' : undefined}
+                        onClick={() => {
+                          setSelectedOrderId(order.id);
+                          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                            onViewOrder(order);
+                          }
+                        }}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected ? 'bg-muted/80' : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        <TableCell className="font-semibold tabular-nums text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span>#{order.orderNumber}</span>
+                            {shopSettings?.enableDailyToken && order.tokenNumber && (
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 font-medium">
+                                #{String(order.tokenNumber).padStart(2, '0')}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formattedDate}, {formattedTime}
+                        </TableCell>
+                        <TableCell className="text-xs font-medium text-foreground max-w-[160px] truncate">
+                          {order.customerName || 'Walk-in Customer'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground tabular-nums">
+                          {itemsCount} {itemsCount === 1 ? 'item' : 'items'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px] font-normal">
                             {paymentModeLabel}
                           </Badge>
-                        )}
-                        <span className="text-[11px] text-muted-foreground">
-
-                          {formattedDate}, {formattedTime}
-                        </span>
-                      </div>
-
-                      <p className="text-xs font-medium text-foreground truncate mt-1">
-                        {order.customerName || 'Walk-in'} • {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-                      </p>
-                    </div>
-
-                    {/* Right: Amount */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-bold text-xs sm:text-sm text-foreground tabular-nums tracking-tight font-medium">
-                        {currencySymbol}
-                        {order.total.toFixed(2)}
-                      </span>
-                    </div>
-                  </Card>
-                );
-              })
-            )}
+                        </TableCell>
+                        <TableCell>
+                          {order.status === 'refunded' ? (
+                            <Badge variant="destructive" className="text-[10px] py-0 font-medium">
+                              Refunded
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] py-0 font-normal">
+                              Paid
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-bold tabular-nums text-xs text-foreground">
+                          {currencySymbol}{order.total.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
 
           {/* Footer Bill Counter */}
           {orders.length > 0 && (
-            <div className="p-2.5 bg-card border-t border-border flex justify-between items-center text-xs text-muted-foreground shrink-0 ">
+            <div className="p-2.5 bg-card border-t border-border flex justify-between items-center text-xs text-muted-foreground shrink-0">
               <span className="tabular-nums">Bills: {filteredOrders.length} of {orders.length}</span>
               <span className="text-[11px] text-muted-foreground">GST Sequence Maintained</span>
             </div>
           )}
         </div>
 
-        {/* Right Column (Tablet View): Live Receipt Inspector Pane */}
-        <div className="hidden md:flex md:w-2/5 bg-muted/20 flex-col min-h-0 p-4 overflow-y-auto">
+        {/* Right Column: Live Receipt Inspector Pane using default shadcn Card */}
+        <div className="hidden md:flex md:w-[380px] lg:w-[420px] bg-muted/10 flex-col min-h-0 p-4 overflow-y-auto">
           {activeSelectedOrder ? (() => {
             const billDateObj = new Date(activeSelectedOrder.createdAt);
             const formattedDateStr = billDateObj.toLocaleDateString('en-GB', {
@@ -747,10 +772,12 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
 
             const paymentBadgeLabel =
               activeSelectedOrder.paymentMethod === 'CREDIT'
-                ? 'KHATA - UNPAID'
+                ? 'Khata (Credit)'
                 : activeSelectedOrder.paymentMethod === 'ONLINE'
-                ? 'UPI - PAID'
-                : `${activeSelectedOrder.paymentMethod} - PAID`;
+                ? 'UPI'
+                : activeSelectedOrder.paymentMethod === 'CASH'
+                ? 'Cash'
+                : activeSelectedOrder.paymentMethod;
 
             const totalItemCount = activeSelectedOrder.items.reduce((sum, item) => sum + item.quantity, 0);
             const activeTaxBreakdown = taxTotals.taxRateBreakdown.filter(
@@ -758,120 +785,126 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
             );
 
             return (
-              <Card className="p-4 shadow-xs flex flex-col gap-3 text-xs border-border bg-card">
-                {/* Header */}
-                <div className="flex justify-between items-start border-b border-dashed border-border pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-foreground tabular-nums">
-                        Bill #{activeSelectedOrder.orderNumber}
-                      </span>
-                      {shopSettings?.enableDailyToken && activeSelectedOrder.tokenNumber && (
-                        <Badge variant="secondary" className="text-[11px] py-0 text-primary bg-primary/10 border-primary/20">
-                          TOKEN #{String(activeSelectedOrder.tokenNumber).padStart(2, '0')}
-                        </Badge>
-                      )}
+              <Card className="shadow-xs border-border bg-card flex flex-col justify-between overflow-hidden">
+                <CardHeader className="pb-3 border-b border-border">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base font-bold tabular-nums">
+                          Bill #{activeSelectedOrder.orderNumber}
+                        </CardTitle>
+                        {shopSettings?.enableDailyToken && activeSelectedOrder.tokenNumber && (
+                          <Badge variant="secondary" className="text-[10px] py-0">
+                            Token #{String(activeSelectedOrder.tokenNumber).padStart(2, '0')}
+                          </Badge>
+                        )}
+                      </div>
+                      <CardDescription className="text-xs mt-0.5">
+                        {activeSelectedOrder.customerName || 'Walk-in Customer'} • {billDateTime}
+                      </CardDescription>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Billed by: {activeSelectedOrder.staffName || 'Staff'}
+                        {activeSelectedOrder.tableOrToken && (
+                          <span className="ml-2 font-medium text-foreground">
+                            • Table / Buzzer: {activeSelectedOrder.tableOrToken}
+                          </span>
+                        )}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {activeSelectedOrder.customerName || 'Walk-in Customer'} • {billDateTime}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                      Billed by: {activeSelectedOrder.staffName || 'Anand (Store Owner)'}
-                      {activeSelectedOrder.tableOrToken && (
-                        <span className="ml-2 font-semibold text-foreground">
-                          • Table / Buzzer: {activeSelectedOrder.tableOrToken}
+                    {activeSelectedOrder.status === 'refunded' ? (
+                      <Badge variant="destructive" className="text-[10px] py-0 shrink-0">
+                        Refunded
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] py-0 shrink-0">
+                        {paymentBadgeLabel}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-3 py-3 text-xs flex-1 overflow-y-auto">
+                  {/* Items List */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">
+                      <span>Items ({totalItemCount})</span>
+                      <span>Amount</span>
+                    </div>
+                    <Separator />
+                    {activeSelectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-xs text-foreground">
+                        <span className="truncate pr-2">
+                          {item.name} <span className="text-muted-foreground tabular-nums">×{item.quantity}</span>
                         </span>
-                      )}
-                    </p>
-                  </div>
-                  {activeSelectedOrder.status === 'refunded' ? (
-                    <Badge variant="destructive" className="text-[10px] font-bold uppercase tracking-wider shrink-0">
-                      REFUNDED
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="text-[10px] font-bold uppercase tracking-wider shrink-0">
-                      {paymentBadgeLabel}
-                    </Badge>
-                  )}
-                </div>
-
-
-                {/* Items Section */}
-                <div className="border-t border-b border-dashed border-border py-2.5 space-y-1.5">
-                  <div className="flex justify-between font-bold text-[10px] text-muted-foreground uppercase">
-                    <span>ITEMS ({totalItemCount})</span>
-                    <span>AMOUNT</span>
-                  </div>
-                  {activeSelectedOrder.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-xs text-foreground">
-                      <span className="truncate pr-2">
-                        • {item.name} <span className="text-muted-foreground tabular-nums">x{item.quantity}</span>
-                      </span>
-                      <span className="font-bold shrink-0 tabular-nums tracking-tight font-medium">
-                        {currencySymbol}
-                        {(item.unitPrice * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Statutory Tax Breakdown */}
-                <div className="space-y-1 text-xs text-muted-foreground border-t border-dashed border-border pt-2.5">
-                  <div className="flex justify-between">
-                    <span>Taxable Value:</span>
-                    <span className="font-semibold text-foreground tabular-nums tracking-tight font-medium">
-                      {currencySymbol}{taxableValue.toFixed(2)}
-                    </span>
-                  </div>
-
-                  {activeTaxBreakdown.length > 0 ? (
-                    activeTaxBreakdown.map((b) => (
-                      <div key={b.rate} className="flex justify-between text-[11px] text-muted-foreground">
-                        <span>GST {b.rate}% (CGST {(b.rate / 2).toFixed(1)}% + SGST {(b.rate / 2).toFixed(1)}%):</span>
-                        <span className="font-semibold text-foreground tabular-nums tracking-tight font-medium">
-                          +{currencySymbol}{b.totalTax.toFixed(2)}
+                        <span className="font-semibold shrink-0 tabular-nums">
+                          {currencySymbol}
+                          {(item.unitPrice * item.quantity).toFixed(2)}
                         </span>
                       </div>
-                    ))
-                  ) : totalTax > 0 ? (
-                    <div className="flex justify-between text-[11px] text-muted-foreground">
-                      <span>GST {taxRate}% (CGST {halfTaxRate}% + SGST {halfTaxRate}%):</span>
-                      <span className="font-semibold text-foreground tabular-nums tracking-tight font-medium">
-                        +{currencySymbol}{totalTax.toFixed(2)}
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Tax Breakdown */}
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Taxable Value:</span>
+                      <span className="font-medium text-foreground tabular-nums">
+                        {currencySymbol}{taxableValue.toFixed(2)}
                       </span>
                     </div>
-                  ) : (
-                    <div className="flex justify-between text-[11px] text-muted-foreground">
-                      <span>Tax (Exempt / 0% GST):</span>
-                      <span className="tabular-nums">{currencySymbol}0.00</span>
-                    </div>
-                  )}
 
-                  {totalTax > 0 && (
-                    <div className="flex justify-between font-bold text-foreground border-t border-dotted border-border pt-1">
-                      <span>Total Tax:</span>
-                      <span className="tabular-nums tracking-tight font-medium">
-                        {currencySymbol}{totalTax.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+                    {activeTaxBreakdown.length > 0 ? (
+                      activeTaxBreakdown.map((b) => (
+                        <div key={b.rate} className="flex justify-between text-[11px] text-muted-foreground">
+                          <span>GST {b.rate}% (CGST {(b.rate / 2).toFixed(1)}% + SGST {(b.rate / 2).toFixed(1)}%):</span>
+                          <span className="font-medium text-foreground tabular-nums">
+                            +{currencySymbol}{b.totalTax.toFixed(2)}
+                          </span>
+                        </div>
+                      ))
+                    ) : totalTax > 0 ? (
+                      <div className="flex justify-between text-[11px] text-muted-foreground">
+                        <span>GST {taxRate}% (CGST {halfTaxRate}% + SGST {halfTaxRate}%):</span>
+                        <span className="font-medium text-foreground tabular-nums">
+                          +{currencySymbol}{totalTax.toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-[11px] text-muted-foreground">
+                        <span>Tax (0% GST):</span>
+                        <span className="tabular-nums">{currencySymbol}0.00</span>
+                      </div>
+                    )}
 
-                  {activeSelectedOrder.discount > 0 && (
-                    <div className="flex justify-between text-destructive">
-                      <span>Discount:</span>
-                      <span className="tabular-nums tracking-tight font-medium">-{currencySymbol}{activeSelectedOrder.discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
+                    {totalTax > 0 && (
+                      <div className="flex justify-between font-medium text-foreground border-t border-border pt-1">
+                        <span>Total Tax:</span>
+                        <span className="tabular-nums">
+                          {currencySymbol}{totalTax.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
 
-                {/* Grand Total */}
-                <div className="flex justify-between text-sm font-bold text-foreground pt-2 border-t border-border">
-                  <span>GRAND TOTAL:</span>
-                  <span className="tabular-nums tracking-tight font-medium">{currencySymbol}{activeSelectedOrder.total.toFixed(2)}</span>
-                </div>
+                    {activeSelectedOrder.discount > 0 && (
+                      <div className="flex justify-between text-destructive">
+                        <span>Discount:</span>
+                        <span className="tabular-nums">-{currencySymbol}{activeSelectedOrder.discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2 pt-2">
+                  <Separator />
+
+                  {/* Grand Total */}
+                  <div className="flex justify-between text-sm font-bold text-foreground">
+                    <span>Grand Total:</span>
+                    <span className="tabular-nums text-base">{currencySymbol}{activeSelectedOrder.total.toFixed(2)}</span>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="flex flex-col gap-2 pt-3 border-t border-border bg-muted/10">
                   <Button
                     type="button"
                     onClick={() => {
@@ -880,44 +913,41 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                     }}
                     disabled={activeSelectedOrder.status === 'refunded'}
                     variant="outline"
-                    className="w-full h-9 text-xs font-bold text-amber-600 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40"
-                    title={activeSelectedOrder.status === 'refunded' ? 'Bill already refunded' : 'Process item return & refund'}
+                    className="w-full h-8 text-xs font-medium cursor-pointer"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                    <RotateCcw className="size-3.5 mr-1.5" />
                     <span>{activeSelectedOrder.status === 'refunded' ? 'Already Refunded' : 'Process Return / Refund'}</span>
                   </Button>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 w-full">
                     <Button
                       type="button"
                       onClick={() => onPrintOrder(activeSelectedOrder)}
                       variant="default"
-                      className="h-9 text-xs font-medium cursor-pointer"
-                      title="Print Duplicate Receipt"
+                      className="h-8 text-xs font-medium cursor-pointer"
                     >
-                      <Printer className="w-3.5 h-3.5 shrink-0" />
-                      <span>Print Duplicate</span>
+                      <Printer className="size-3.5 mr-1.5" />
+                      <span>Print Receipt</span>
                     </Button>
                     <Button
                       type="button"
                       onClick={() => onDeleteOrder(activeSelectedOrder.id)}
                       variant="destructive"
-                      className="h-9 text-xs font-medium cursor-pointer"
-                      title="Cancel / Void Bill"
+                      className="h-8 text-xs font-medium cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                      <Trash2 className="size-3.5 mr-1.5" />
                       <span>Void Bill</span>
                     </Button>
                   </div>
-                </div>
+                </CardFooter>
               </Card>
             );
           })() : (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
-              <Receipt className="w-8 h-8 text-muted-foreground/40 mb-2" />
-              <p className="text-xs font-bold text-foreground">No Invoice Selected</p>
+              <Receipt className="size-8 text-muted-foreground/40 mb-2" />
+              <p className="text-xs font-semibold text-foreground">No Bill Selected</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Click any invoice in the list to preview the thermal receipt
+                Click any row in the table to inspect the receipt
               </p>
             </div>
           )}
