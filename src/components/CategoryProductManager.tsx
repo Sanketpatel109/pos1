@@ -25,6 +25,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface CategoryProductManagerProps {
   categories: Category[];
@@ -385,7 +393,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
           </div>
 
           {/* Categories List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
+          <div className="flex-1 overflow-y-auto p-3 space-y-1.5 no-scrollbar">
             {orderedCategories.map((cat) => {
               const catName = (cat.name || '').trim();
               const isAllCat = catName.toUpperCase() === 'ALL' || catName.toLowerCase() === 'all items';
@@ -397,7 +405,7 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                 : isAllCat;
 
               return (
-                <Card
+                <div
                   key={cat.id}
                   onClick={() => {
                     if (isAllCat) {
@@ -407,51 +415,55 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                     }
                     setActiveTab('products');
                   }}
-                  className={`p-3 flex items-center justify-between shadow-xs border transition-all bg-card cursor-pointer ${
+                  className={`group px-3 py-2 rounded-lg border transition-all flex flex-row items-center justify-between gap-2.5 cursor-pointer select-none ${
                     isSelected
-                      ? 'border-primary ring-1 ring-primary/30 bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/25 shadow-xs'
+                      : 'border-border bg-card text-card-foreground hover:bg-muted/70 hover:border-border'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-8 h-8 rounded-md flex items-center justify-center font-bold text-xs shrink-0 ${
-                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
-                    }`}>
-                      <Layers className={`w-4 h-4 ${isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+                    <div
+                      className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs shrink-0 ${
+                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-foreground'
+                      }`}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className={`font-semibold text-xs truncate ${isSelected ? 'text-primary font-bold' : 'text-foreground'}`}>
+                      <div className={`text-xs font-semibold leading-tight truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
                         {cat.name}
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground tabular-nums">
-                        {count} items
-                      </p>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground tabular-nums leading-normal">
+                        {count} {count === 1 ? 'item' : 'items'}
+                      </div>
                     </div>
                   </div>
 
-                  {!isAllCat && (
-                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        size="icon-xs"
-                        variant="ghost"
-                        onClick={() => handleOpenEditCategory(cat)}
-                        className="cursor-pointer text-muted-foreground hover:text-foreground"
-                        title="Edit Category"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        size="icon-xs"
-                        variant="ghost"
-                        onClick={() => onDeleteCategory(cat.id)}
-                        className="cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Delete Category"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </Card>
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {!isAllCat && (
+                      <>
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => handleOpenEditCategory(cat)}
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                          title="Edit Category"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => onDeleteCategory(cat.id)}
+                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                          title="Delete Category"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -772,42 +784,42 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
       </div>
 
       {/* Category Edit Modal */}
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <Card className="w-full max-w-sm border-border shadow-2xl p-4 space-y-3 bg-card text-foreground">
-            <h3 className="font-bold text-sm text-foreground">
+      <Dialog open={isCategoryModalOpen} onOpenChange={(open) => !open && setIsCategoryModalOpen(false)}>
+        <DialogContent className="sm:max-w-sm p-5 gap-4">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold">
               {editingCategory ? 'Edit Category' : 'Create New Category'}
-            </h3>
-            <form onSubmit={handleSaveCategory} className="space-y-3">
-              <Input
-                type="text"
-                placeholder="Category Name (e.g. Desserts)"
-                value={categoryNameInput}
-                onChange={(e) => setCategoryNameInput(e.target.value)}
-                className="w-full h-9 text-xs bg-background"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCategoryModalOpen(false)}
-                  className="flex-1 h-9 text-xs font-medium cursor-pointer"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="default"
-                  className="flex-1 h-9 text-xs font-medium cursor-pointer"
-                >
-                  Save
-                </Button>
-              </div>
-            </form>
-          </Card>
-        </div>
-      )}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveCategory} className="space-y-4">
+            <Input
+              type="text"
+              placeholder="Category Name (e.g. Desserts)"
+              value={categoryNameInput}
+              onChange={(e) => setCategoryNameInput(e.target.value)}
+              className="w-full h-9 text-xs"
+              autoFocus
+            />
+            <DialogFooter className="flex gap-2 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="h-8 text-xs font-medium cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="default"
+                className="h-8 text-xs font-medium cursor-pointer"
+              >
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Product Add/Edit Modal with modern Photo Upload / Camera dropzone */}
       <AddProductModal
@@ -822,36 +834,30 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
       />
 
       {/* CSV Bulk Import Modal */}
-      {isXlsModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <Card className="w-full max-w-sm border-border shadow-2xl p-4 space-y-3 bg-card text-foreground">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-sm">Bulk Catalog Import</h3>
-              <button
-                onClick={() => setIsXlsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      <Dialog open={isXlsModalOpen} onOpenChange={(open) => !open && setIsXlsModalOpen(false)}>
+        <DialogContent className="sm:max-w-sm p-5 gap-4">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold">Bulk Catalog Import</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Upload a .csv file with inventory details. Existing barcodes will update stock and pricing; new items will be added.
+            </DialogDescription>
+          </DialogHeader>
 
-            <p className="text-xs text-muted-foreground space-y-1">
-              <span>Upload a .csv file with inventory details. Existing barcodes will update stock and pricing; new items will be added:</span>
-              <code className="bg-muted p-1.5 rounded text-[10px] block leading-relaxed break-all mt-1">
-                name, barcode, category, selling_price, cost_price, gst_rate, stock_quantity, unit
-              </code>
-            </p>
+          <div className="space-y-3">
+            <code className="bg-muted p-2 rounded text-[11px] block leading-relaxed break-all font-mono text-muted-foreground">
+              name, barcode, category, selling_price, cost_price, gst_rate, stock_quantity, unit
+            </code>
 
             <Button
               variant="outline"
               onClick={handleDownloadSampleCsv}
-              className="w-full h-9 text-xs font-medium gap-1.5 cursor-pointer"
+              className="w-full h-8 text-xs font-medium gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download Sample CSV Template</span>
             </Button>
 
-            <label className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors">
+            <label className="w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors">
               <Upload className="w-3.5 h-3.5" />
               <span>Select CSV File</span>
               <input
@@ -861,9 +867,9 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                 className="hidden"
               />
             </label>
-          </Card>
-        </div>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
