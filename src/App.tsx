@@ -348,10 +348,13 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((it: any) => ({
-            ...it,
-            price: Number(it.price !== undefined ? it.price : it.sellingPrice) || 0,
-          }));
+          const valid = parsed
+            .filter((it: any) => it.name && it.name !== 'Unnamed Product')
+            .map((it: any) => ({
+              ...it,
+              price: Number(it.price !== undefined ? it.price : it.sellingPrice) || 0,
+            }));
+          return valid;
         }
       } catch {}
     }
@@ -564,28 +567,27 @@ export default function App() {
 
     const unsubCatalog = listenToLiveCatalog(
       (items) => {
-        if (items.length > 0) {
-          setCatalog((prev) => {
-            const map = new Map<string, CatalogItem>();
-            items.forEach((it) => map.set(it.id, it));
-            // Retain any locally added products that haven't synced yet (within 60s)
-            prev.forEach((localIt) => {
+        setCatalog((prev) => {
+          const map = new Map<string, CatalogItem>();
+          // Only add valid remote items (never Unnamed Product)
+          items
+            .filter((it) => it.name && it.name !== 'Unnamed Product')
+            .forEach((it) => map.set(it.id, it));
+
+          // Retain any locally added products that have valid real names
+          prev.forEach((localIt) => {
+            if (localIt.name && localIt.name !== 'Unnamed Product') {
               if (!map.has(localIt.id)) {
-                const ts = localIt.id.startsWith('item-')
-                  ? parseInt(localIt.id.replace('item-', ''), 10)
-                  : 0;
-                if (!ts || Date.now() - ts < 60000) {
-                  map.set(localIt.id, localIt);
-                }
+                map.set(localIt.id, localIt);
               }
-            });
-            const merged = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-            try {
-              localStorage.setItem('monopos_live_catalog', JSON.stringify(merged));
-            } catch {}
-            return merged;
+            }
           });
-        }
+          const merged = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+          try {
+            localStorage.setItem('monopos_live_catalog', JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
       },
       undefined,
       tenantId
@@ -1221,7 +1223,7 @@ export default function App() {
     });
 
     setCatalog((prevCatalog) => {
-      return prevCatalog.map((prod) => {
+      const updatedCatalog = prevCatalog.map((prod) => {
         const deductQty = stockDeductions.get(prod.name);
         if (deductQty !== undefined && prod.stock !== undefined) {
           return {
@@ -1231,6 +1233,14 @@ export default function App() {
         }
         return prod;
       });
+      try {
+        localStorage.setItem('monopos_live_catalog', JSON.stringify(updatedCatalog));
+      } catch {}
+      // Live stock deduction using the updatedCatalog so it has full item details (name, category, price)
+      liveBatchDeductStock(stockDeductions, updatedCatalog).catch((err) =>
+        console.warn('Live stock deduction failed:', err)
+      );
+      return updatedCatalog;
     });
 
     setOrders((prev) => [newOrder, ...prev]);
@@ -1250,7 +1260,6 @@ export default function App() {
 
     // Live real-time bidirectional Firestore synchronization
     liveSaveOrder(newOrder).catch((err) => console.warn('Live order save failed:', err));
-    liveBatchDeductStock(stockDeductions, catalog).catch((err) => console.warn('Live stock deduction failed:', err));
 
     if (data.paymentMode === 'CASH') {
       const cashSaleEntry: CashEntry = {

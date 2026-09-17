@@ -47,62 +47,70 @@ export async function pushAllToCloud(data: CloudStoreData, ownerEmail?: string):
 
   // 3. Catalog Products
   for (const item of data.catalog) {
+    if (!item.name || item.name === 'Unnamed Product') continue;
     const itemRef = getTenantDoc('catalog', item.id);
-    batch.set(itemRef, {
+    batch.set(itemRef, JSON.parse(JSON.stringify({
       ...item,
       syncedAt: new Date().toISOString(),
-    }, { merge: true });
+    })), { merge: true });
   }
 
   // 4. Categories
   if (data.categories) {
     for (const cat of data.categories) {
       const catRef = getTenantDoc('categories', cat.id);
-      batch.set(catRef, {
+      batch.set(catRef, JSON.parse(JSON.stringify({
         ...cat,
         syncedAt: new Date().toISOString(),
-      }, { merge: true });
+      })), { merge: true });
     }
   }
 
   // 5. Customers
   for (const customer of data.customers) {
     const customerRef = getTenantDoc('customers', customer.id);
-    batch.set(customerRef, {
+    batch.set(customerRef, JSON.parse(JSON.stringify({
       ...customer,
       syncedAt: new Date().toISOString(),
-    }, { merge: true });
+    })), { merge: true });
   }
 
   // 6. Cash entries
   const recentCash = data.cashEntries.slice(0, 100);
   for (const entry of recentCash) {
     const cashRef = getTenantDoc('cashEntries', entry.id);
-    batch.set(cashRef, {
+    batch.set(cashRef, JSON.parse(JSON.stringify({
       ...entry,
       syncedAt: new Date().toISOString(),
-    }, { merge: true });
+    })), { merge: true });
   }
 
-  // 7. Staff
+  // 7. Store settings
+  const settingsRef = getTenantDoc('settings', 'store_config');
+  batch.set(settingsRef, JSON.parse(JSON.stringify({
+    ...data.shopSettings,
+    syncedAt: new Date().toISOString(),
+  })), { merge: true });
+
+  // 8. Staff list
   if (data.staff) {
     for (const member of data.staff) {
       const staffRef = getTenantDoc('staff', member.id);
-      batch.set(staffRef, {
+      batch.set(staffRef, JSON.parse(JSON.stringify({
         ...member,
         syncedAt: new Date().toISOString(),
-      }, { merge: true });
+      })), { merge: true });
     }
   }
 
-  // 8. Held Orders
+  // 9. Held / Parked orders
   if (data.heldOrders) {
     for (const held of data.heldOrders) {
       const heldRef = getTenantDoc('heldOrders', held.id);
-      batch.set(heldRef, {
+      batch.set(heldRef, JSON.parse(JSON.stringify({
         ...held,
         syncedAt: new Date().toISOString(),
-      }, { merge: true });
+      })), { merge: true });
     }
   }
 
@@ -126,10 +134,10 @@ export async function pushSingleOrder(order: Order): Promise<void> {
 }
 
 /**
- * Restore data from Firebase Firestore
+ * Pull all 9 data points from Firestore cloud to local state.
  */
-export async function pullAllFromCloud(): Promise<Partial<CloudStoreData>> {
-  const result: Partial<CloudStoreData> = {};
+export async function pullAllFromCloud(): Promise<Partial<CloudDataPayload>> {
+  const result: Partial<CloudDataPayload> = {};
 
   try {
     // Orders
@@ -144,12 +152,13 @@ export async function pullAllFromCloud(): Promise<Partial<CloudStoreData>> {
       result.orders = pulledOrders;
     }
 
-    // Catalog
+    // Catalog Products
     const catalogSnap = await getDocs(getTenantCollection('catalog'));
     if (!catalogSnap.empty) {
       const pulledCatalog: CatalogItem[] = [];
       catalogSnap.forEach((doc) => {
         const raw = (doc.data() || {}) as any;
+        if (!raw.name || raw.name === 'Unnamed Product') return;
         const rawPrice =
           raw.price !== undefined
             ? raw.price
@@ -160,7 +169,7 @@ export async function pullAllFromCloud(): Promise<Partial<CloudStoreData>> {
         pulledCatalog.push({
           ...raw,
           id: doc.id,
-          name: raw.name || 'Unnamed Product',
+          name: raw.name || 'Product',
           price: isNaN(parsedPrice) ? 0 : parsedPrice,
         } as CatalogItem);
       });

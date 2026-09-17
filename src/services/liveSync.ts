@@ -178,6 +178,12 @@ export function listenToLiveCatalog(
       const items: CatalogItem[] = [];
       snapshot.forEach((d) => {
         const raw = (d.data() || {}) as any;
+        // Purge and ignore ghost/corrupted products with no name or 'Unnamed Product' and empty category
+        if ((!raw.name || raw.name === 'Unnamed Product') && (!raw.category || raw.category === '')) {
+          console.warn('Purging ghost unnamed product from Firestore:', d.id);
+          deleteDoc(d.ref).catch(() => {});
+          return;
+        }
         const rawPrice =
           raw.price !== undefined
             ? raw.price
@@ -188,7 +194,7 @@ export function listenToLiveCatalog(
         items.push({
           ...raw,
           id: d.id,
-          name: raw.name || 'Unnamed Product',
+          name: raw.name || 'Product',
           price: isNaN(parsedPrice) ? 0 : parsedPrice,
         } as CatalogItem);
       });
@@ -197,8 +203,8 @@ export function listenToLiveCatalog(
       updateSyncState({
         isConnected: true,
         lastSyncAt: new Date(),
-        tableCounts: { ...currentSyncState.tableCounts, catalog: snapshot.size },
-        lastEvent: `Catalog updated (${snapshot.size} items)`,
+        tableCounts: { ...currentSyncState.tableCounts, catalog: items.length },
+        lastEvent: `Catalog updated (${items.length} items)`,
       });
       callback(items);
     },
@@ -576,19 +582,25 @@ export async function liveDeleteAllOrders(): Promise<void> {
 }
 
 /**
+ * Helper to strip undefined values so Firestore never rejects payloads
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
+/**
  * Live Save / Add / Update Product in Catalog
  */
 export async function liveSaveProduct(item: CatalogItem): Promise<void> {
   try {
     const itemRef = getTenantDoc('catalog', item.id);
-    await setDoc(
-      itemRef,
-      {
-        ...item,
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
+    const sanitized = sanitizeForFirestore({
+      ...item,
+      name: item.name || 'Product',
+      price: typeof item.price === 'number' ? item.price : 0,
+      updatedAt: new Date().toISOString(),
+    });
+    await setDoc(itemRef, sanitized, { merge: true });
     updateSyncState({
       lastSyncAt: new Date(),
       lastEvent: `Updated product ${item.name}`,
@@ -622,10 +634,10 @@ export async function liveUpdateProductStock(itemId: string, newStock: number): 
   try {
     await setDoc(
       getTenantDoc('catalog', itemId),
-      {
+      sanitizeForFirestore({
         stock: newStock,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
@@ -636,6 +648,7 @@ export async function liveUpdateProductStock(itemId: string, newStock: number): 
 
 /**
  * Live Batch Deduct Stock after Sale
+ * CRITICAL: Preserves full item (name, category, price, gstRate) so documents never turn into incomplete ghost documents!
  */
 export async function liveBatchDeductStock(
   stockDeductions: Map<string, number>,
@@ -648,9 +661,14 @@ export async function liveBatchDeductStock(
       const deductQty = stockDeductions.get(item.name);
       if (deductQty !== undefined && item.stock !== undefined) {
         const updatedStock = Math.max(0, item.stock - deductQty);
+        const fullItem = sanitizeForFirestore({
+          ...item,
+          stock: updatedStock,
+          updatedAt: new Date().toISOString(),
+        });
         batch.set(
           getTenantDoc('catalog', item.id),
-          { stock: updatedStock, updatedAt: new Date().toISOString() },
+          fullItem,
           { merge: true }
         );
       }
@@ -668,10 +686,10 @@ export async function liveSaveCategory(category: Category): Promise<void> {
   try {
     await setDoc(
       getTenantDoc('categories', category.id),
-      {
+      sanitizeForFirestore({
         ...category,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
     updateSyncState({
@@ -703,10 +721,10 @@ export async function liveSaveCustomer(customer: Customer): Promise<void> {
   try {
     await setDoc(
       getTenantDoc('customers', customer.id),
-      {
+      sanitizeForFirestore({
         ...customer,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
     updateSyncState({
@@ -729,10 +747,10 @@ export async function liveSettleCustomerCredit(
   try {
     await setDoc(
       getTenantDoc('customers', customerId),
-      {
+      sanitizeForFirestore({
         creditBalance: newBalance,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
@@ -748,10 +766,10 @@ export async function liveSaveCashEntry(entry: CashEntry): Promise<void> {
   try {
     await setDoc(
       getTenantDoc('cashEntries', entry.id),
-      {
+      sanitizeForFirestore({
         ...entry,
         createdAt: entry.createdAt || new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
     updateSyncState({
@@ -771,10 +789,10 @@ export async function liveSaveSettings(settings: ShopSettings): Promise<void> {
   try {
     await setDoc(
       getTenantDoc('settings', 'store_config'),
-      {
+      sanitizeForFirestore({
         ...settings,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
     updateSyncState({
@@ -794,10 +812,10 @@ export async function liveSaveStaff(member: StaffMember): Promise<void> {
   try {
     await setDoc(
       getTenantDoc('staff', member.id),
-      {
+      sanitizeForFirestore({
         ...member,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true }
     );
     updateSyncState({
