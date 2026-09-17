@@ -10,10 +10,6 @@ import {
   sendPasswordResetEmail,
 } from '../firebase';
 import {
-  Zap,
-  CloudUpload,
-  BarChart3,
-  ShieldCheck,
   Eye,
   EyeOff,
   Loader2,
@@ -23,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 
 interface AuthGateScreenProps {
   onAuthenticated: () => void;
@@ -149,350 +144,231 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-background text-foreground">
-      {/* LEFT COLUMN: Simplified, Ultra-Clean Auth Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-10 lg:p-14 overflow-y-auto">
+    <div className="grid min-h-svh lg:grid-cols-2 bg-background text-foreground">
+      {/* Left Column: Official shadcn Auth Form */}
+      <div className="flex flex-col gap-4 p-6 md:p-10">
         {/* Brand Header */}
-        <div className="flex items-center gap-2.5">
-          <div className="size-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-black text-base shadow-xs">
-            M
+        <div className="flex justify-center gap-2 md:justify-start">
+          <div className="flex items-center gap-2 font-medium">
+            <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xs">
+              M
+            </div>
+            <span className="font-bold text-base tracking-tight">MonoPOS</span>
           </div>
-          <span className="font-bold text-base sm:text-lg tracking-tight">MonoPOS</span>
         </div>
 
-        {/* Center Form Area */}
-        <div className="w-full max-w-sm mx-auto my-auto py-8">
-          {isForgotPassword ? (
-            /* Forgot Password View */
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight">Reset Password</h2>
-                <p className="text-xs text-muted-foreground">
-                  Enter your email address and we'll send you an instant reset link.
-                </p>
-              </div>
-
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="auth-email-reset" className="text-xs font-semibold">
-                    Email address*
-                  </Label>
-                  <Input
-                    id="auth-email-reset"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                    autoComplete="email"
-                    autoFocus
-                    required
-                  />
+        {/* Center Form Container */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-xs sm:max-w-sm">
+            {isForgotPassword ? (
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <h1 className="text-2xl font-bold tracking-tight">Reset Password</h1>
+                  <p className="text-balance text-sm text-muted-foreground">
+                    Enter your email below to receive a password reset link
+                  </p>
                 </div>
 
-                <Button
-                  type="submit"
-                  size="default"
-                  className="w-full font-semibold bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 cursor-pointer h-10"
-                  disabled={loading || resetSent}
-                >
-                  {loading && <Loader2 className="size-4 animate-spin mr-2" />}
-                  {resetSent ? 'Reset Link Sent!' : 'Send Reset Link'}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsForgotPassword(false);
-                    setResetSent(false);
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
-                  className="w-full text-xs font-medium cursor-pointer"
-                >
-                  ← Back to Login
-                </Button>
-              </form>
-            </div>
-          ) : (
-            /* Main Login / Register View */
-            <div className="space-y-5">
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight">
-                  {isSignUp ? 'Create an account' : 'Welcome Back'}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {isSignUp
-                    ? 'Start your 14-day free trial for your retail store.'
-                    : 'Sign in to access your store register and inventory.'}
-                </p>
-              </div>
-
-              {/* Google 1-Tap Login Button */}
-              <Button
-                id="btn-google-sign-in"
-                type="button"
-                variant="outline"
-                size="default"
-                className="w-full h-10 font-semibold gap-2.5 shadow-2xs hover:bg-muted/50 cursor-pointer"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <svg className="size-4 shrink-0" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                )}
-                <span>Continue with Google</span>
-              </Button>
-
-              {/* Or continue with Email Divider */}
-              <div className="relative flex items-center justify-center text-xs text-muted-foreground">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <span className="relative bg-background px-3 text-[11px] font-medium text-muted-foreground">
-                  Or continue with Email
-                </span>
-              </div>
-
-              {/* Email & Password Form */}
-              <form onSubmit={handleEmailAuth} className="space-y-3.5">
-                <div className="space-y-1.5">
-                  <Label htmlFor="auth-email" className="text-xs font-semibold">
-                    Email address*
-                  </Label>
-                  <Input
-                    id="auth-email"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auth-password" className="text-xs font-semibold">
-                      Password*
-                    </Label>
-                    {!isSignUp && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsForgotPassword(true);
-                          setError(null);
-                          setSuccessMessage(null);
-                        }}
-                        className="text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
-                      >
-                        Forgot Password?
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
+                <form onSubmit={handleForgotPassword} className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="auth-email-reset">Email</Label>
                     <Input
-                      id="auth-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••••••"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                      className="pr-9"
-                      autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                      id="auth-email-reset"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                      autoComplete="email"
+                      autoFocus
                       required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
                   </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full cursor-pointer"
+                    disabled={loading || resetSent}
+                  >
+                    {loading && <Loader2 className="size-4 animate-spin mr-2" />}
+                    {resetSent ? 'Reset Link Sent!' : 'Send Reset Link'}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setResetSent(false);
+                      setError(null);
+                      setSuccessMessage(null);
+                    }}
+                    className="w-full text-xs font-medium cursor-pointer"
+                  >
+                    ← Back to Login
+                  </Button>
+                </form>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <h1 className="text-2xl font-bold tracking-tight">
+                    {isSignUp ? 'Create an account' : 'Login to your account'}
+                  </h1>
+                  <p className="text-balance text-sm text-muted-foreground">
+                    {isSignUp
+                      ? 'Enter your email below to create your account'
+                      : 'Enter your email below to login to your account'}
+                  </p>
                 </div>
 
-                {/* Submit Button */}
-                <Button
-                  id="btn-submit-auth"
-                  type="submit"
-                  size="default"
-                  className="w-full font-semibold bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 cursor-pointer h-10 shadow-xs mt-1"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="size-4 animate-spin mr-2" />}
-                  {isSignUp ? 'Sign up for MonoPOS' : 'Sign in to MonoPOS'}
-                </Button>
-              </form>
+                <form onSubmit={handleEmailAuth} className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="auth-email">Email</Label>
+                    <Input
+                      id="auth-email"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
 
-              {/* Account Switcher */}
-              <div className="text-center text-xs text-muted-foreground pt-1">
-                {isSignUp ? (
-                  <span>
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setIsSignUp(false); setError(null); }}
-                      className="font-bold text-foreground hover:underline cursor-pointer"
-                    >
-                      Sign in
-                    </button>
-                  </span>
-                ) : (
-                  <span>
-                    New on our platform?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setIsSignUp(true); setError(null); }}
-                      className="font-bold text-foreground hover:underline cursor-pointer"
-                    >
-                      Create an account
-                    </button>
-                  </span>
-                )}
+                  <div className="grid gap-2">
+                    <div className="flex items-center">
+                      <Label htmlFor="auth-password">Password</Label>
+                      {!isSignUp && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsForgotPassword(true);
+                            setError(null);
+                            setSuccessMessage(null);
+                          }}
+                          className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:underline cursor-pointer"
+                        >
+                          Forgot your password?
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="auth-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                        className="pr-9"
+                        autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <Button
+                    id="btn-submit-auth"
+                    type="submit"
+                    className="w-full cursor-pointer"
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="size-4 animate-spin mr-2" />}
+                    {isSignUp ? 'Sign Up' : 'Login'}
+                  </Button>
+
+                  <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+                    <span className="relative z-10 bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+
+                  <Button
+                    id="btn-google-sign-in"
+                    type="button"
+                    variant="outline"
+                    className="w-full cursor-pointer gap-2"
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                    )}
+                    <span>Continue with Google</span>
+                  </Button>
+
+                  <div className="text-center text-sm">
+                    {isSignUp ? (
+                      <>
+                        Already have an account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => { setIsSignUp(false); setError(null); }}
+                          className="underline underline-offset-4 font-semibold text-foreground cursor-pointer"
+                        >
+                          Sign in
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        Don&apos;t have an account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => { setIsSignUp(true); setError(null); }}
+                          className="underline underline-offset-4 font-semibold text-foreground cursor-pointer"
+                        >
+                          Sign up
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </form>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Feedback Alerts */}
-          {successMessage && (
-            <div className="mt-4 flex items-center gap-2 p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
-              <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-              <span>{successMessage}</span>
-            </div>
-          )}
+            {/* Feedback Alerts */}
+            {successMessage && (
+              <div className="mt-4 flex items-center gap-2 p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                <span>{successMessage}</span>
+              </div>
+            )}
 
-          {error && (
-            <div className="mt-4 flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
-              <AlertCircle className="size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+            {error && (
+              <div className="mt-4 flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
+                <AlertCircle className="size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Clean Footer Trust Note */}
-        <div className="text-center text-[11px] text-muted-foreground">
+        <div className="text-center text-xs text-muted-foreground">
           Encrypted with 256-bit SSL • 🇮🇳 GST Compliant
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Streamlined Showcase (Hidden on Mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 p-6 flex-col justify-between relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-neutral-900 text-white rounded-3xl m-4 shadow-2xl">
-        {/* Ambient Lighting */}
-        <div className="absolute inset-0 opacity-25 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-600 via-zinc-900 to-black pointer-events-none" />
-        <div className="absolute -top-32 -right-32 size-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 size-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-
-        {/* Top Product Value Proposition */}
-        <div className="relative z-10 space-y-3 p-6 pt-10 max-w-lg">
-          <Badge variant="outline" className="text-white/80 border-white/20 bg-white/5 gap-1.5 text-xs">
-            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Live Cloud Retail Engine
-          </Badge>
-          <h1 className="text-4xl font-extrabold tracking-tight leading-tight">
-            Lightning-Fast Retail Billing
-          </h1>
-          <p className="text-sm text-zinc-300 leading-relaxed">
-            Engineered for high-volume supermarkets, apparel stores, cafes, and groceries across India.
-          </p>
-
-          <div className="flex items-center gap-3 pt-4">
-            <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/15 gap-1 text-[11px]">
-              <Zap className="size-3 text-amber-400" /> 0.3s Instant Billing
-            </Badge>
-            <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/15 gap-1 text-[11px]">
-              <CloudUpload className="size-3 text-indigo-400" /> Auto Cloud Backup
-            </Badge>
-            <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/15 gap-1 text-[11px]">
-              <BarChart3 className="size-3 text-emerald-400" /> GSTR-1 Tax Ready
-            </Badge>
-          </div>
-        </div>
-
-        {/* Middle: Smooth Animated POS Terminal Showcase */}
-        <div className="relative z-10 my-auto px-4 sm:px-6 py-2 flex flex-col items-center justify-center">
-          <div className="relative w-full max-w-md xl:max-w-lg group">
-            {/* Ambient Multi-colored Glow Backdrop */}
-            <div className="absolute -inset-1.5 bg-gradient-to-r from-cyan-500/30 via-indigo-500/30 to-purple-500/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-85 transition duration-1000 animate-pulse-glow pointer-events-none" />
-
-            {/* Floating Image Wrapper */}
-            <div className="relative rounded-2xl overflow-hidden border border-white/20 bg-zinc-950/80 shadow-2xl backdrop-blur-sm animate-smooth-float">
-              {/* The Terminal Image */}
-              <img
-                src="/pos-terminal-showcase.jpg"
-                alt="MonoPOS Dual-Screen Retail Terminal"
-                className="w-full h-auto object-cover rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-                loading="eager"
-              />
-
-              {/* Laser / Holographic Scan Beam Effect */}
-              <div className="absolute inset-x-0 h-20 bg-gradient-to-b from-transparent via-cyan-400/25 to-transparent pointer-events-none animate-scan-beam" />
-
-              {/* Glassmorphism Inner Shadow / Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-
-              {/* Floating Live Telemetry Badge - Top Left */}
-              <div className="absolute top-3 left-3 bg-zinc-950/85 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 flex items-center gap-1.5 text-[11px] font-medium text-white/90 shadow-lg">
-                <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="size-2 rounded-full bg-emerald-500 -ml-3.5" />
-                <span>Dual-Screen Active</span>
-              </div>
-
-              {/* Floating Real-time Stat Badge - Bottom Right */}
-              <div className="absolute bottom-3 right-3 bg-zinc-950/85 backdrop-blur-md border border-white/20 rounded-xl px-3 py-1.5 flex items-center gap-2 text-white shadow-lg">
-                <div className="size-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                  ₹
-                </div>
-                <div className="text-left leading-tight">
-                  <div className="text-[10px] text-zinc-400">Counter Speed</div>
-                  <div className="text-xs font-bold text-emerald-400">0.3s / receipt</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Social Proof Card */}
-        <div className="relative z-10 bg-white text-zinc-900 dark:bg-zinc-950 dark:text-white rounded-2xl p-6 shadow-2xl border border-white/20 mx-4 mb-4">
-          <div className="space-y-1">
-            <h3 className="text-base font-bold tracking-tight">
-              Trusted by 3,500+ Indian Retailers
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Powering daily counter sales with offline reliability, zero downtime, and instant digital receipts.
-            </p>
-          </div>
-
-          {/* Social Proof Avatars & Uptime */}
-          <div className="flex items-center justify-between pt-4 mt-2 border-t border-border/60">
-            <div className="flex items-center -space-x-2">
-              <div className="size-7 rounded-full bg-slate-200 border-2 border-white dark:border-zinc-950 flex items-center justify-center text-[10px] font-bold text-slate-700">
-                👨‍💼
-              </div>
-              <div className="size-7 rounded-full bg-slate-300 border-2 border-white dark:border-zinc-950 flex items-center justify-center text-[10px] font-bold text-slate-700">
-                👩‍💼
-              </div>
-              <div className="size-7 rounded-full bg-slate-400 border-2 border-white dark:border-zinc-950 flex items-center justify-center text-[10px] font-bold text-slate-700">
-                🧑‍💻
-              </div>
-              <div className="size-7 rounded-full bg-zinc-900 text-white border-2 border-white dark:border-zinc-950 flex items-center justify-center text-[9px] font-black">
-                +3.5k
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="size-3.5" />
-              <span>99.99% Cloud Uptime</span>
-            </div>
-          </div>
-        </div>
+      {/* Right Column: Default shadcn Image Block */}
+      <div className="relative hidden bg-muted lg:block">
+        <img
+          src="/pos-terminal-showcase.jpg"
+          alt="MonoPOS Retail Billing Terminal"
+          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.85]"
+        />
       </div>
     </div>
   );
