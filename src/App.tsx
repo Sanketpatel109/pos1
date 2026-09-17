@@ -173,10 +173,32 @@ export default function App() {
     }
   });
 
-  // Listen to Firebase Auth state
+  // Listen to Firebase Auth state with local persistence
   useEffect(() => {
+    const savedUser = localStorage.getItem('monopos_auth_user');
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.warn('Failed to parse saved user:', e);
+      }
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+        try {
+          localStorage.setItem('monopos_auth_user', JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || user.email?.split('@')[0] || 'Store Staff',
+          }));
+        } catch {}
+      } else {
+        const saved = localStorage.getItem('monopos_auth_user');
+        if (!saved) {
+          setCurrentUser(null);
+        }
+      }
       setAuthChecked(true);
     });
     return () => unsubscribe();
@@ -294,6 +316,8 @@ export default function App() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      localStorage.removeItem('monopos_auth_user');
+      setCurrentUser(null);
       clearCachedLicense();
       setTenantLicense(null);
       setLicenseStatus(null);

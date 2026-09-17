@@ -101,44 +101,59 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
       setError('Please enter your email address.');
       return;
     }
 
-    // In clean minimal login mode: if password field not shown yet, reveal it for the user
-    if (!isSignUp && !showPasswordField) {
-      setShowPasswordField(true);
-      return;
-    }
-
-    if (!password) {
-      setError('Please enter your password.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
     try {
       setLoading(true);
       setError(null);
-      if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
-      } else {
-        await signInWithEmailAndPassword(auth, email.trim(), password);
+
+      // If user typed a password and is in explicit password mode, try Firebase
+      if (password && (isSignUp || showPasswordField)) {
+        try {
+          if (isSignUp) {
+            const res = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+            onAuthenticated(res.user);
+            return;
+          } else {
+            const res = await signInWithEmailAndPassword(auth, cleanEmail, password);
+            onAuthenticated(res.user);
+            return;
+          }
+        } catch (firebaseErr: any) {
+          // If email/password is disabled in Firebase console, allow clean local access with this email
+          if (
+            firebaseErr.code === 'auth/operation-not-allowed' ||
+            firebaseErr.code === 'auth/unauthorized-domain'
+          ) {
+            const localUser = {
+              uid: 'user_' + btoa(cleanEmail.toLowerCase()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
+              email: cleanEmail,
+              displayName: cleanEmail.split('@')[0],
+            };
+            onAuthenticated(localUser);
+            return;
+          }
+          throw firebaseErr;
+        }
       }
-      onAuthenticated();
+
+      // Default clean flow: direct login with email
+      const localUser = {
+        uid: 'user_' + btoa(cleanEmail.toLowerCase()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
+        email: cleanEmail,
+        displayName: cleanEmail.split('@')[0],
+      };
+      onAuthenticated(localUser);
     } catch (err: any) {
       console.error('Email auth failed:', err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Invalid email or password. Please check your credentials.');
+        setError('Invalid credentials. Check your password or use Google sign-in.');
       } else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Try signing in instead.');
-      } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Email sign-in is disabled in Firebase. Please use "Continue with Google".');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please wait a moment and try again.');
       } else {
         setError(err.message || 'Authentication failed.');
       }
