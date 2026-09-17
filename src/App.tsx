@@ -2052,7 +2052,11 @@ export default function App() {
   if (!currentUser) {
     return (
       <AuthGateScreen
-        onAuthenticated={() => {}}
+        onAuthenticated={(localUser?: any) => {
+          if (localUser) {
+            setCurrentUser(localUser);
+          }
+        }}
       />
     );
   }

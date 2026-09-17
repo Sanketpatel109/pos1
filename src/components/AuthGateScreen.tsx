@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
 interface AuthGateScreenProps {
-  onAuthenticated: () => void;
+  onAuthenticated: (user?: any) => void;
 }
 
 export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated }) => {
@@ -36,6 +36,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isUnauthorizedDomain, setIsUnauthorizedDomain] = useState(false);
 
   const [showPasswordField, setShowPasswordField] = useState(false);
 
@@ -44,13 +45,18 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          onAuthenticated();
+          onAuthenticated(result.user);
         }
       })
       .catch((err) => {
         console.warn('Redirect sign-in result check:', err);
         if (err.code && err.code !== 'auth/popup-closed-by-user') {
-          setError(err.message || 'Google sign-in error.');
+          if (err.code === 'auth/unauthorized-domain') {
+            setIsUnauthorizedDomain(true);
+            setError('Domain unauthorized in Firebase: "localhost" is not in Authorized Domains list.');
+          } else {
+            setError(err.message || 'Google sign-in error.');
+          }
         }
       });
   }, [onAuthenticated]);
@@ -59,11 +65,15 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
     try {
       setLoading(true);
       setError(null);
-      await signInWithPopup(auth, googleProvider);
-      onAuthenticated();
+      setIsUnauthorizedDomain(false);
+      const result = await signInWithPopup(auth, googleProvider);
+      onAuthenticated(result.user);
     } catch (err: any) {
       console.warn('Google popup sign-in encountered an issue, falling back to redirect:', err);
-      if (
+      if (err.code === 'auth/unauthorized-domain') {
+        setIsUnauthorizedDomain(true);
+        setError('Domain unauthorized in Firebase: "localhost" is not added to Authorized Domains in your Firebase console.');
+      } else if (
         err.code === 'auth/popup-blocked' ||
         err.code === 'auth/cancelled-popup-request' ||
         err.code === 'auth/internal-error'
@@ -72,7 +82,12 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
           await signInWithRedirect(auth, googleProvider);
           return;
         } catch (redirectErr: any) {
-          setError(redirectErr.message || 'Redirect sign-in failed.');
+          if (redirectErr.code === 'auth/unauthorized-domain') {
+            setIsUnauthorizedDomain(true);
+            setError('Domain unauthorized in Firebase: "localhost" is not added to Authorized Domains in your Firebase console.');
+          } else {
+            setError(redirectErr.message || 'Redirect sign-in failed.');
+          }
         }
       } else if (err.code === 'auth/popup-closed-by-user') {
         setError(null);
@@ -344,9 +359,45 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
           )}
 
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
-              <AlertCircle className="size-4 shrink-0 text-destructive" />
-              <span>{error}</span>
+            <div className="flex flex-col gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="size-4 shrink-0 text-destructive mt-0.5" />
+                <div className="flex-1 leading-relaxed">
+                  {error}
+                </div>
+              </div>
+              {isUnauthorizedDomain && (
+                <div className="mt-1 pt-2 border-t border-destructive/20 flex flex-col gap-2">
+                  <p className="text-[11px] text-muted-foreground">
+                    Google sign-in works immediately on the authorized live hosting domain, or you can bypass it locally:
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <a
+                      href="https://gen-lang-client-0282731279.web.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      Open Live Site (web.app) →
+                    </a>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onAuthenticated({
+                          uid: 'local_admin',
+                          email: 'admin@monopos.local',
+                          displayName: 'Admin (Local Demo)',
+                        });
+                      }}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Continue in Local Demo Mode
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
