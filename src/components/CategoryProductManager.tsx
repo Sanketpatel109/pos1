@@ -22,9 +22,10 @@ import { canViewCostPrice } from '../utils/permissions';
 import { ensureAllItemsFirst } from '../utils/categories';
 import { AddProductModal } from './AddProductModal';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { cn } from 'cn';
 import {
   Dialog,
   DialogContent,
@@ -405,8 +406,9 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                 : isAllCat;
 
               return (
-                <div
+                <Card
                   key={cat.id}
+                  size="sm"
                   onClick={() => {
                     if (isAllCat) {
                       setSelectedCategory(null);
@@ -415,33 +417,37 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                     }
                     setActiveTab('products');
                   }}
-                  className={`group px-3 py-2 rounded-lg border transition-all flex flex-row items-center justify-between gap-2.5 cursor-pointer select-none ${
+                  className={cn(
+                    "group cursor-pointer select-none transition-all py-2.5 px-3 gap-0 border",
                     isSelected
-                      ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/25 shadow-xs'
-                      : 'border-border bg-card text-card-foreground hover:bg-muted/70 hover:border-border'
-                  }`}
+                      ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/25 shadow-xs"
+                      : "border-border bg-card text-card-foreground hover:bg-muted/70 hover:border-border"
+                  )}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs shrink-0 ${
-                        isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:text-foreground'
-                      }`}
-                    >
-                      <Layers className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className={`text-xs font-semibold leading-tight truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>
-                        {cat.name}
+                  <CardHeader className="p-0 flex flex-row items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div
+                        className={cn(
+                          "w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs shrink-0 transition-colors",
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground group-hover:text-foreground"
+                        )}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
                       </div>
-                      <div className="text-[11px] text-muted-foreground tabular-nums leading-normal">
-                        {count} {count === 1 ? 'item' : 'items'}
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className={cn("text-xs font-semibold leading-tight truncate", isSelected ? "text-primary" : "text-foreground")}>
+                          {cat.name}
+                        </CardTitle>
+                        <CardDescription className="text-[11px] text-muted-foreground tabular-nums leading-normal">
+                          {count} {count === 1 ? 'item' : 'items'}
+                        </CardDescription>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     {!isAllCat && (
-                      <>
+                      <CardAction className="flex items-center gap-1 shrink-0 p-0 m-0 self-center" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="icon-xs"
                           variant="ghost"
@@ -460,10 +466,10 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
-                      </>
+                      </CardAction>
                     )}
-                  </div>
-                </div>
+                  </CardHeader>
+                </Card>
               );
             })}
           </div>
@@ -673,7 +679,8 @@ export const CategoryProductManager: React.FC<CategoryProductManagerProps> = ({
                     return (
                       <Card
                         key={item.id}
-                        className="p-3 flex flex-col justify-between shadow-xs hover:border-primary/50 transition-all gap-2 border-border bg-card"
+                        size="sm"
+                        className="py-3 px-3 flex flex-col justify-between shadow-xs hover:border-primary/50 transition-all gap-2.5 border-border bg-card"
                       >
                         <div className="w-full h-24 bg-muted rounded-md overflow-hidden shrink-0 relative flex items-center justify-center">
                           {item.image ? (
