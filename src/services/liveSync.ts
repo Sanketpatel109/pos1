@@ -164,9 +164,14 @@ export async function testFirestoreConnection(): Promise<boolean> {
  */
 export function listenToLiveCatalog(
   callback: (items: CatalogItem[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('catalog');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('catalog', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -210,9 +215,14 @@ export function listenToLiveCatalog(
  */
 export function listenToLiveCategories(
   callback: (categories: Category[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('categories');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('categories', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -240,9 +250,14 @@ export function listenToLiveCategories(
  */
 export function listenToLiveOrders(
   callback: (orders: Order[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('orders');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('orders', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -272,9 +287,14 @@ export function listenToLiveOrders(
  */
 export function listenToLiveCustomers(
   callback: (customers: Customer[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('customers');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('customers', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -304,9 +324,14 @@ export function listenToLiveCustomers(
  */
 export function listenToLiveCashEntries(
   callback: (entries: CashEntry[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('cashEntries');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('cashEntries', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -336,9 +361,14 @@ export function listenToLiveCashEntries(
  */
 export function listenToLiveSettings(
   callback: (settings: ShopSettings) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const docRef = getTenantDoc('settings', 'store_config');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const docRef = getTenantDoc('settings', 'store_config', tId);
   return onSnapshot(
     docRef,
     (snapshot) => {
@@ -365,9 +395,14 @@ export function listenToLiveSettings(
  */
 export function listenToLiveStaff(
   callback: (staff: StaffMember[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('staff');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('staff', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {
@@ -395,9 +430,14 @@ export function listenToLiveStaff(
  */
 export function listenToLiveHeldOrders(
   callback: (held: Order[]) => void,
-  onError?: (err: FirestoreErrorInfo) => void
+  onError?: (err: FirestoreErrorInfo) => void,
+  tenantId?: string
 ): () => void {
-  const colRef = getTenantCollection('heldOrders');
+  const tId = tenantId || activeTenantId;
+  if (!tId) {
+    return () => {};
+  }
+  const colRef = getTenantCollection('heldOrders', tId);
   return onSnapshot(
     colRef,
     (snapshot) => {

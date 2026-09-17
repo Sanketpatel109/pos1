@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import { BillItem, CatalogItem } from '../types';
 import { calculateItemTaxSnapshot, calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 
@@ -105,14 +105,80 @@ export const CartProvider: React.FC<CartProviderProps> = ({
   initialItems = [],
   defaultTaxRate = 0,
 }) => {
-  const [currentBillItems, setCurrentBillItems] = useState<BillItem[]>(initialItems);
+  const [currentBillItems, setCurrentBillItems] = useState<BillItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('monopos_active_cart');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load active cart from localStorage:', e);
+    }
+    return initialItems;
+  });
+
   const [taxRate, setTaxRate] = useState<number>(defaultTaxRate);
-  const [discount, setDiscountValue] = useState<number>(0);
-  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>('percentage');
+
+  const [discount, setDiscountValue] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('monopos_cart_discount');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed?.discount === 'number') {
+          return Math.max(0, parsed.discount);
+        }
+      }
+    } catch {}
+    return 0;
+  });
+
+  const [discountType, setDiscountType] = useState<'percentage' | 'flat'>(() => {
+    try {
+      const saved = localStorage.getItem('monopos_cart_discount');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.discountType === 'flat' || parsed?.discountType === 'percentage') {
+          return parsed.discountType;
+        }
+      }
+    } catch {}
+    return 'percentage';
+  });
+
+  // Automatically persist active cart items to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem('monopos_active_cart', JSON.stringify(currentBillItems));
+    } catch (err) {
+      console.warn('Failed to persist active cart to localStorage:', err);
+    }
+  }, [currentBillItems]);
+
+  // Automatically persist discount preferences
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'monopos_cart_discount',
+        JSON.stringify({ discount, discountType })
+      );
+    } catch (err) {
+      console.warn('Failed to persist cart discount to localStorage:', err);
+    }
+  }, [discount, discountType]);
 
   const setDiscount = useCallback((amount: number, type: 'percentage' | 'flat' = 'percentage') => {
-    setDiscountValue(Math.max(0, amount));
+    const validAmount = Math.max(0, amount);
+    setDiscountValue(validAmount);
     setDiscountType(type);
+    try {
+      localStorage.setItem(
+        'monopos_cart_discount',
+        JSON.stringify({ discount: validAmount, discountType: type })
+      );
+    } catch {}
   }, []);
 
   const addItem = useCallback(
@@ -283,6 +349,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({
   const clearCart = useCallback(() => {
     setCurrentBillItems([]);
     setDiscountValue(0);
+    setDiscountType('percentage');
+    try {
+      localStorage.removeItem('monopos_active_cart');
+      localStorage.removeItem('monopos_cart_discount');
+    } catch {}
   }, []);
 
   const taxTotals = useMemo(() => {

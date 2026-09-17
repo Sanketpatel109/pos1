@@ -213,26 +213,49 @@ export default function App() {
       const onboardedKey = `monopos_onboarded_${currentUser.uid}`;
       const userSettingsKey = `monopos_retail_settings_${currentUser.uid}`;
 
+      // Check if store is already active/onboarded via keys or existing catalog/orders
+      const hasExistingCatalog = (() => {
+        try {
+          const raw = localStorage.getItem('monopos_live_catalog');
+          return raw ? JSON.parse(raw).length > 0 : false;
+        } catch {
+          return false;
+        }
+      })();
+
+      const hasExistingOrders = (() => {
+        try {
+          const raw = localStorage.getItem('monopos_orders');
+          return raw ? JSON.parse(raw).length > 0 : false;
+        } catch {
+          return false;
+        }
+      })();
+
+      const localAlreadyOnboarded =
+        localStorage.getItem(onboardedKey) === 'true' ||
+        localStorage.getItem('monopos_onboarded') === 'true' ||
+        Boolean(shopSettings.onboarded) ||
+        hasExistingCatalog ||
+        hasExistingOrders;
+
       // 1. Check local storage for this user's specific store settings
-      const userSavedSettings = localStorage.getItem(userSettingsKey);
-      let localAlreadyOnboarded = localStorage.getItem(onboardedKey) === 'true';
+      const userSavedSettings =
+        localStorage.getItem(userSettingsKey) ||
+        localStorage.getItem('monopos_retail_settings');
 
       if (userSavedSettings) {
         try {
           const parsed = JSON.parse(userSavedSettings);
-          if (
-            parsed.shopName &&
-            parsed.shopName !== 'MonoPOS Express' &&
-            parsed.shopName !== 'Anand Supermarket'
-          ) {
+          if (parsed && typeof parsed === 'object') {
             setShopSettings((prev) => ({ ...prev, ...parsed }));
-            localAlreadyOnboarded = true;
           }
         } catch {}
       }
 
-      if (localAlreadyOnboarded || Boolean(shopSettings.onboarded)) {
+      if (localAlreadyOnboarded) {
         localStorage.setItem(onboardedKey, 'true');
+        localStorage.setItem('monopos_onboarded', 'true');
         setIsStoreOnboardingOpen(false);
       } else {
         // 2. Query Firestore directly before opening onboarding modal to avoid race conditions
@@ -240,30 +263,20 @@ export default function App() {
           .then((snap) => {
             if (snap.exists()) {
               const remote = snap.data() as ShopSettings;
-              if (
-                remote.onboarded ||
-                (remote.shopName &&
-                  remote.shopName !== 'MonoPOS Express' &&
-                  remote.shopName !== 'Anand Supermarket')
-              ) {
-                setShopSettings((prev) => ({ ...prev, ...remote }));
-                localStorage.setItem(onboardedKey, 'true');
-                localStorage.setItem(userSettingsKey, JSON.stringify(remote));
-                setIsStoreOnboardingOpen(false);
-                return;
-              }
+              setShopSettings((prev) => ({ ...prev, ...remote }));
+              localStorage.setItem(onboardedKey, 'true');
+              localStorage.setItem('monopos_onboarded', 'true');
+              localStorage.setItem(userSettingsKey, JSON.stringify(remote));
+              setIsStoreOnboardingOpen(false);
+              return;
             }
-            // Only show onboarding if user has never configured a store
+            // Only show onboarding if user has never configured a store and has 0 data
             setIsStoreOnboardingOpen(true);
           })
           .catch((err) => {
             console.warn('Firestore store config check deferred:', err);
-            // If offline, check if settings already have a valid custom name
-            if (shopSettings.shopName && shopSettings.shopName !== 'MonoPOS Express') {
-              setIsStoreOnboardingOpen(false);
-            } else {
-              setIsStoreOnboardingOpen(true);
-            }
+            // Default to not showing onboarding modal when offline
+            setIsStoreOnboardingOpen(false);
           });
       }
     } else {
@@ -538,6 +551,10 @@ export default function App() {
 
   // Real-time live Firestore synchronization across all 9 database points / collections
   useEffect(() => {
+    if (!currentUser) return;
+
+    const tenantId = `tenant_${currentUser.uid}`;
+    setActiveTenantId(tenantId);
     testFirestoreConnection();
 
     const unsubSyncState = subscribeSyncState((state) => {
@@ -545,67 +562,113 @@ export default function App() {
       if (state.lastSyncAt) setLastSyncedAt(state.lastSyncAt);
     });
 
-    const unsubCatalog = listenToLiveCatalog((items) => {
-      if (items.length > 0) {
-        setCatalog(items);
-        try {
-          localStorage.setItem('monopos_live_catalog', JSON.stringify(items));
-        } catch {}
-      }
-    });
-
-    const unsubCategories = listenToLiveCategories((cats) => {
-      if (cats.length > 0) {
-        const ordered = ensureAllItemsFirst(cats);
-        setCategories(ordered);
-        try {
-          localStorage.setItem('monopos_categories', JSON.stringify(ordered));
-        } catch {}
-      }
-    });
-
-    const unsubOrders = listenToLiveOrders((remoteOrders) => {
-      if (remoteOrders.length > 0) {
-        setOrders(remoteOrders);
-        const maxOrderNum = Math.max(...remoteOrders.map((o) => o.orderNumber || 0), 0);
-        if (maxOrderNum > 0) {
-          setOrderNumber((prev) => Math.max(prev, maxOrderNum + 1));
+    const unsubCatalog = listenToLiveCatalog(
+      (items) => {
+        if (items.length > 0) {
+          setCatalog((prev) => {
+            const map = new Map<string, CatalogItem>();
+            items.forEach((it) => map.set(it.id, it));
+            // Retain any locally added products that haven't synced yet (within 60s)
+            prev.forEach((localIt) => {
+              if (!map.has(localIt.id)) {
+                const ts = localIt.id.startsWith('item-')
+                  ? parseInt(localIt.id.replace('item-', ''), 10)
+                  : 0;
+                if (!ts || Date.now() - ts < 60000) {
+                  map.set(localIt.id, localIt);
+                }
+              }
+            });
+            const merged = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+            try {
+              localStorage.setItem('monopos_live_catalog', JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
         }
-      }
-    });
+      },
+      undefined,
+      tenantId
+    );
 
-    const unsubCustomers = listenToLiveCustomers((custs) => {
-      if (custs.length > 0) setCustomers(custs);
-    });
+    const unsubCategories = listenToLiveCategories(
+      (cats) => {
+        if (cats.length > 0) {
+          const ordered = ensureAllItemsFirst(cats);
+          setCategories(ordered);
+          try {
+            localStorage.setItem('monopos_categories', JSON.stringify(ordered));
+          } catch {}
+        }
+      },
+      undefined,
+      tenantId
+    );
 
-    const unsubCash = listenToLiveCashEntries((entries) => {
-      if (entries.length > 0) setCashEntries(entries);
-    });
-
-    const unsubSettings = listenToLiveSettings((remoteSettings) => {
-      if (remoteSettings) {
-        setShopSettings((prev) => ({ ...prev, ...remoteSettings }));
-        if (
-          remoteSettings.onboarded ||
-          (remoteSettings.shopName &&
-            remoteSettings.shopName !== 'MonoPOS Express' &&
-            remoteSettings.shopName !== 'Anand Supermarket')
-        ) {
-          if (currentUser) {
-            localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+    const unsubOrders = listenToLiveOrders(
+      (remoteOrders) => {
+        if (remoteOrders.length > 0) {
+          setOrders(remoteOrders);
+          const maxOrderNum = Math.max(...remoteOrders.map((o) => o.orderNumber || 0), 0);
+          if (maxOrderNum > 0) {
+            setOrderNumber((prev) => Math.max(prev, maxOrderNum + 1));
           }
-          setIsStoreOnboardingOpen(false);
         }
-      }
-    });
+      },
+      undefined,
+      tenantId
+    );
 
-    const unsubStaff = listenToLiveStaff((staff) => {
-      if (staff.length > 0) setStaffList(staff);
-    });
+    const unsubCustomers = listenToLiveCustomers(
+      (custs) => {
+        if (custs.length > 0) setCustomers(custs);
+      },
+      undefined,
+      tenantId
+    );
 
-    const unsubHeld = listenToLiveHeldOrders((held) => {
-      setHeldOrders(held);
-    });
+    const unsubCash = listenToLiveCashEntries(
+      (entries) => {
+        if (entries.length > 0) setCashEntries(entries);
+      },
+      undefined,
+      tenantId
+    );
+
+    const unsubSettings = listenToLiveSettings(
+      (remoteSettings) => {
+        if (remoteSettings) {
+          setShopSettings((prev) => ({ ...prev, ...remoteSettings }));
+          if (
+            remoteSettings.onboarded ||
+            (remoteSettings.shopName &&
+              remoteSettings.shopName !== 'MonoPOS Express' &&
+              remoteSettings.shopName !== 'Anand Supermarket')
+          ) {
+            localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+            setIsStoreOnboardingOpen(false);
+          }
+        }
+      },
+      undefined,
+      tenantId
+    );
+
+    const unsubStaff = listenToLiveStaff(
+      (staff) => {
+        if (staff.length > 0) setStaffList(staff);
+      },
+      undefined,
+      tenantId
+    );
+
+    const unsubHeld = listenToLiveHeldOrders(
+      (held) => {
+        setHeldOrders(held);
+      },
+      undefined,
+      tenantId
+    );
 
     return () => {
       unsubSyncState();
@@ -686,17 +749,34 @@ export default function App() {
       });
     }
 
-    // Always launch completely clean fresh store: zero cart, zero dummy catalog, zero orders
-    setCatalog([]);
-    setOrders([]);
-    setCustomers([]);
-    setCashEntries([]);
-    cartClearCart();
-    setOrderNumber(1);
-    localStorage.setItem('monopos_live_catalog', JSON.stringify([]));
-    localStorage.setItem('monopos_orders', JSON.stringify([]));
-    localStorage.setItem('monopos_customers', JSON.stringify([]));
-    localStorage.setItem('monopos_cash_entries', JSON.stringify([]));
+    // If catalog already has items, preserve them; only initialize if empty
+    const hasExistingCatalog = (() => {
+      try {
+        const raw = localStorage.getItem('monopos_live_catalog');
+        return raw ? JSON.parse(raw).length > 0 : false;
+      } catch {
+        return false;
+      }
+    })();
+
+    if (catalog.length === 0 && !hasExistingCatalog) {
+      setCatalog([]);
+      localStorage.setItem('monopos_live_catalog', JSON.stringify([]));
+    }
+
+    const hasExistingOrders = (() => {
+      try {
+        const raw = localStorage.getItem('monopos_orders');
+        return raw ? JSON.parse(raw).length > 0 : false;
+      } catch {
+        return false;
+      }
+    })();
+
+    if (orders.length === 0 && !hasExistingOrders) {
+      setOrders([]);
+      localStorage.setItem('monopos_orders', JSON.stringify([]));
+    }
 
     if (currentUser) {
       localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
