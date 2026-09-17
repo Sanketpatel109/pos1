@@ -184,6 +184,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   *** DUPLICATE COPY ***
                 </div>
               )}
+              {order?.status === 'refunded' && (
+                <div className="mt-1.5 py-1 px-2 text-center bg-red-100 border-y border-dashed border-red-400 font-bold text-[11px] tracking-widest text-red-900 uppercase">
+                  *** FULLY REFUNDED / VOID ***
+                </div>
+              )}
+              {order?.status === 'partially_refunded' && (
+                <div className="mt-1.5 py-1 px-2 text-center bg-amber-100 border-y border-dashed border-amber-400 font-bold text-[11px] tracking-widest text-amber-900 uppercase">
+                  *** PARTIALLY REFUNDED ***
+                </div>
+              )}
             </div>
 
             {/* Invoice Meta */}
@@ -236,16 +246,37 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 <span className="col-span-2 text-right">Total</span>
               </div>
 
-              {activeItems.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-12 text-[11px] py-0.5">
-                  <span className="col-span-6 truncate font-medium">{item.name}</span>
-                  <span className="col-span-2 text-center">{item.quantity}</span>
-                  <span className="col-span-2 text-right">{item.unitPrice.toFixed(0)}</span>
-                  <span className="col-span-2 text-right font-bold">
-                    {(item.unitPrice * item.quantity).toFixed(0)}
-                  </span>
-                </div>
-              ))}
+              {activeItems.map((item, idx) => {
+                const refundedMatch = order?.refundedItems?.find(
+                  (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
+                );
+                const refundedQty = refundedMatch ? refundedMatch.quantity : 0;
+                const isItemFullyReturned = refundedQty >= item.quantity;
+                const isItemPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
+
+                return (
+                  <div key={idx} className="grid grid-cols-12 text-[11px] py-0.5">
+                    <span className={`col-span-6 truncate font-medium ${isItemFullyReturned ? 'line-through text-muted-foreground' : ''}`}>
+                      {item.name}
+                      {isItemPartiallyReturned && (
+                        <span className="block text-[9px] text-amber-600 not-italic no-underline">
+                          ({refundedQty} of {item.quantity} ret.)
+                        </span>
+                      )}
+                      {isItemFullyReturned && order?.status === 'partially_refunded' && (
+                        <span className="block text-[9px] text-destructive not-italic no-underline">
+                          (Item Returned)
+                        </span>
+                      )}
+                    </span>
+                    <span className="col-span-2 text-center">{item.quantity}</span>
+                    <span className="col-span-2 text-right">{item.unitPrice.toFixed(0)}</span>
+                    <span className={`col-span-2 text-right font-bold ${isItemFullyReturned ? 'line-through text-muted-foreground' : ''}`}>
+                      {(item.unitPrice * item.quantity).toFixed(0)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Calculations & Total */}
@@ -303,12 +334,32 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               )}
 
               <div className="flex justify-between text-sm font-extrabold text-foreground border-t border-border pt-1">
-                <span>GRAND TOTAL:</span>
-                <span>
+                <span>{order?.status === 'refunded' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</span>
+                <span className={order?.status === 'refunded' ? 'line-through text-muted-foreground' : ''}>
                   {shopSettings.currencySymbol}
                   {activeTotal.toFixed(2)}
                 </span>
               </div>
+
+              {order?.refundAmount && order.refundAmount > 0 && (
+                <div className="flex justify-between text-[11px] font-bold text-destructive border-t border-dotted border-border pt-1">
+                  <span>{order.status === 'refunded' ? 'TOTAL REFUNDED:' : 'AMOUNT REFUNDED:'}</span>
+                  <span>
+                    -{shopSettings.currencySymbol}
+                    {order.refundAmount.toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              {order?.status === 'partially_refunded' && order.refundAmount && (
+                <div className="flex justify-between text-sm font-black text-primary border-t border-border pt-1">
+                  <span>NET PAID TOTAL:</span>
+                  <span>
+                    {shopSettings.currencySymbol}
+                    {Math.max(0, activeTotal - order.refundAmount).toFixed(2)}
+                  </span>
+                </div>
+              )}
 
               {/* Cash Tendered & Change Return Slip Information */}
               {activePaymentMethod === 'CASH' && order?.tenderedAmount !== undefined && order.tenderedAmount > 0 && (

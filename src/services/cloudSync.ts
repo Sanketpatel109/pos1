@@ -136,8 +136,8 @@ export async function pushSingleOrder(order: Order): Promise<void> {
 /**
  * Pull all 9 data points from Firestore cloud to local state.
  */
-export async function pullAllFromCloud(): Promise<Partial<CloudDataPayload>> {
-  const result: Partial<CloudDataPayload> = {};
+export async function pullAllFromCloud(): Promise<Partial<CloudStoreData>> {
+  const result: Partial<CloudStoreData> = {};
 
   try {
     // Orders

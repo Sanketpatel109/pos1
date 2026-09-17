@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RotateCcw,
   AlertTriangle,
@@ -9,7 +9,8 @@ import {
   CreditCard,
   Building,
 } from 'lucide-react';
-import { Order } from '../types';
+import { Order, BillItem } from '../types';
+import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 import { printThermalHtml } from '../utils/thermalPrinter';
 import {
   Dialog,
@@ -65,6 +66,19 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
 }) => {
   if (!isOpen || !order) return null;
 
+  // Helper to compute already refunded count for a given item
+  const getAlreadyRefundedQty = (itemId: string, itemName: string): number => {
+    if (!order?.refundedItems) return 0;
+    return order.refundedItems
+      .filter((r) => r.id === itemId || r.name.toLowerCase() === itemName.toLowerCase())
+      .reduce((sum, r) => sum + r.quantity, 0);
+  };
+
+  const getAvailableReturnQty = (item: BillItem): number => {
+    const already = getAlreadyRefundedQty(item.id, item.name);
+    return Math.max(0, item.quantity - already);
+  };
+
   // Track return quantities per item
   const [returnQtys, setReturnQtys] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
@@ -84,17 +98,43 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [lastRefund, setLastRefund] = useState<RefundResult | null>(null);
 
-  // Return all toggle
+  // Reset modal state whenever opened or target order changes
+  useEffect(() => {
+    if (isOpen && order) {
+      const init: Record<string, number> = {};
+      order.items.forEach((item) => {
+        init[item.id] = 0;
+      });
+      setReturnQtys(init);
+      setIsSuccess(false);
+      setLastRefund(null);
+      setRefundMethod(order.paymentMethod === 'CREDIT' ? 'KHATA' : 'CASH');
+      setRefundReason('Customer Return (Defective/Damaged)');
+      setRestockInventory(true);
+    }
+  }, [isOpen, order?.id]);
+
+  const totalAvailableUnits = order.items.reduce(
+    (sum, it) => sum + getAvailableReturnQty(it),
+    0
+  );
+
+  // Return all available toggle
   const handleSelectAll = () => {
-    const allSelected = order.items.every((item) => returnQtys[item.id] === item.quantity);
+    const allAvailableSelected = order.items.every((item) => {
+      const avail = getAvailableReturnQty(item);
+      return avail === 0 || (returnQtys[item.id] || 0) === avail;
+    });
+
     const updated: Record<string, number> = {};
     order.items.forEach((item) => {
-      updated[item.id] = allSelected ? 0 : item.quantity;
+      const avail = getAvailableReturnQty(item);
+      updated[item.id] = allAvailableSelected ? 0 : avail;
     });
     setReturnQtys(updated);
   };
 
-  // Adjust item return qty
+  // Adjust item return qty safely within available remaining bounds
   const handleSetQty = (id: string, qty: number, max: number) => {
     const clamped = Math.max(0, Math.min(max, qty));
     setReturnQtys((prev) => ({
@@ -103,22 +143,46 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
     }));
   };
 
-  // Calculations
+  // Selected items calculation
   const selectedItems = order.items
     .filter((item) => (returnQtys[item.id] || 0) > 0)
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      quantity: returnQtys[item.id] || 0,
-      unitPrice: item.unitPrice,
-      amount: Number((item.unitPrice * (returnQtys[item.id] || 0)).toFixed(2)),
-    }));
+    .map((item) => {
+      const qty = returnQtys[item.id] || 0;
+      return {
+        id: item.id,
+        name: item.name,
+        quantity: qty,
+        unitPrice: item.unitPrice,
+        amount: Number((item.unitPrice * qty).toFixed(2)),
+        gstRate: item.gstRate,
+        taxableAmount: item.taxableAmount,
+        cgst: item.cgst,
+        sgst: item.sgst,
+      };
+    });
 
   const totalReturnUnits = Object.values(returnQtys).reduce((sum, q) => sum + q, 0);
   const refundSubtotal = selectedItems.reduce((sum, it) => sum + it.amount, 0);
-  // Prorate GST if applicable
-  const refundTax = order.subtotal > 0 ? (refundSubtotal * order.taxRate) / 100 : 0;
-  const totalRefundAmount = Number((refundSubtotal + refundTax).toFixed(2));
+
+  // Prorate discount if the original order included a discount
+  const discountRatio =
+    order.subtotal > 0 && order.discount > 0 ? order.discount / order.subtotal : 0;
+  const proratedDiscount = Number((refundSubtotal * discountRatio).toFixed(2));
+  const effectiveRefundSubtotal = Math.max(0, refundSubtotal - proratedDiscount);
+
+  // Prorate tax accurately from item snapshot or order tax rate
+  const taxSnapshot = calculateOrderTaxFromSnapshot(selectedItems);
+  const refundTax =
+    taxSnapshot.totalTax > 0
+      ? Number((taxSnapshot.totalTax * (1 - discountRatio)).toFixed(2))
+      : order.subtotal > 0 && order.taxRate > 0
+      ? Number(((effectiveRefundSubtotal * order.taxRate) / 100).toFixed(2))
+      : 0;
+
+  // Total refund amount strictly cannot exceed remaining unrefunded order balance
+  const remainingOrderBalance = Math.max(0, order.total - (order.refundAmount || 0));
+  const rawRefundAmount = Number((effectiveRefundSubtotal + refundTax).toFixed(2));
+  const totalRefundAmount = Math.min(remainingOrderBalance, rawRefundAmount);
 
   const handleProcessRefund = () => {
     if (selectedItems.length === 0 || totalRefundAmount <= 0) return;
@@ -126,7 +190,13 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
     const result: RefundResult = {
       orderId: order.id,
       orderNumber: order.orderNumber,
-      refundedItems: selectedItems,
+      refundedItems: selectedItems.map((it) => ({
+        id: it.id,
+        name: it.name,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        amount: it.amount,
+      })),
       refundAmount: totalRefundAmount,
       refundMethod,
       refundReason,
@@ -278,27 +348,41 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
             {/* Action Bar: Select All / None */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Select Items to Return
-              </span>
+              <div>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Select Items to Return
+                </span>
+                <p className="text-[10px] text-muted-foreground">
+                  {totalAvailableUnits > 0
+                    ? `${totalAvailableUnits} unreturned units available across this bill`
+                    : 'All items in this bill have already been refunded'}
+                </p>
+              </div>
               <Button
                 type="button"
                 variant="link"
                 size="xs"
                 onClick={handleSelectAll}
+                disabled={totalAvailableUnits === 0}
                 className="text-xs font-bold text-primary p-0 h-auto"
               >
-                {order.items.every((item) => returnQtys[item.id] === item.quantity)
+                {order.items.every((item) => {
+                  const avail = getAvailableReturnQty(item);
+                  return avail === 0 || (returnQtys[item.id] || 0) === avail;
+                })
                   ? 'Deselect All'
-                  : 'Return All Items'}
+                  : 'Return All Available'}
               </Button>
             </div>
 
             {/* Line Items List with Stepper */}
             <div className="space-y-2 border border-border rounded-xl p-2 bg-muted/20 max-h-56 overflow-y-auto">
               {order.items.map((item) => {
+                const alreadyRefunded = getAlreadyRefundedQty(item.id, item.name);
+                const availableQty = getAvailableReturnQty(item);
                 const currentReturnQty = returnQtys[item.id] || 0;
                 const isSelected = currentReturnQty > 0;
+                const isFullyReturned = availableQty === 0;
 
                 return (
                   <Card
@@ -306,16 +390,30 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
                     className={`transition-all ${
                       isSelected
                         ? 'border-primary/40 bg-primary/5 shadow-2xs'
+                        : isFullyReturned
+                        ? 'border-border/60 bg-muted/30 opacity-70'
                         : 'border-border bg-card shadow-none'
                     }`}
                   >
                     <CardContent className="p-2.5 flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-foreground truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {currencySymbol}{item.unitPrice.toFixed(2)} each • Purchased: {item.quantity}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className={`text-xs font-bold truncate ${isFullyReturned ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {item.name}
+                          </p>
+                          {isFullyReturned && (
+                            <Badge variant="outline" className="text-[9px] py-0 px-1 text-destructive border-destructive/30">
+                              Already Returned ({alreadyRefunded})
+                            </Badge>
+                          )}
+                          {!isFullyReturned && alreadyRefunded > 0 && (
+                            <Badge variant="secondary" className="text-[9px] py-0 px-1 text-amber-700 dark:text-amber-400">
+                              {alreadyRefunded} prev. returned
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {currencySymbol}{item.unitPrice.toFixed(2)} each • Available: <span className="font-semibold text-foreground">{availableQty}</span> of {item.quantity}
                         </p>
                       </div>
 
@@ -325,8 +423,8 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
                           type="button"
                           variant="outline"
                           size="icon-xs"
-                          onClick={() => handleSetQty(item.id, currentReturnQty - 1, item.quantity)}
-                          disabled={currentReturnQty <= 0}
+                          onClick={() => handleSetQty(item.id, currentReturnQty - 1, availableQty)}
+                          disabled={currentReturnQty <= 0 || isFullyReturned}
                           className="h-7 w-7 text-xs font-bold"
                         >
                           -
@@ -338,8 +436,8 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
                           type="button"
                           variant="outline"
                           size="icon-xs"
-                          onClick={() => handleSetQty(item.id, currentReturnQty + 1, item.quantity)}
-                          disabled={currentReturnQty >= item.quantity}
+                          onClick={() => handleSetQty(item.id, currentReturnQty + 1, availableQty)}
+                          disabled={currentReturnQty >= availableQty || isFullyReturned}
                           className="h-7 w-7 text-xs font-bold"
                         >
                           +
@@ -440,6 +538,14 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
                     {currencySymbol}{refundSubtotal.toFixed(2)}
                   </span>
                 </div>
+                {proratedDiscount > 0 && (
+                  <div className="flex justify-between text-destructive">
+                    <span>Prorated Discount:</span>
+                    <span className="font-bold tabular-nums">
+                      -{currencySymbol}{proratedDiscount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 {refundTax > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Prorated GST Adjustment:</span>

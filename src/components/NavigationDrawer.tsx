@@ -15,6 +15,7 @@ import {
   Crown,
   LogOut,
   Sparkles,
+  Barcode,
 } from 'lucide-react';
 import { ActiveScreen, ShopSettings, StaffRole } from '../types';
 import { User } from '../firebase';
@@ -121,6 +122,12 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           label: 'Products & Stock Inventory',
           description: 'Manage items, barcodes & stock levels',
           icon: Package,
+        },
+        {
+          id: 'barcode-generator',
+          label: 'Barcode Label Generator',
+          description: 'Print thermal & A4 sticker sheets',
+          icon: Barcode,
         },
       ],
     },

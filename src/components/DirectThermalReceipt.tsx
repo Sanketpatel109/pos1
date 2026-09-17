@@ -81,6 +81,16 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
         {shopSettings.gstin && (
           <p className="text-[10px] font-bold text-black">GSTIN: {shopSettings.gstin}</p>
         )}
+        {order.status === 'refunded' && (
+          <div className="border-y border-dashed border-black py-0.5 my-1 text-center font-bold tracking-widest text-[10px]">
+            *** FULLY REFUNDED / VOID ***
+          </div>
+        )}
+        {order.status === 'partially_refunded' && (
+          <div className="border-y border-dashed border-black py-0.5 my-1 text-center font-bold tracking-widest text-[10px]">
+            *** PARTIALLY REFUNDED ***
+          </div>
+        )}
       </div>
 
       {/* Invoice Meta Table */}
@@ -133,25 +143,46 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
             </tr>
           </thead>
           <tbody>
-            {order.items.map((item, idx) => (
-              <React.Fragment key={idx}>
-                <tr className="border-b border-dotted border-zinc-200 last:border-0">
-                  <td className="text-left py-1 pr-1 truncate font-medium">{item.name}</td>
-                  <td className="text-center py-1 font-semibold">{item.quantity}</td>
-                  <td className="text-right py-1">{item.unitPrice.toFixed(0)}</td>
-                  <td className="text-right py-1 font-bold">
-                    {(item.unitPrice * item.quantity).toFixed(0)}
-                  </td>
-                </tr>
-                {item.selectedPackName && (
-                  <tr>
-                    <td colSpan={4} className="text-[8.5px] text-zinc-600 pl-1 pb-1 font-mono">
-                      * {item.selectedPackName} (@ {currencySymbol}{(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)
+            {order.items.map((item, idx) => {
+              const refundedMatch = order.refundedItems?.find(
+                (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
+              );
+              const refundedQty = refundedMatch ? refundedMatch.quantity : 0;
+              const isItemFullyReturned = refundedQty >= item.quantity;
+              const isItemPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
+
+              return (
+                <React.Fragment key={idx}>
+                  <tr className="border-b border-dotted border-zinc-200 last:border-0">
+                    <td className={`text-left py-1 pr-1 truncate font-medium ${isItemFullyReturned ? 'line-through text-zinc-400' : ''}`}>
+                      {item.name}
+                      {isItemPartiallyReturned && (
+                        <span className="block text-[8px] text-zinc-600 no-underline not-italic font-normal">
+                          ({refundedQty} of {item.quantity} ret.)
+                        </span>
+                      )}
+                      {isItemFullyReturned && order.status === 'partially_refunded' && (
+                        <span className="block text-[8px] text-zinc-600 no-underline not-italic font-normal">
+                          (Returned)
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-center py-1 font-semibold">{item.quantity}</td>
+                    <td className="text-right py-1">{item.unitPrice.toFixed(0)}</td>
+                    <td className={`text-right py-1 font-bold ${isItemFullyReturned ? 'line-through text-zinc-400' : ''}`}>
+                      {(item.unitPrice * item.quantity).toFixed(0)}
                     </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
+                  {item.selectedPackName && (
+                    <tr>
+                      <td colSpan={4} className="text-[8.5px] text-zinc-600 pl-1 pb-1 font-mono">
+                        * {item.selectedPackName} (@ {currencySymbol}{(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -200,9 +231,23 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
             )}
 
             <tr className="border-t border-black font-bold text-xs">
-              <td className="text-left pt-1">GRAND TOTAL:</td>
-              <td className="text-right pt-1 font-black">{currencySymbol}{order.total.toFixed(2)}</td>
+              <td className="text-left pt-1">{order.status === 'refunded' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</td>
+              <td className={`text-right pt-1 font-black ${order.status === 'refunded' ? 'line-through text-zinc-400' : ''}`}>{currencySymbol}{order.total.toFixed(2)}</td>
             </tr>
+
+            {order.refundAmount !== undefined && order.refundAmount > 0 && (
+              <tr className="font-bold">
+                <td className="text-left py-0.5">TOTAL REFUNDED:</td>
+                <td className="text-right py-0.5 font-black">-{currencySymbol}{order.refundAmount.toFixed(2)}</td>
+              </tr>
+            )}
+
+            {order.status === 'partially_refunded' && order.refundAmount !== undefined && (
+              <tr className="border-t border-black font-bold text-xs">
+                <td className="text-left pt-1">NET PAID TOTAL:</td>
+                <td className="text-right pt-1 font-black">{currencySymbol}{Math.max(0, order.total - order.refundAmount).toFixed(2)}</td>
+              </tr>
+            )}
 
             {totalBaseUnitsSold !== totalPacksSold && (
               <tr className="text-[9px] text-zinc-600">
@@ -314,15 +359,28 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
 
   const itemsRowsHtml = order.items
     .map((item) => {
+      const refundedMatch = order.refundedItems?.find(
+        (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
+      );
+      const refundedQty = refundedMatch ? refundedMatch.quantity : 0;
+      const isItemFullyReturned = refundedQty >= item.quantity;
+      const isItemPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
+
+      const retTag = isItemPartiallyReturned
+        ? `<div style="font-size: 8px; color: #555; text-decoration: none;">(${refundedQty} of ${item.quantity} ret.)</div>`
+        : isItemFullyReturned && order.status === 'partially_refunded'
+        ? `<div style="font-size: 8px; color: #555; text-decoration: none;">(Returned)</div>`
+        : '';
+
       const packRow = item.selectedPackName
         ? `<tr><td colspan="4" style="font-size: 8.5px; color: #555; padding-left: 4px; padding-bottom: 2px;">* ${item.selectedPackName} (@ ${currencySymbol}${(item.unitPrice / (item.multiplier || 1)).toFixed(2)}/unit)</td></tr>`
         : '';
       return `
         <tr style="border-bottom: 1px dotted #d0d0d0;">
-          <td style="width: 46%; text-align: left; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.name}</td>
+          <td style="width: 46%; text-align: left; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ${isItemFullyReturned ? 'text-decoration: line-through; color: #888;' : ''}">${item.name}${retTag}</td>
           <td style="width: 14%; text-align: center; padding: 3px 0;">${item.quantity}</td>
           <td style="width: 20%; text-align: right; padding: 3px 0;">${item.unitPrice.toFixed(0)}</td>
-          <td style="width: 20%; text-align: right; padding: 3px 0; font-weight: bold;">${(item.unitPrice * item.quantity).toFixed(0)}</td>
+          <td style="width: 20%; text-align: right; padding: 3px 0; font-weight: bold; ${isItemFullyReturned ? 'text-decoration: line-through; color: #888;' : ''}">${(item.unitPrice * item.quantity).toFixed(0)}</td>
         </tr>
         ${packRow}
       `;
@@ -393,6 +451,13 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
     `
     : '';
 
+  const refundStatusBannerHtml =
+    order.status === 'refunded'
+      ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** FULLY REFUNDED / VOID ***</div>`
+      : order.status === 'partially_refunded'
+      ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** PARTIALLY REFUNDED ***</div>`
+      : '';
+
   return `
     <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
       ${logoHtml}
@@ -401,6 +466,7 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
       ${shopSettings.address ? `<div style="font-size: 9px; color: #555;">${shopSettings.address}</div>` : ''}
       ${shopSettings.phone ? `<div style="font-size: 9px; color: #555;">Tel: ${shopSettings.phone.trim()}</div>` : ''}
       ${shopSettings.gstin ? `<div style="font-size: 9px; font-weight: bold;">GSTIN: ${shopSettings.gstin}</div>` : ''}
+      ${refundStatusBannerHtml}
     </div>
 
     <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
@@ -460,9 +526,29 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
         ${gstRowsHtml}
         ${totalTaxRowHtml}
         <tr style="border-top: 1px solid #000; font-size: 12px; font-weight: bold;">
-          <td style="text-align: left; padding: 4px 0;">GRAND TOTAL:</td>
-          <td style="text-align: right; padding: 4px 0; font-weight: 900;">${currencySymbol}${order.total.toFixed(2)}</td>
+          <td style="text-align: left; padding: 4px 0;">${order.status === 'refunded' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</td>
+          <td style="text-align: right; padding: 4px 0; font-weight: 900; ${order.status === 'refunded' ? 'text-decoration: line-through; color: #888;' : ''}">${currencySymbol}${order.total.toFixed(2)}</td>
         </tr>
+        ${
+          order.refundAmount !== undefined && order.refundAmount > 0
+            ? `
+          <tr style="font-weight: bold;">
+            <td style="text-align: left; padding: 2px 0;">TOTAL REFUNDED:</td>
+            <td style="text-align: right; padding: 2px 0; font-weight: 900;">-${currencySymbol}${order.refundAmount.toFixed(2)}</td>
+          </tr>
+        `
+            : ''
+        }
+        ${
+          order.status === 'partially_refunded' && order.refundAmount !== undefined
+            ? `
+          <tr style="border-top: 1px solid #000; font-size: 12px; font-weight: bold;">
+            <td style="text-align: left; padding: 4px 0;">NET PAID TOTAL:</td>
+            <td style="text-align: right; padding: 4px 0; font-weight: 900;">${currencySymbol}${Math.max(0, order.total - order.refundAmount).toFixed(2)}</td>
+          </tr>
+        `
+            : ''
+        }
         ${totalBaseUnitsSold !== totalPacksSold ? `
         <tr style="font-size: 9px; color: #666;">
           <td style="text-align: left; padding: 1.5px 0;">Total Base Units:</td>

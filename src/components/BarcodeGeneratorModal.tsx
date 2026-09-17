@@ -1,6 +1,27 @@
-import React, { useState } from 'react';
-import { X, Printer, Barcode as BarcodeIcon, Tag, Sliders, Check, Copy, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Printer, Barcode as BarcodeIcon, Sparkles } from 'lucide-react';
 import { CatalogItem } from '../types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 interface BarcodeGeneratorModalProps {
   isOpen: boolean;
@@ -26,7 +47,12 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
   const [skuValue, setSkuValue] = useState<string>(defaultItem?.sku || 'SKU-001');
   const [priceValue, setPriceValue] = useState<number>(defaultItem ? defaultItem.price : 99);
 
-  React.useEffect(() => {
+  // Format options
+  const [labelFormat, setLabelFormat] = useState<'thermal-single' | 'a4-24' | 'a4-40'>('a4-40');
+  const [showStoreName, setShowStoreName] = useState<boolean>(true);
+  const [showPrice, setShowPrice] = useState<boolean>(true);
+
+  useEffect(() => {
     if (isOpen) {
       const activeItem = (initialProductId && catalog.find((c) => c.id === initialProductId)) || catalog[0] || null;
       if (activeItem) {
@@ -38,17 +64,18 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
       }
     }
   }, [isOpen, initialProductId, catalog]);
-  
-  // Format options
-  const [labelFormat, setLabelFormat] = useState<'thermal-single' | 'a4-24' | 'a4-40'>('thermal-single');
-  const [printQuantity, setPrintQuantity] = useState<number>(24);
-  const [showStoreName, setShowStoreName] = useState<boolean>(true);
-  const [showPrice, setShowPrice] = useState<boolean>(true);
 
   if (!isOpen) return null;
 
   const handleProductChange = (productId: string) => {
     setSelectedProductId(productId);
+    if (productId === 'custom') {
+      setProductName('Custom Product');
+      setBarcodeValue(`890${Math.floor(100000000 + Math.random() * 900000000).toString().slice(0, 9)}`);
+      setSkuValue('SKU-CUSTOM');
+      setPriceValue(99);
+      return;
+    }
     const item = catalog.find((c) => c.id === productId);
     if (item) {
       setProductName(item.name);
@@ -69,9 +96,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
 
   // Generates SVG bars based on the barcode string digits (simulated Code128 pattern)
   const renderSvgBarcode = (code: string) => {
-    // Generate deterministic pattern of bars from the string
     const bars: { width: number; isBlack: boolean }[] = [];
-    // Start code
     bars.push({ width: 2, isBlack: true }, { width: 1, isBlack: false }, { width: 1, isBlack: true });
 
     for (let i = 0; i < code.length; i++) {
@@ -87,7 +112,6 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
         { width: b4, isBlack: false }
       );
     }
-    // Stop code
     bars.push({ width: 2, isBlack: true }, { width: 1, isBlack: false }, { width: 3, isBlack: true });
 
     let currentX = 10;
@@ -115,7 +139,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
     return (
       <svg
         viewBox={`0 0 ${totalWidth} 50`}
-        className="w-full h-12 max-h-12"
+        className="w-full h-11 max-h-11"
         preserveAspectRatio="xMidYMid meet"
       >
         {svgElements}
@@ -124,7 +148,7 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
           y={46}
           textAnchor="middle"
           fontSize="10"
-          fontFamily="inherit"
+          fontFamily="monospace"
           fontWeight="bold"
           fill="#1c1b1d"
           letterSpacing="2"
@@ -139,181 +163,220 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
     labelFormat === 'thermal-single' ? 1 : labelFormat === 'a4-24' ? 24 : 40;
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className="w-full max-w-4xl bg-card text-card-foreground rounded-xl border border-border shadow-xl overflow-hidden flex flex-col max-h-[92vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-5xl md:max-w-6xl w-[95vw] h-[90vh] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden bg-background text-foreground border-border shadow-2xl">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-zinc-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
-              <BarcodeIcon className="w-5 h-5" />
+        <DialogHeader className="px-5 py-3.5 border-b border-border flex flex-row items-center justify-between shrink-0 space-y-0 bg-card">
+          <div className="flex items-center gap-2.5">
+            <div className="size-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <BarcodeIcon className="size-4.5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white leading-tight">
+              <DialogTitle className="text-sm sm:text-base font-bold text-foreground">
                 Product Barcode Label Generator
-              </h2>
-              <p className="text-xs text-zinc-400 font-medium">
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
                 Thermal Roll (50x25mm) & A4 Sticker Sheet Printing
-              </p>
+              </DialogDescription>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
+          <div className="flex items-center gap-2 pr-6 sm:pr-8">
+            <Button
               onClick={handlePrint}
-              className="px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+              size="sm"
+              className="gap-1.5 h-8 text-xs font-semibold cursor-pointer shadow-xs"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="size-3.5" />
               <span>Print Stickers</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
-        </div>
+        </DialogHeader>
 
         {/* Content Layout: Left Controls, Right Preview */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Controls Column */}
-          <div className="w-full md:w-80 border-r border-zinc-200 bg-zinc-50 p-4 overflow-y-auto space-y-4">
-            <div>
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">
+          <div className="w-full md:w-80 border-r border-border bg-card p-4 overflow-y-auto space-y-3.5 shrink-0">
+            {/* Select Product */}
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Select Product from Catalog
-              </label>
-              <select
-                value={selectedProductId}
-                onChange={(e) => handleProductChange(e.target.value)}
-                className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-800 focus:outline-hidden focus:border-zinc-900"
-              >
-                <option value="">-- Custom Sticker --</option>
-                {catalog.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} ({currencySymbol}{item.price})
-                  </option>
-                ))}
-              </select>
+              </Label>
+              <Select value={selectedProductId} onValueChange={handleProductChange}>
+                <SelectTrigger className="w-full h-8.5 text-xs bg-background">
+                  <SelectValue placeholder="-- Select Product --">
+                    {selectedProductId === 'custom'
+                      ? '-- Custom Sticker --'
+                      : catalog.find((c) => c.id === selectedProductId)
+                      ? `${catalog.find((c) => c.id === selectedProductId)?.name} (${currencySymbol}${catalog.find((c) => c.id === selectedProductId)?.price.toFixed(2)})`
+                      : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">-- Custom Sticker --</SelectItem>
+                  {catalog.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name} ({currencySymbol}{item.price.toFixed(2)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <div>
-                <label className="text-[10px] font-bold text-zinc-600 block mb-1">Product Title</label>
-                <input
+            <Separator />
+
+            {/* Product Metadata Inputs */}
+            <div className="space-y-2.5">
+              <div className="space-y-1">
+                <Label htmlFor="barcode-product-title" className="text-xs font-medium text-foreground">
+                  Product Title
+                </Label>
+                <Input
+                  id="barcode-product-title"
                   type="text"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                  className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs text-zinc-800"
+                  className="h-8 text-xs bg-background"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-600 block mb-1">MRP / Price ({currencySymbol})</label>
-                  <input
+                <div className="space-y-1">
+                  <Label htmlFor="barcode-price" className="text-xs font-medium text-foreground">
+                    MRP / Price ({currencySymbol})
+                  </Label>
+                  <Input
+                    id="barcode-price"
                     type="number"
                     value={priceValue}
                     onChange={(e) => setPriceValue(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-800"
+                    className="h-8 text-xs font-bold tabular-nums bg-background"
                   />
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-600 block mb-1">SKU Code</label>
-                  <input
+                <div className="space-y-1">
+                  <Label htmlFor="barcode-sku" className="text-xs font-medium text-foreground">
+                    SKU Code
+                  </Label>
+                  <Input
+                    id="barcode-sku"
                     type="text"
                     value={skuValue}
                     onChange={(e) => setSkuValue(e.target.value)}
-                    className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs text-zinc-800"
+                    className="h-8 text-xs bg-background"
                   />
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-bold text-zinc-600">Barcode (EAN-13 / Code128)</label>
-                  <button
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="barcode-code" className="text-xs font-medium text-foreground">
+                    Barcode (EAN-13 / Code128)
+                  </Label>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="xs"
                     onClick={handleGenerateRandomBarcode}
-                    className="text-[10px] text-primary font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                    className="h-5 px-1 text-[11px] text-primary gap-1 cursor-pointer"
                   >
-                    <Sparkles className="w-3 h-3" /> Auto-Gen
-                  </button>
+                    <Sparkles className="size-3" />
+                    <span>Auto-Gen</span>
+                  </Button>
                 </div>
-                <input
+                <Input
+                  id="barcode-code"
                   type="text"
                   value={barcodeValue}
                   onChange={(e) => setBarcodeValue(e.target.value)}
-                  className="w-full bg-white border border-zinc-300 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-800 tracking-wider"
+                  className="h-8 text-xs font-mono font-bold tracking-wider tabular-nums bg-background"
                 />
               </div>
             </div>
 
-            <div className="pt-2 border-t border-zinc-200 space-y-2.5">
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">
-                Paper / Sticker Sheet Format
-              </label>
+            <Separator />
 
+            {/* Paper / Sticker Format */}
+            <div className="space-y-2">
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Paper / Sticker Sheet Format
+              </Label>
               <div className="space-y-1.5">
                 {[
                   { id: 'thermal-single', name: 'Thermal Roll (Single 50x25mm)', desc: '1 sticker for thermal label printer' },
                   { id: 'a4-24', name: 'A4 Sheet: 24 Labels (3x8 Grid)', desc: 'Standard Avery / Tally sticker sheet' },
                   { id: 'a4-40', name: 'A4 Sheet: 40 Labels (4x10 Grid)', desc: 'Compact retail grocery labels' },
                 ].map((fmt) => (
-                  <button
+                  <Button
                     key={fmt.id}
                     type="button"
+                    variant={labelFormat === fmt.id ? 'default' : 'outline'}
                     onClick={() => setLabelFormat(fmt.id as any)}
-                    className={`w-full p-2 rounded-xl border text-left cursor-pointer transition-all ${
+                    className={`w-full h-auto p-2.5 flex flex-col items-start justify-start text-left cursor-pointer transition-all ${
                       labelFormat === fmt.id
-                        ? 'bg-zinc-900 border-zinc-900 text-white shadow-2xs'
-                        : 'bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-100'
+                        ? 'shadow-xs'
+                        : 'bg-background hover:bg-muted text-foreground'
                     }`}
                   >
-                    <span className="text-xs font-bold block">{fmt.name}</span>
-                    <span className={`text-[10px] ${labelFormat === fmt.id ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    <div className="w-full flex items-center justify-between">
+                      <span className="text-xs font-semibold">{fmt.name}</span>
+                      {labelFormat === fmt.id && (
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 bg-primary-foreground/20 text-primary-foreground">
+                          Active
+                        </Badge>
+                      )}
+                    </div>
+                    <span className={`text-[10px] block mt-0.5 font-normal ${labelFormat === fmt.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                       {fmt.desc}
                     </span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
 
-            <div className="pt-2 border-t border-zinc-200 space-y-2">
-              <label className="flex items-center gap-2 text-xs font-medium text-zinc-700 cursor-pointer">
-                <input
-                  type="checkbox"
+            <Separator />
+
+            {/* Options Checkboxes */}
+            <div className="space-y-2.5 pt-0.5">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="show-store-name"
                   checked={showStoreName}
-                  onChange={(e) => setShowStoreName(e.target.checked)}
-                  className="rounded border-zinc-300 text-zinc-900"
+                  onCheckedChange={(checked) => setShowStoreName(Boolean(checked))}
                 />
-                <span>Include Store Name ({shopName})</span>
-              </label>
-              <label className="flex items-center gap-2 text-xs font-medium text-zinc-700 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Label
+                  htmlFor="show-store-name"
+                  className="text-xs font-medium text-foreground cursor-pointer select-none leading-none"
+                >
+                  Include Store Name ({shopName})
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="show-price"
                   checked={showPrice}
-                  onChange={(e) => setShowPrice(e.target.checked)}
-                  className="rounded border-zinc-300 text-zinc-900"
+                  onCheckedChange={(checked) => setShowPrice(Boolean(checked))}
                 />
-                <span>Include Retail Price & Tax badge</span>
-              </label>
+                <Label
+                  htmlFor="show-price"
+                  className="text-xs font-medium text-foreground cursor-pointer select-none leading-none"
+                >
+                  Include Retail Price & Tax badge
+                </Label>
+              </div>
             </div>
           </div>
 
           {/* Right Sheet Preview Area */}
-          <div className="flex-1 bg-zinc-200 p-4 sm:p-6 overflow-y-auto flex flex-col items-center">
-            <div className="mb-2 text-center">
-              <span className="text-xs font-extrabold text-zinc-600 uppercase tracking-wider">
+          <div className="flex-1 bg-muted/30 p-4 sm:p-6 overflow-y-auto flex flex-col items-center">
+            <div className="mb-3 text-center">
+              <Badge variant="outline" className="text-xs uppercase tracking-wider font-semibold py-1 px-3 bg-card border-border shadow-2xs">
                 Live Print Layout Preview ({totalStickersToRender} Sticker{totalStickersToRender > 1 ? 's' : ''})
-              </span>
+              </Badge>
             </div>
 
             {/* Printable Canvas */}
-            <div
+            <Card
               id="printable-barcode-sheet"
-              className={`bg-white shadow-xl rounded-xl p-4 border border-zinc-300 transition-all ${
+              className={`bg-card shadow-sm border-border p-4 transition-all ${
                 labelFormat === 'thermal-single'
                   ? 'w-64'
                   : labelFormat === 'a4-24'
@@ -321,49 +384,51 @@ export const BarcodeGeneratorModal: React.FC<BarcodeGeneratorModalProps> = ({
                   : 'w-full max-w-2xl grid grid-cols-4 gap-2'
               }`}
             >
-              {Array.from({ length: totalStickersToRender }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="border border-dashed border-zinc-300 p-2 rounded-lg flex flex-col items-center justify-between text-center bg-white"
-                  style={{ minHeight: '105px' }}
-                >
-                  {showStoreName && (
-                    <span className="text-[9px] font-black uppercase tracking-wider text-zinc-700 truncate max-w-full">
-                      {shopName}
-                    </span>
-                  )}
-                  <span className="text-[11px] font-black text-zinc-900 leading-tight line-clamp-1">
-                    {productName}
-                  </span>
-
-                  <div className="w-full my-0.5">
-                    {renderSvgBarcode(barcodeValue)}
-                  </div>
-
-                  <div className="w-full flex items-center justify-between px-1 text-[10px] font-bold text-zinc-800">
-                    <span className="text-[9px] text-zinc-500">{skuValue}</span>
-                    {showPrice && (
-                      <span className="text-xs font-black text-zinc-950">
-                        {currencySymbol}{priceValue.toFixed(2)}
+              <CardContent className="p-0 col-span-full contents">
+                {Array.from({ length: totalStickersToRender }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-dashed border-border/80 p-2 rounded-lg flex flex-col items-center justify-between text-center bg-card shadow-2xs"
+                    style={{ minHeight: '105px' }}
+                  >
+                    {showStoreName && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate max-w-full">
+                        {shopName}
                       </span>
                     )}
+                    <span className="text-[11px] font-bold text-foreground leading-tight line-clamp-1">
+                      {productName}
+                    </span>
+
+                    <div className="w-full my-0.5">
+                      {renderSvgBarcode(barcodeValue)}
+                    </div>
+
+                    <div className="w-full flex items-center justify-between px-1 text-[10px] font-semibold text-foreground">
+                      <span className="text-[9px] text-muted-foreground font-mono">{skuValue}</span>
+                      {showPrice && (
+                        <span className="text-xs font-bold text-foreground tabular-nums">
+                          {currencySymbol}{priceValue.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </CardContent>
+            </Card>
 
             <div className="mt-4 flex items-center gap-2">
-              <button
+              <Button
                 onClick={handlePrint}
-                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md cursor-pointer active:scale-95 transition-all"
+                className="gap-2 font-semibold text-xs h-9 shadow-xs cursor-pointer"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="size-4" />
                 <span>Send to Sticker Printer</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

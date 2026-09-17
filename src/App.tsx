@@ -335,7 +335,7 @@ export default function App() {
       setCashEntries([]);
       setHeldOrders([]);
       cartClearCart();
-      setShopSettings(DEFAULT_RETAIL_SETTINGS);
+      setShopSettings(DEFAULT_SHOP_SETTINGS);
       setStaffList(SAMPLE_STAFF);
     } catch (err) {
       console.error('Sign out failed:', err);
@@ -2131,18 +2131,51 @@ export default function App() {
   const handleProcessRefund = (refund: RefundResult) => {
     playSfx('remove');
 
-    // 1. Update order status to 'refunded'
+    let customerToCredit: string | undefined;
+
+    // 1. Update order status: 'refunded' vs 'partially_refunded' with cumulative items
     setOrders((prev) => {
       const updated = prev.map((ord) => {
         if (ord.id === refund.orderId) {
+          customerToCredit = ord.customerId;
+
+          const prevRefundedItems = ord.refundedItems || [];
+          const mergedRefundedItems = [...prevRefundedItems.map((it) => ({ ...it }))];
+
+          refund.refundedItems.forEach((newItem) => {
+            const existingIdx = mergedRefundedItems.findIndex(
+              (it) => it.id === newItem.id || it.name.toLowerCase() === newItem.name.toLowerCase()
+            );
+            if (existingIdx >= 0) {
+              mergedRefundedItems[existingIdx] = {
+                ...mergedRefundedItems[existingIdx],
+                quantity: mergedRefundedItems[existingIdx].quantity + newItem.quantity,
+                amount: Number(
+                  (mergedRefundedItems[existingIdx].amount + newItem.amount).toFixed(2)
+                ),
+              };
+            } else {
+              mergedRefundedItems.push({ ...newItem });
+            }
+          });
+
+          // Check if all units in the order have been refunded
+          const totalOrderItemsQty = ord.items.reduce((sum, it) => sum + it.quantity, 0);
+          const totalRefundedQty = mergedRefundedItems.reduce((sum, it) => sum + it.quantity, 0);
+          const isFullyRefunded = totalRefundedQty >= totalOrderItemsQty;
+
+          const cumulativeRefundAmount = Number(
+            ((ord.refundAmount || 0) + refund.refundAmount).toFixed(2)
+          );
+
           const refundOrder: Order = {
             ...ord,
-            status: 'refunded',
-            refundAmount: refund.refundAmount,
+            status: isFullyRefunded ? 'refunded' : 'partially_refunded',
+            refundAmount: cumulativeRefundAmount,
             refundReason: refund.refundReason,
             refundedAt: refund.refundedAt,
             refundMethod: refund.refundMethod,
-            refundedItems: refund.refundedItems,
+            refundedItems: mergedRefundedItems,
           };
           liveSaveOrder(refundOrder).catch(() => {});
           return refundOrder;
@@ -2187,6 +2220,29 @@ export default function App() {
         type: 'OUT',
         amount: refund.refundAmount,
         reason: `Customer Refund - Bill #${refund.orderNumber} (${refund.refundReason})`,
+      });
+    }
+
+    // 4. If Khata refund, deduct outstanding balance from customer's credit account
+    if (refund.refundMethod === 'KHATA' && customerToCredit) {
+      setCustomers((prev) => {
+        const updated = prev.map((c) => {
+          if (c.id === customerToCredit) {
+            const newCreditBalance = Math.max(0, (c.creditBalance || 0) - refund.refundAmount);
+            const updatedCust = { ...c, creditBalance: newCreditBalance };
+            liveSaveCustomer(updatedCust).catch((err) =>
+              console.warn('Live save customer refund:', err)
+            );
+            return updatedCust;
+          }
+          return c;
+        });
+        if (currentUser?.uid) {
+          try {
+            localStorage.setItem(`monopos_customers_${currentUser.uid}`, JSON.stringify(updated));
+          } catch {}
+        }
+        return updated;
       });
     }
   };

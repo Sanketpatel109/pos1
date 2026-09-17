@@ -84,8 +84,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
   });
 
   // Overall status breakdowns for counts
-  const completedAllOrders = orders.filter((o) => o.status !== 'refunded');
-  const refundedAllOrders = orders.filter((o) => o.status === 'refunded');
+  const validSalesOrders = orders.filter((o) => (o.status as string) !== 'cancelled' && (o.status as string) !== 'VOID');
+  const completedAllOrders = orders.filter((o) => o.status !== 'refunded' && (o.status as string) !== 'cancelled' && (o.status as string) !== 'VOID');
+  const refundedAllOrders = orders.filter((o) => o.status === 'refunded' || o.status === 'partially_refunded');
 
   // Filter orders by payment, status, and search query
   const filteredOrders = orders.filter((order) => {
@@ -96,7 +97,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
       statusFilter === 'ALL'
         ? true
         : statusFilter === 'REFUNDED'
-        ? order.status === 'refunded'
+        ? order.status === 'refunded' || order.status === 'partially_refunded'
         : order.status !== 'refunded';
 
     const q = searchQuery.trim().toLowerCase();
@@ -120,22 +121,33 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
     orders.find((o) => o.id === selectedOrderId) || filteredOrders[0] || null;
 
   // Real-world Accounting Metrics (Gross Sales, Refunds, Net Realized)
-  const grossSales = completedAllOrders.reduce((sum, o) => sum + o.total, 0);
-  const totalRefunds = refundedAllOrders.reduce((sum, o) => sum + o.total, 0);
+  const grossSales = validSalesOrders.reduce((sum, o) => sum + o.total, 0);
+  const totalRefunds = orders.reduce((sum, o) => {
+    if (o.status === 'refunded' || o.status === 'partially_refunded') {
+      return sum + (o.refundAmount !== undefined ? o.refundAmount : o.total);
+    }
+    return sum;
+  }, 0);
   const netSales = Math.max(0, grossSales - totalRefunds);
-  const avgOrderValue = completedAllOrders.length > 0 ? grossSales / completedAllOrders.length : 0;
+  const avgOrderValue = completedAllOrders.length > 0 ? netSales / completedAllOrders.length : 0;
 
-  const cashSales = completedAllOrders
+  const getOrderNetTotal = (o: Order) => {
+    if (o.status === 'refunded') return 0;
+    if (o.status === 'partially_refunded') return Math.max(0, o.total - (o.refundAmount || 0));
+    return o.total;
+  };
+
+  const cashSales = validSalesOrders
     .filter((o) => o.paymentMethod === 'CASH')
-    .reduce((sum, o) => sum + o.total, 0);
+    .reduce((sum, o) => sum + getOrderNetTotal(o), 0);
 
-  const onlineSales = completedAllOrders
+  const onlineSales = validSalesOrders
     .filter((o) => o.paymentMethod === 'ONLINE')
-    .reduce((sum, o) => sum + o.total, 0);
+    .reduce((sum, o) => sum + getOrderNetTotal(o), 0);
 
-  const creditSales = completedAllOrders
+  const creditSales = validSalesOrders
     .filter((o) => o.paymentMethod === 'CREDIT')
-    .reduce((sum, o) => sum + o.total, 0);
+    .reduce((sum, o) => sum + getOrderNetTotal(o), 0);
 
   const monthlyOrders = orders.filter((o) => o.createdAt && o.createdAt.startsWith(gstMonth));
   const monthlyOrdersCount = monthlyOrders.length;
@@ -790,7 +802,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         <TableCell>
                           {order.status === 'refunded' ? (
                             <Badge variant="destructive" className="text-[10px] py-0 font-semibold bg-destructive/10 text-destructive border-destructive/20">
-                              Refunded
+                              Fully Refunded
+                            </Badge>
+                          ) : order.status === 'partially_refunded' ? (
+                            <Badge variant="secondary" className="text-[10px] py-0 font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                              Partially Refunded
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-[10px] py-0 font-normal">
@@ -799,8 +815,18 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                           )}
                         </TableCell>
                         <TableCell className={`text-right font-bold tabular-nums text-xs ${order.status === 'refunded' ? 'text-destructive' : 'text-foreground'}`}>
-                          {order.status === 'refunded' ? `-${currencySymbol}` : currencySymbol}
-                          {order.total.toFixed(2)}
+                          {order.status === 'refunded' ? (
+                            <span>-{currencySymbol}{(order.refundAmount || order.total).toFixed(2)}</span>
+                          ) : order.status === 'partially_refunded' ? (
+                            <div>
+                              <span>{currencySymbol}{order.total.toFixed(2)}</span>
+                              <div className="text-[10px] font-medium text-destructive">
+                                -{currencySymbol}{(order.refundAmount || 0).toFixed(2)} ref.
+                              </div>
+                            </div>
+                          ) : (
+                            `${currencySymbol}${order.total.toFixed(2)}`
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -890,7 +916,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                     </div>
                     {activeSelectedOrder.status === 'refunded' ? (
                       <Badge variant="destructive" className="text-[10px] py-0 shrink-0">
-                        Refunded
+                        Fully Refunded
+                      </Badge>
+                    ) : activeSelectedOrder.status === 'partially_refunded' ? (
+                      <Badge variant="secondary" className="text-[10px] py-0 shrink-0 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                        Partially Refunded
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-[10px] py-0 shrink-0">
@@ -906,8 +936,22 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                     <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
                       <AlertCircle className="size-4 shrink-0" />
                       <div className="min-w-0">
-                        <p className="font-bold leading-tight">Refunded Invoice / Credit Note</p>
-                        <p className="text-[10px] text-destructive/80">Money returned to customer • Excluded from net revenue</p>
+                        <p className="font-bold leading-tight">Fully Refunded Invoice / Credit Note</p>
+                        <p className="text-[10px] text-destructive/80">
+                          All items returned ({currencySymbol}{(activeSelectedOrder.refundAmount || activeSelectedOrder.total).toFixed(2)}) • Excluded from net revenue
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSelectedOrder.status === 'partially_refunded' && (
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
+                      <AlertCircle className="size-4 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-bold leading-tight">Partially Refunded Order</p>
+                        <p className="text-[10px] opacity-90">
+                          {currencySymbol}{(activeSelectedOrder.refundAmount || 0).toFixed(2)} refunded to customer ({activeSelectedOrder.refundMethod || 'CASH'})
+                        </p>
                       </div>
                     </div>
                   )}
@@ -919,17 +963,45 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                       <span>Amount</span>
                     </div>
                     <Separator />
-                    {activeSelectedOrder.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-xs text-foreground">
-                        <span className={`truncate pr-2 ${activeSelectedOrder.status === 'refunded' ? 'line-through text-muted-foreground' : ''}`}>
-                          {item.name} <span className="text-muted-foreground tabular-nums not-italic">×{item.quantity}</span>
-                        </span>
-                        <span className="font-semibold shrink-0 tabular-nums">
-                          {currencySymbol}
-                          {(item.unitPrice * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
+                    {activeSelectedOrder.items.map((item, idx) => {
+                      const refundedItem = activeSelectedOrder.refundedItems?.find(
+                        (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
+                      );
+                      const refundedQty = refundedItem ? refundedItem.quantity : 0;
+                      const isFullyReturned = refundedQty >= item.quantity;
+                      const isPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
+
+                      return (
+                        <div key={idx} className="flex justify-between items-start text-xs text-foreground py-0.5">
+                          <div className="min-w-0 flex-1 pr-2">
+                            <div className={`truncate ${isFullyReturned ? 'line-through text-muted-foreground' : ''}`}>
+                              {item.name} <span className="text-muted-foreground tabular-nums not-italic">×{item.quantity}</span>
+                            </div>
+                            {isPartiallyReturned && (
+                              <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                ({refundedQty} of {item.quantity} returned)
+                              </div>
+                            )}
+                            {isFullyReturned && activeSelectedOrder.status === 'partially_refunded' && (
+                              <div className="text-[10px] text-destructive font-medium">
+                                (Item Returned)
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`font-semibold tabular-nums ${isFullyReturned ? 'line-through text-muted-foreground' : ''}`}>
+                              {currencySymbol}
+                              {(item.unitPrice * item.quantity).toFixed(2)}
+                            </span>
+                            {refundedQty > 0 && (
+                              <div className="text-[10px] text-destructive tabular-nums">
+                                -{currencySymbol}{(item.unitPrice * refundedQty).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <Separator />
@@ -985,14 +1057,39 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
 
                   <Separator />
 
-                  {/* Grand Total */}
-                  <div className={`flex justify-between text-sm font-bold ${activeSelectedOrder.status === 'refunded' ? 'text-destructive' : 'text-foreground'}`}>
-                    <span>{activeSelectedOrder.status === 'refunded' ? 'Grand Total (Refunded):' : 'Grand Total:'}</span>
-                    <span className="tabular-nums text-base">
-                      {activeSelectedOrder.status === 'refunded' ? `-${currencySymbol}` : currencySymbol}
-                      {activeSelectedOrder.total.toFixed(2)}
-                    </span>
-                  </div>
+                  {/* Grand Total & Refunded Breakdown */}
+                  {activeSelectedOrder.status === 'refunded' ? (
+                    <div className="flex justify-between text-sm font-bold text-destructive">
+                      <span>Grand Total (Fully Refunded):</span>
+                      <span className="tabular-nums text-base">
+                        -{currencySymbol}{(activeSelectedOrder.refundAmount || activeSelectedOrder.total).toFixed(2)}
+                      </span>
+                    </div>
+                  ) : activeSelectedOrder.status === 'partially_refunded' ? (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Original Total:</span>
+                        <span className="tabular-nums font-medium">{currencySymbol}{activeSelectedOrder.total.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-semibold text-destructive">
+                        <span>Total Refunded:</span>
+                        <span className="tabular-nums">-{currencySymbol}{(activeSelectedOrder.refundAmount || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold text-foreground pt-1.5 border-t border-dashed border-border">
+                        <span>Net Realized Total:</span>
+                        <span className="tabular-nums text-base text-primary">
+                          {currencySymbol}{Math.max(0, activeSelectedOrder.total - (activeSelectedOrder.refundAmount || 0)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-sm font-bold text-foreground">
+                      <span>Grand Total:</span>
+                      <span className="tabular-nums text-base">
+                        {currencySymbol}{activeSelectedOrder.total.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
 
                 <CardFooter className="flex flex-col gap-2 pt-3 border-t border-border bg-muted/10">
@@ -1007,7 +1104,13 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                     className="w-full h-8 text-xs font-medium cursor-pointer"
                   >
                     <RotateCcw className="size-3.5 mr-1.5" />
-                    <span>{activeSelectedOrder.status === 'refunded' ? 'Already Refunded' : 'Process Return / Refund'}</span>
+                    <span>
+                      {activeSelectedOrder.status === 'refunded'
+                        ? 'Fully Refunded'
+                        : activeSelectedOrder.status === 'partially_refunded'
+                        ? 'Refund Remaining Items'
+                        : 'Process Return / Refund'}
+                    </span>
                   </Button>
 
                   <div className="grid grid-cols-2 gap-2 w-full">
