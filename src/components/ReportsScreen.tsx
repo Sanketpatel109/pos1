@@ -17,6 +17,7 @@ import {
   BarChart3,
   Layers,
   RotateCcw,
+  AlertCircle,
 } from 'lucide-react';
 import { Order, PaymentMethod, CatalogItem, ShopSettings } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
@@ -65,6 +66,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
   onProcessRefund,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | PaymentMethod>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'COMPLETED' | 'REFUNDED'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isExportMenuOpen, setIsExportMenuOpen] = useState<boolean>(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState<boolean>(false);
@@ -81,10 +83,21 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // Filter orders
+  // Overall status breakdowns for counts
+  const completedAllOrders = orders.filter((o) => o.status !== 'refunded');
+  const refundedAllOrders = orders.filter((o) => o.status === 'refunded');
+
+  // Filter orders by payment, status, and search query
   const filteredOrders = orders.filter((order) => {
-    const matchesFilter =
+    const matchesPayment =
       selectedFilter === 'ALL' || order.paymentMethod === selectedFilter;
+
+    const matchesStatus =
+      statusFilter === 'ALL'
+        ? true
+        : statusFilter === 'REFUNDED'
+        ? order.status === 'refunded'
+        : order.status !== 'refunded';
 
     const q = searchQuery.trim().toLowerCase();
     const cleanQ = q.replace(/^ord-/, '').replace(/^#/, '');
@@ -99,27 +112,28 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
         order.customerName.toLowerCase().includes(q)) ||
       (order.customerPhone && order.customerPhone.includes(q));
 
-    return matchesFilter && matchesSearch;
+    return matchesPayment && matchesStatus && matchesSearch;
   });
 
   // Active selected order for tablet preview pane
   const activeSelectedOrder =
     orders.find((o) => o.id === selectedOrderId) || filteredOrders[0] || null;
 
-  // Calculate Metrics
-  const totalSales = filteredOrders.reduce((sum, o) => sum + o.total, 0);
-  const totalBillsCount = filteredOrders.length;
-  const avgOrderValue = totalBillsCount > 0 ? totalSales / totalBillsCount : 0;
+  // Real-world Accounting Metrics (Gross Sales, Refunds, Net Realized)
+  const grossSales = completedAllOrders.reduce((sum, o) => sum + o.total, 0);
+  const totalRefunds = refundedAllOrders.reduce((sum, o) => sum + o.total, 0);
+  const netSales = Math.max(0, grossSales - totalRefunds);
+  const avgOrderValue = completedAllOrders.length > 0 ? grossSales / completedAllOrders.length : 0;
 
-  const cashSales = filteredOrders
+  const cashSales = completedAllOrders
     .filter((o) => o.paymentMethod === 'CASH')
     .reduce((sum, o) => sum + o.total, 0);
 
-  const onlineSales = filteredOrders
+  const onlineSales = completedAllOrders
     .filter((o) => o.paymentMethod === 'ONLINE')
     .reduce((sum, o) => sum + o.total, 0);
 
-  const creditSales = filteredOrders
+  const creditSales = completedAllOrders
     .filter((o) => o.paymentMethod === 'CREDIT')
     .reduce((sum, o) => sum + o.total, 0);
 
@@ -398,34 +412,43 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="p-4 gap-1 border-border shadow-xs">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-              Total Sales
+              Gross Sales
             </span>
             <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
-              {currencySymbol}{totalSales.toFixed(2)}
+              {currencySymbol}{grossSales.toFixed(2)}
+            </span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {completedAllOrders.length} Paid {completedAllOrders.length === 1 ? 'Bill' : 'Bills'}
             </span>
           </Card>
 
           <Card className="p-4 gap-1 border-border shadow-xs">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-              Total Bills
+              Refunds & Returns
             </span>
-            <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
-              {totalBillsCount} Bills
+            <span className="text-2xl font-bold text-destructive tabular-nums tracking-tight">
+              -{currencySymbol}{totalRefunds.toFixed(2)}
+            </span>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {refundedAllOrders.length} {refundedAllOrders.length === 1 ? 'Return' : 'Returns'} Processed
             </span>
           </Card>
 
           <Card className="p-4 gap-1 border-border shadow-xs">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-              Avg. Bill Value
+              Net Realized Sales
             </span>
             <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
-              {currencySymbol}{avgOrderValue.toFixed(2)}
+              {currencySymbol}{netSales.toFixed(2)}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Gross − Total Refunds
             </span>
           </Card>
 
           <Card className="p-4 gap-1 border-border shadow-xs flex flex-col justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
-              Payment Breakdown
+              Payment Breakdown (Net)
             </span>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between text-foreground">
@@ -605,25 +628,78 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
               </div>
             </div>
 
-            {/* Filter Chips: All | Cash | UPI | Khata | Split */}
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {[
-                { key: 'ALL', label: 'All' },
-                { key: 'CASH', label: 'Cash' },
-                { key: 'ONLINE', label: 'UPI' },
-                { key: 'CREDIT', label: 'Khata' },
-                { key: 'SPLIT', label: 'Split' },
-              ].map((filterItem) => (
-                <Button
-                  key={filterItem.key}
-                  size="sm"
-                  variant={selectedFilter === filterItem.key ? 'default' : 'outline'}
-                  onClick={() => setSelectedFilter(filterItem.key as 'ALL' | PaymentMethod)}
-                  className="h-7 px-3 text-xs font-medium cursor-pointer"
+            {/* Filter Bar: Status Tabs & Payment Mode Chips */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              {/* Status Segmented Control (All | Sales | Refunds) */}
+              <div className="flex items-center p-0.5 bg-muted rounded-lg border border-border shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('ALL')}
+                  className={`h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                    statusFilter === 'ALL'
+                      ? 'bg-card text-foreground font-semibold shadow-xs border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
-                  {filterItem.label}
-                </Button>
-              ))}
+                  <span>All</span>
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                    {orders.length}
+                  </Badge>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('COMPLETED')}
+                  className={`h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                    statusFilter === 'COMPLETED'
+                      ? 'bg-card text-foreground font-semibold shadow-xs border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span>Sales</span>
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                    {completedAllOrders.length}
+                  </Badge>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('REFUNDED')}
+                  className={`h-7 px-2.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                    statusFilter === 'REFUNDED'
+                      ? 'bg-card text-destructive font-semibold shadow-xs border border-border'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span>Refunds</span>
+                  {refundedAllOrders.length > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 bg-destructive/15 text-destructive border-destructive/20">
+                      {refundedAllOrders.length}
+                    </Badge>
+                  )}
+                </button>
+              </div>
+
+              {/* Payment Mode Filter Chips */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                {[
+                  { key: 'ALL', label: 'All Modes' },
+                  { key: 'CASH', label: 'Cash' },
+                  { key: 'ONLINE', label: 'UPI' },
+                  { key: 'CREDIT', label: 'Khata' },
+                  { key: 'SPLIT', label: 'Split' },
+                ].map((filterItem) => (
+                  <Button
+                    key={filterItem.key}
+                    size="sm"
+                    variant={selectedFilter === filterItem.key ? 'default' : 'outline'}
+                    onClick={() => setSelectedFilter(filterItem.key as 'ALL' | PaymentMethod)}
+                    className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                  >
+                    {filterItem.label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -713,7 +789,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                         </TableCell>
                         <TableCell>
                           {order.status === 'refunded' ? (
-                            <Badge variant="destructive" className="text-[10px] py-0 font-medium">
+                            <Badge variant="destructive" className="text-[10px] py-0 font-semibold bg-destructive/10 text-destructive border-destructive/20">
                               Refunded
                             </Badge>
                           ) : (
@@ -722,8 +798,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-bold tabular-nums text-xs text-foreground">
-                          {currencySymbol}{order.total.toFixed(2)}
+                        <TableCell className={`text-right font-bold tabular-nums text-xs ${order.status === 'refunded' ? 'text-destructive' : 'text-foreground'}`}>
+                          {order.status === 'refunded' ? `-${currencySymbol}` : currencySymbol}
+                          {order.total.toFixed(2)}
                         </TableCell>
                       </TableRow>
                     );
@@ -824,6 +901,17 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                 </CardHeader>
 
                 <CardContent className="space-y-3 py-3 text-xs flex-1 overflow-y-auto">
+                  {/* Refunded Notice Banner */}
+                  {activeSelectedOrder.status === 'refunded' && (
+                    <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+                      <AlertCircle className="size-4 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-bold leading-tight">Refunded Invoice / Credit Note</p>
+                        <p className="text-[10px] text-destructive/80">Money returned to customer • Excluded from net revenue</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Items List */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -833,8 +921,8 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                     <Separator />
                     {activeSelectedOrder.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-xs text-foreground">
-                        <span className="truncate pr-2">
-                          {item.name} <span className="text-muted-foreground tabular-nums">×{item.quantity}</span>
+                        <span className={`truncate pr-2 ${activeSelectedOrder.status === 'refunded' ? 'line-through text-muted-foreground' : ''}`}>
+                          {item.name} <span className="text-muted-foreground tabular-nums not-italic">×{item.quantity}</span>
                         </span>
                         <span className="font-semibold shrink-0 tabular-nums">
                           {currencySymbol}
@@ -898,9 +986,12 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                   <Separator />
 
                   {/* Grand Total */}
-                  <div className="flex justify-between text-sm font-bold text-foreground">
-                    <span>Grand Total:</span>
-                    <span className="tabular-nums text-base">{currencySymbol}{activeSelectedOrder.total.toFixed(2)}</span>
+                  <div className={`flex justify-between text-sm font-bold ${activeSelectedOrder.status === 'refunded' ? 'text-destructive' : 'text-foreground'}`}>
+                    <span>{activeSelectedOrder.status === 'refunded' ? 'Grand Total (Refunded):' : 'Grand Total:'}</span>
+                    <span className="tabular-nums text-base">
+                      {activeSelectedOrder.status === 'refunded' ? `-${currencySymbol}` : currencySymbol}
+                      {activeSelectedOrder.total.toFixed(2)}
+                    </span>
                   </div>
                 </CardContent>
 
