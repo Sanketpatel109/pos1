@@ -231,3 +231,52 @@ body {
     @apply font-sans;
   }
 }
+
+@keyframes smooth-float {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.008);
+  }
+}
+
+@keyframes scan-beam {
+  0% {
+    top: -20%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    top: 120%;
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.03);
+  }
+}
+
+.animate-smooth-float {
+  animation: smooth-float 6s ease-in-out infinite;
+}
+
+.animate-scan-beam {
+  animation: scan-beam 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 5s ease-in-out infinite;
+}

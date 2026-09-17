@@ -416,6 +416,49 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
           </div>
         </div>
 
+        {/* Middle: Smooth Animated POS Terminal Showcase */}
+        <div className="relative z-10 my-auto px-4 sm:px-6 py-2 flex flex-col items-center justify-center">
+          <div className="relative w-full max-w-md xl:max-w-lg group">
+            {/* Ambient Multi-colored Glow Backdrop */}
+            <div className="absolute -inset-1.5 bg-gradient-to-r from-cyan-500/30 via-indigo-500/30 to-purple-500/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-85 transition duration-1000 animate-pulse-glow pointer-events-none" />
+
+            {/* Floating Image Wrapper */}
+            <div className="relative rounded-2xl overflow-hidden border border-white/20 bg-zinc-950/80 shadow-2xl backdrop-blur-sm animate-smooth-float">
+              {/* The Terminal Image */}
+              <img
+                src="/pos-terminal-showcase.jpg"
+                alt="MonoPOS Dual-Screen Retail Terminal"
+                className="w-full h-auto object-cover rounded-2xl transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                loading="eager"
+              />
+
+              {/* Laser / Holographic Scan Beam Effect */}
+              <div className="absolute inset-x-0 h-20 bg-gradient-to-b from-transparent via-cyan-400/25 to-transparent pointer-events-none animate-scan-beam" />
+
+              {/* Glassmorphism Inner Shadow / Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+
+              {/* Floating Live Telemetry Badge - Top Left */}
+              <div className="absolute top-3 left-3 bg-zinc-950/85 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 flex items-center gap-1.5 text-[11px] font-medium text-white/90 shadow-lg">
+                <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="size-2 rounded-full bg-emerald-500 -ml-3.5" />
+                <span>Dual-Screen Active</span>
+              </div>
+
+              {/* Floating Real-time Stat Badge - Bottom Right */}
+              <div className="absolute bottom-3 right-3 bg-zinc-950/85 backdrop-blur-md border border-white/20 rounded-xl px-3 py-1.5 flex items-center gap-2 text-white shadow-lg">
+                <div className="size-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                  ₹
+                </div>
+                <div className="text-left leading-tight">
+                  <div className="text-[10px] text-zinc-400">Counter Speed</div>
+                  <div className="text-xs font-bold text-emerald-400">0.3s / receipt</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Bottom Social Proof Card */}
         <div className="relative z-10 bg-white text-zinc-900 dark:bg-zinc-950 dark:text-white rounded-2xl p-6 shadow-2xl border border-white/20 mx-4 mb-4">
           <div className="space-y-1">
