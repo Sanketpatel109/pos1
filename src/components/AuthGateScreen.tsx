@@ -61,6 +61,24 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       });
   }, [onAuthenticated]);
 
+  const handleGoogleRedirectSignIn = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsUnauthorizedDomain(false);
+      await signInWithRedirect(auth, googleProvider);
+    } catch (err: any) {
+      console.error('Redirect sign-in error:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        setIsUnauthorizedDomain(true);
+        setError('Domain unauthorized in Firebase: "localhost" is not in Authorized Domains list.');
+      } else {
+        setError(err.message || 'Failed to start Google sign-in redirect.');
+      }
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
@@ -69,7 +87,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       const result = await signInWithPopup(auth, googleProvider);
       onAuthenticated(result.user);
     } catch (err: any) {
-      console.warn('Google popup sign-in encountered an issue, falling back to redirect:', err);
+      console.warn('Google popup sign-in encountered an issue:', err);
       if (err.code === 'auth/unauthorized-domain') {
         setIsUnauthorizedDomain(true);
         setError('Domain unauthorized in Firebase: "localhost" is not added to Authorized Domains in your Firebase console.');
@@ -78,21 +96,13 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
         err.code === 'auth/cancelled-popup-request' ||
         err.code === 'auth/internal-error'
       ) {
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        } catch (redirectErr: any) {
-          if (redirectErr.code === 'auth/unauthorized-domain') {
-            setIsUnauthorizedDomain(true);
-            setError('Domain unauthorized in Firebase: "localhost" is not added to Authorized Domains in your Firebase console.');
-          } else {
-            setError(redirectErr.message || 'Redirect sign-in failed.');
-          }
-        }
+        // Automatically fallback to redirect if popup was blocked
+        await handleGoogleRedirectSignIn();
+        return;
       } else if (err.code === 'auth/popup-closed-by-user') {
         setError(null);
       } else {
-        setError(err.message || 'Google sign-in failed. Please try again.');
+        setError(err.message || 'Google sign-in failed. Please try again or use redirect.');
       }
     } finally {
       setLoading(false);
@@ -351,19 +361,32 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
           </div>
 
           {/* Full-width Google Authentication Button */}
-          <Button
-            id="btn-google-sign-in"
-            type="button"
-            variant="outline"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-4 fill-current">
-              <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-            </svg>
-            Continue with Google
-          </Button>
+          <div className="flex flex-col gap-1.5">
+            <Button
+              id="btn-google-sign-in"
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-4 fill-current">
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
+              </svg>
+              Continue with Google
+            </Button>
+            <div className="flex items-center justify-center text-[11px] text-muted-foreground gap-1">
+              <span>Popup blank or blocked?</span>
+              <button
+                type="button"
+                onClick={handleGoogleRedirectSignIn}
+                disabled={loading}
+                className="underline underline-offset-2 hover:text-foreground font-medium cursor-pointer"
+              >
+                Sign in with redirect
+              </button>
+            </div>
+          </div>
 
           {/* Feedback Alerts using standard shadcn tokens */}
           {successMessage && (
