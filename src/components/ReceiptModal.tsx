@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Printer,
   Share2,
@@ -41,8 +41,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   onClose,
 }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [viewMode, setViewMode] = useState<'current' | 'original'>('current');
 
   if (!isOpen) return null;
+
+  const hasRefunds = Boolean(
+    order?.status === 'refunded' ||
+      order?.status === 'partially_refunded' ||
+      (order?.refundAmount && order.refundAmount > 0)
+  );
 
   // Resolve active data from order or live items
   const activeOrderNum = order ? order.orderNumber : orderNumber;
@@ -98,7 +105,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       customerName: activeCustomerName,
       customerPhone: activeCustomerPhone,
     };
-    printDirectThermalReceipt(resolvedOrder, shopSettings);
+    printDirectThermalReceipt(resolvedOrder, shopSettings, {
+      isOriginalInvoice: viewMode === 'original',
+    });
   };
 
   const handleShareWhatsApp = () => {
@@ -139,11 +148,42 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Receipt Version Selector (for refunded/partially refunded orders) */}
+        {hasRefunds && (
+          <div className="px-4 py-2 bg-muted/30 border-b border-border flex items-center justify-between gap-2">
+            <span className="text-[11px] font-semibold text-muted-foreground">Receipt Type:</span>
+            <div className="flex rounded-lg bg-zinc-200/80 p-0.5 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setViewMode('current')}
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'current'
+                    ? 'bg-white text-zinc-900 shadow-2xs'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+              >
+                Current (Net)
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('original')}
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  viewMode === 'original'
+                    ? 'bg-white text-zinc-900 shadow-2xs'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+              >
+                Original Purchase
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Receipt Container (Thermal Paper Simulation) */}
         <div className="flex-1 overflow-y-auto p-4 bg-secondary flex justify-center no-scrollbar">
@@ -179,17 +219,21 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                   GSTIN: {shopSettings.gstin}
                 </p>
               )}
-              {(isDuplicate || order?.isDuplicate) && (
+              {viewMode === 'original' ? (
+                <div className="mt-1.5 py-1 px-2 text-center bg-zinc-100 border-y border-dashed border-zinc-400 font-bold text-[11px] tracking-widest text-zinc-900 uppercase">
+                  *** ORIGINAL TAX INVOICE ***
+                </div>
+              ) : (isDuplicate || order?.isDuplicate) ? (
                 <div className="mt-1.5 py-1 px-2 text-center bg-zinc-100 border-y border-dashed border-zinc-400 font-bold text-[11px] tracking-widest text-zinc-900 uppercase ">
                   *** DUPLICATE COPY ***
                 </div>
-              )}
-              {order?.status === 'refunded' && (
+              ) : null}
+              {viewMode !== 'original' && order?.status === 'refunded' && (
                 <div className="mt-1.5 py-1 px-2 text-center bg-red-100 border-y border-dashed border-red-400 font-bold text-[11px] tracking-widest text-red-900 uppercase">
                   *** FULLY REFUNDED / VOID ***
                 </div>
               )}
-              {order?.status === 'partially_refunded' && (
+              {viewMode !== 'original' && order?.status === 'partially_refunded' && (
                 <div className="mt-1.5 py-1 px-2 text-center bg-amber-100 border-y border-dashed border-amber-400 font-bold text-[11px] tracking-widest text-amber-900 uppercase">
                   *** PARTIALLY REFUNDED ***
                 </div>
@@ -250,7 +294,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 const refundedMatch = order?.refundedItems?.find(
                   (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
                 );
-                const refundedQty = refundedMatch ? refundedMatch.quantity : 0;
+                const refundedQty = viewMode !== 'original' && refundedMatch ? refundedMatch.quantity : 0;
                 const isItemFullyReturned = refundedQty >= item.quantity;
                 const isItemPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
 
@@ -334,14 +378,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               )}
 
               <div className="flex justify-between text-sm font-extrabold text-foreground border-t border-border pt-1">
-                <span>{order?.status === 'refunded' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</span>
-                <span className={order?.status === 'refunded' ? 'line-through text-muted-foreground' : ''}>
+                <span>{order?.status === 'refunded' && viewMode !== 'original' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</span>
+                <span className={order?.status === 'refunded' && viewMode !== 'original' ? 'line-through text-muted-foreground' : ''}>
                   {shopSettings.currencySymbol}
                   {activeTotal.toFixed(2)}
                 </span>
               </div>
 
-              {order?.refundAmount && order.refundAmount > 0 && (
+              {viewMode !== 'original' && order?.refundAmount && order.refundAmount > 0 && (
                 <div className="flex justify-between text-[11px] font-bold text-destructive border-t border-dotted border-border pt-1">
                   <span>{order.status === 'refunded' ? 'TOTAL REFUNDED:' : 'AMOUNT REFUNDED:'}</span>
                   <span>
@@ -351,7 +395,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                 </div>
               )}
 
-              {order?.status === 'partially_refunded' && order.refundAmount && (
+              {viewMode !== 'original' && order?.status === 'partially_refunded' && order.refundAmount && (
                 <div className="flex justify-between text-sm font-black text-primary border-t border-border pt-1">
                   <span>NET PAID TOTAL:</span>
                   <span>

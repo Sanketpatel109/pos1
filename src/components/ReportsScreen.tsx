@@ -22,6 +22,7 @@ import {
 import { Order, PaymentMethod, CatalogItem, ShopSettings } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 import { downloadTallyXml } from '../utils/tallyExport';
+import { printCreditNoteVoucher, printDirectThermalReceipt } from './DirectThermalReceipt';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1057,6 +1058,82 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
 
                   <Separator />
 
+                  {/* Audit Trail & Credit Notes History */}
+                  {activeSelectedOrder.refundHistory && activeSelectedOrder.refundHistory.length > 0 && (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="size-3 text-primary" />
+                          Credit Notes & Return Slips ({activeSelectedOrder.refundHistory.length})
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {activeSelectedOrder.refundHistory.map((rec, idx) => {
+                          const refundDate = new Date(rec.refundedAt).toLocaleString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          });
+                          return (
+                            <div
+                              key={rec.id || idx}
+                              className="p-2.5 rounded-lg bg-muted/40 border border-border/80 space-y-1.5 text-[11px]"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 font-bold">
+                                  <span className="text-foreground">#{rec.creditNoteNumber}</span>
+                                  <Badge variant="outline" className="text-[9px] py-0 px-1 font-mono">
+                                    {rec.refundMethod}
+                                  </Badge>
+                                </div>
+                                <span className="font-bold text-destructive tabular-nums">
+                                  -{currencySymbol}{rec.refundAmount.toFixed(2)}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between text-[10px] text-muted-foreground">
+                                <span>{refundDate}</span>
+                                {rec.staffName && <span>By: {rec.staffName}</span>}
+                              </div>
+
+                              {rec.refundReason && (
+                                <p className="text-[10px] text-muted-foreground italic truncate">
+                                  Reason: {rec.refundReason}
+                                </p>
+                              )}
+
+                              {rec.refundedItems && rec.refundedItems.length > 0 && (
+                                <div className="text-[10px] bg-background/80 rounded p-1.5 border border-border/50 text-foreground space-y-0.5">
+                                  {rec.refundedItems.map((item, itemIdx) => (
+                                    <div key={itemIdx} className="flex justify-between">
+                                      <span className="truncate pr-2">• {item.name} &times; {item.quantity}</span>
+                                      <span className="tabular-nums font-medium shrink-0">{currencySymbol}{item.amount.toFixed(0)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="pt-0.5 flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-[10px] px-2 font-medium cursor-pointer"
+                                  onClick={() => printCreditNoteVoucher(activeSelectedOrder, rec, shopSettings)}
+                                >
+                                  <Printer className="size-3 mr-1" />
+                                  Print Credit Note
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <Separator />
+                    </div>
+                  )}
+
                   {/* Grand Total & Refunded Breakdown */}
                   {activeSelectedOrder.status === 'refunded' ? (
                     <div className="flex justify-between text-sm font-bold text-destructive">
@@ -1113,26 +1190,66 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({
                     </span>
                   </Button>
 
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    <Button
-                      type="button"
-                      onClick={() => onPrintOrder(activeSelectedOrder)}
-                      variant="default"
-                      className="h-8 text-xs font-medium cursor-pointer"
-                    >
-                      <Printer className="size-3.5 mr-1.5" />
-                      <span>Print Receipt</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => onDeleteOrder(activeSelectedOrder.id)}
-                      variant="destructive"
-                      className="h-8 text-xs font-medium cursor-pointer"
-                    >
-                      <Trash2 className="size-3.5 mr-1.5" />
-                      <span>Void Bill</span>
-                    </Button>
-                  </div>
+                  {activeSelectedOrder.status === 'refunded' ||
+                  activeSelectedOrder.status === 'partially_refunded' ||
+                  (activeSelectedOrder.refundAmount && activeSelectedOrder.refundAmount > 0) ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        <Button
+                          type="button"
+                          onClick={() => onPrintOrder(activeSelectedOrder)}
+                          variant="default"
+                          className="h-8 text-xs font-medium cursor-pointer"
+                        >
+                          <Printer className="size-3.5 mr-1.5" />
+                          <span>Print Receipt</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            printDirectThermalReceipt(activeSelectedOrder, shopSettings, {
+                              isOriginalInvoice: true,
+                            })
+                          }
+                          variant="outline"
+                          className="h-8 text-xs font-medium cursor-pointer border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/40"
+                        >
+                          <FileText className="size-3.5 mr-1.5" />
+                          <span>Print Original Bill</span>
+                        </Button>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => onDeleteOrder(activeSelectedOrder.id)}
+                        variant="ghost"
+                        className="w-full h-7 text-[11px] font-normal text-muted-foreground hover:text-destructive cursor-pointer"
+                      >
+                        <Trash2 className="size-3 mr-1 text-destructive" />
+                        <span>Void Entire Bill Record</span>
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      <Button
+                        type="button"
+                        onClick={() => onPrintOrder(activeSelectedOrder)}
+                        variant="default"
+                        className="h-8 text-xs font-medium cursor-pointer"
+                      >
+                        <Printer className="size-3.5 mr-1.5" />
+                        <span>Print Receipt</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => onDeleteOrder(activeSelectedOrder.id)}
+                        variant="destructive"
+                        className="h-8 text-xs font-medium cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5 mr-1.5" />
+                        <span>Void Bill</span>
+                      </Button>
+                    </div>
+                  )}
                 </CardFooter>
               </Card>
             );

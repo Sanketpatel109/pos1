@@ -1,5 +1,5 @@
 import React from 'react';
-import { Order, ShopSettings } from '../types';
+import { Order, ShopSettings, RefundRecord } from '../types';
 import { calculateOrderTaxFromSnapshot } from '../constants/taxRates';
 import { printThermalHtml } from '../utils/thermalPrinter';
 import { Barcode128, getBarcodeSvgString } from './Barcode128';
@@ -7,11 +7,13 @@ import { Barcode128, getBarcodeSvgString } from './Barcode128';
 export interface DirectThermalReceiptProps {
   order: Order | null;
   shopSettings: ShopSettings;
+  isOriginalInvoice?: boolean;
 }
 
 export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
   order,
   shopSettings,
+  isOriginalInvoice = false,
 }) => {
   if (!order) return null;
 
@@ -81,16 +83,19 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
         {shopSettings.gstin && (
           <p className="text-[10px] font-bold text-black">GSTIN: {shopSettings.gstin}</p>
         )}
-        {order.status === 'refunded' && (
+        {isOriginalInvoice ? (
+          <div className="border-y border-dashed border-black py-0.5 my-1 text-center font-bold tracking-widest text-[10px]">
+            *** ORIGINAL TAX INVOICE ***
+          </div>
+        ) : order.status === 'refunded' ? (
           <div className="border-y border-dashed border-black py-0.5 my-1 text-center font-bold tracking-widest text-[10px]">
             *** FULLY REFUNDED / VOID ***
           </div>
-        )}
-        {order.status === 'partially_refunded' && (
+        ) : order.status === 'partially_refunded' ? (
           <div className="border-y border-dashed border-black py-0.5 my-1 text-center font-bold tracking-widest text-[10px]">
             *** PARTIALLY REFUNDED ***
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Invoice Meta Table */}
@@ -147,7 +152,7 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
               const refundedMatch = order.refundedItems?.find(
                 (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
               );
-              const refundedQty = refundedMatch ? refundedMatch.quantity : 0;
+              const refundedQty = !isOriginalInvoice && refundedMatch ? refundedMatch.quantity : 0;
               const isItemFullyReturned = refundedQty >= item.quantity;
               const isItemPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
 
@@ -231,18 +236,22 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
             )}
 
             <tr className="border-t border-black font-bold text-xs">
-              <td className="text-left pt-1">{order.status === 'refunded' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</td>
-              <td className={`text-right pt-1 font-black ${order.status === 'refunded' ? 'line-through text-zinc-400' : ''}`}>{currencySymbol}{order.total.toFixed(2)}</td>
+              <td className="text-left pt-1">
+                {order.status === 'refunded' && !isOriginalInvoice ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}
+              </td>
+              <td className={`text-right pt-1 font-black ${order.status === 'refunded' && !isOriginalInvoice ? 'line-through text-zinc-400' : ''}`}>
+                {currencySymbol}{order.total.toFixed(2)}
+              </td>
             </tr>
 
-            {order.refundAmount !== undefined && order.refundAmount > 0 && (
+            {!isOriginalInvoice && order.refundAmount !== undefined && order.refundAmount > 0 && (
               <tr className="font-bold">
                 <td className="text-left py-0.5">TOTAL REFUNDED:</td>
                 <td className="text-right py-0.5 font-black">-{currencySymbol}{order.refundAmount.toFixed(2)}</td>
               </tr>
             )}
 
-            {order.status === 'partially_refunded' && order.refundAmount !== undefined && (
+            {!isOriginalInvoice && order.status === 'partially_refunded' && order.refundAmount !== undefined && (
               <tr className="border-t border-black font-bold text-xs">
                 <td className="text-left pt-1">NET PAID TOTAL:</td>
                 <td className="text-right pt-1 font-black">{currencySymbol}{Math.max(0, order.total - order.refundAmount).toFixed(2)}</td>
@@ -322,7 +331,16 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
   );
 };
 
-export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSettings): string {
+export interface ThermalReceiptOptions {
+  isOriginalInvoice?: boolean;
+}
+
+export function generateThermalReceiptHtml(
+  order: Order,
+  shopSettings: ShopSettings,
+  options?: ThermalReceiptOptions
+): string {
+  const isOriginal = Boolean(options?.isOriginalInvoice);
   const dateObj = new Date(order.createdAt || Date.now());
   const formattedDate = dateObj.toLocaleDateString('en-GB', {
     day: '2-digit',
@@ -362,7 +380,7 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
       const refundedMatch = order.refundedItems?.find(
         (r) => r.id === item.id || r.name.toLowerCase() === item.name.toLowerCase()
       );
-      const refundedQty = refundedMatch ? refundedMatch.quantity : 0;
+      const refundedQty = !isOriginal && refundedMatch ? refundedMatch.quantity : 0;
       const isItemFullyReturned = refundedQty >= item.quantity;
       const isItemPartiallyReturned = refundedQty > 0 && refundedQty < item.quantity;
 
@@ -451,12 +469,13 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
     `
     : '';
 
-  const refundStatusBannerHtml =
-    order.status === 'refunded'
-      ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** FULLY REFUNDED / VOID ***</div>`
-      : order.status === 'partially_refunded'
-      ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** PARTIALLY REFUNDED ***</div>`
-      : '';
+  const refundStatusBannerHtml = isOriginal
+    ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** ORIGINAL TAX INVOICE ***</div>`
+    : order.status === 'refunded'
+    ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** FULLY REFUNDED / VOID ***</div>`
+    : order.status === 'partially_refunded'
+    ? `<div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 2px 0; margin-top: 4px; text-align: center; font-weight: bold; font-size: 10px;">*** PARTIALLY REFUNDED ***</div>`
+    : '';
 
   return `
     <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
@@ -526,11 +545,11 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
         ${gstRowsHtml}
         ${totalTaxRowHtml}
         <tr style="border-top: 1px solid #000; font-size: 12px; font-weight: bold;">
-          <td style="text-align: left; padding: 4px 0;">${order.status === 'refunded' ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</td>
-          <td style="text-align: right; padding: 4px 0; font-weight: 900; ${order.status === 'refunded' ? 'text-decoration: line-through; color: #888;' : ''}">${currencySymbol}${order.total.toFixed(2)}</td>
+          <td style="text-align: left; padding: 4px 0;">${order.status === 'refunded' && !isOriginal ? 'ORIGINAL TOTAL:' : 'GRAND TOTAL:'}</td>
+          <td style="text-align: right; padding: 4px 0; font-weight: 900; ${order.status === 'refunded' && !isOriginal ? 'text-decoration: line-through; color: #888;' : ''}">${currencySymbol}${order.total.toFixed(2)}</td>
         </tr>
         ${
-          order.refundAmount !== undefined && order.refundAmount > 0
+          !isOriginal && order.refundAmount !== undefined && order.refundAmount > 0
             ? `
           <tr style="font-weight: bold;">
             <td style="text-align: left; padding: 2px 0;">TOTAL REFUNDED:</td>
@@ -540,7 +559,7 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
             : ''
         }
         ${
-          order.status === 'partially_refunded' && order.refundAmount !== undefined
+          !isOriginal && order.status === 'partially_refunded' && order.refundAmount !== undefined
             ? `
           <tr style="border-top: 1px solid #000; font-size: 12px; font-weight: bold;">
             <td style="text-align: left; padding: 4px 0;">NET PAID TOTAL:</td>
@@ -580,7 +599,166 @@ export function generateThermalReceiptHtml(order: Order, shopSettings: ShopSetti
   `;
 }
 
-export function printDirectThermalReceipt(order: Order, shopSettings: ShopSettings): void {
-  const html = generateThermalReceiptHtml(order, shopSettings);
-  printThermalHtml(html, `Receipt-#${order.orderNumber}`);
+export function printDirectThermalReceipt(
+  order: Order,
+  shopSettings: ShopSettings,
+  options?: ThermalReceiptOptions
+): void {
+  const html = generateThermalReceiptHtml(order, shopSettings, options);
+  const title = options?.isOriginalInvoice
+    ? `OriginalInvoice-#${order.orderNumber}`
+    : `Receipt-#${order.orderNumber}`;
+  printThermalHtml(html, title);
+}
+
+export function generateCreditNoteVoucherHtml(
+  order: Order,
+  refundRecord: RefundRecord,
+  shopSettings: ShopSettings
+): string {
+  const dateObj = new Date(refundRecord.refundedAt || Date.now());
+  const formattedDate = dateObj.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  const formattedTime = dateObj.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const origDateObj = new Date(order.createdAt || Date.now());
+  const origDate = origDateObj.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const currencySymbol = shopSettings.currencySymbol || '₹';
+  const prefix = shopSettings.terminalPrefix || 'A';
+  const origInvoiceNo = order.orderNumberFormatted || `${prefix}-${order.orderNumber}`;
+  const creditNoteNo = refundRecord.creditNoteNumber;
+
+  const logoHtml =
+    shopSettings.logoUrl && shopSettings.printLogoOnReceipt !== false
+      ? `<div style="text-align: center; margin-bottom: 4px;"><img src="${shopSettings.logoUrl}" alt="${shopSettings.shopName}" style="max-height: 48px; max-width: 130px; object-fit: contain; filter: grayscale(100%) contrast(200%);" /></div>`
+      : '';
+
+  const returnedItemsRows = (refundRecord.refundedItems || [])
+    .map(
+      (item) => `
+    <tr style="border-bottom: 1px dotted #d0d0d0;">
+      <td style="width: 50%; text-align: left; padding: 3px 0;">${item.name}</td>
+      <td style="width: 15%; text-align: center; padding: 3px 0;">${item.quantity}</td>
+      <td style="width: 17%; text-align: right; padding: 3px 0;">${item.unitPrice.toFixed(0)}</td>
+      <td style="width: 18%; text-align: right; padding: 3px 0; font-weight: bold;">${item.amount.toFixed(0)}</td>
+    </tr>
+  `
+    )
+    .join('');
+
+  return `
+    <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+      ${logoHtml}
+      <h3 class="font-extrabold uppercase" style="font-size: 13px;">${shopSettings.shopName || 'MonoPOS'}</h3>
+      ${shopSettings.tagline ? `<div style="font-size: 9px; color: #555;">${shopSettings.tagline}</div>` : ''}
+      ${shopSettings.address ? `<div style="font-size: 9px; color: #555;">${shopSettings.address}</div>` : ''}
+      ${shopSettings.phone ? `<div style="font-size: 9px; color: #555;">Tel: ${shopSettings.phone.trim()}</div>` : ''}
+      ${shopSettings.gstin ? `<div style="font-size: 9px; font-weight: bold;">GSTIN: ${shopSettings.gstin}</div>` : ''}
+      <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 3px 0; margin-top: 5px; text-align: center; font-weight: bold; font-size: 11px;">
+        *** CREDIT NOTE / REFUND VOUCHER ***
+      </div>
+    </div>
+
+    <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+        <tr>
+          <td style="width: 40%; color: #666; padding: 1px 0;">Credit Note No:</td>
+          <td style="width: 60%; text-align: right; font-weight: bold;">#${creditNoteNo}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Original Invoice:</td>
+          <td style="text-align: right; font-weight: bold;">#${origInvoiceNo} (${origDate})</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Refund Date:</td>
+          <td style="text-align: right;">${formattedDate} ${formattedTime}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Customer:</td>
+          <td style="text-align: right;">${order.customerName || 'Walk-in Customer'}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Refund Mode:</td>
+          <td style="text-align: right; font-weight: bold; text-transform: uppercase;">${refundRecord.refundMethod}</td>
+        </tr>
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Return Reason:</td>
+          <td style="text-align: right;">${refundRecord.refundReason || 'Customer Return'}</td>
+        </tr>
+        ${
+          refundRecord.staffName
+            ? `
+        <tr>
+          <td style="color: #666; padding: 1px 0;">Processed By:</td>
+          <td style="text-align: right;">${refundRecord.staffName}</td>
+        </tr>`
+            : ''
+        }
+      </table>
+    </div>
+
+    <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid #000; font-size: 9.5px; font-weight: bold; text-transform: uppercase;">
+            <th style="width: 50%; text-align: left; padding-bottom: 3px;">Item Returned</th>
+            <th style="width: 15%; text-align: center; padding-bottom: 3px;">Qty</th>
+            <th style="width: 17%; text-align: right; padding-bottom: 3px;">Rate</th>
+            <th style="width: 18%; text-align: right; padding-bottom: 3px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${returnedItemsRows}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+        <tr style="border-top: 1px solid #000; font-size: 12px; font-weight: bold;">
+          <td style="text-align: left; padding: 4px 0;">TOTAL REFUNDED:</td>
+          <td style="text-align: right; padding: 4px 0; font-weight: 900;">${currencySymbol}${refundRecord.refundAmount.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="text-align: left; font-size: 9px; color: #666; padding-top: 2px;">Inventory Restocked:</td>
+          <td style="text-align: right; font-size: 9px; font-weight: bold; padding-top: 2px;">${refundRecord.restockInventory ? 'YES' : 'NO'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="text-center" style="font-size: 9px; padding-top: 6px;">
+      <div style="display: flex; justify-content: center; margin: 4px 0;">
+        ${getBarcodeSvgString(
+          `CN-${creditNoteNo.replace(/^#/, '')}`,
+          { width: 1.3, height: 32, displayValue: true, fontSize: 10 }
+        )}
+      </div>
+      <div style="font-weight: bold; margin-top: 6px;">*** REFUND ACKNOWLEDGEMENT ***</div>
+      <div style="margin-top: 18px; border-top: 1px dotted #888; padding-top: 4px; display: flex; justify-content: space-between; font-size: 8.5px; color: #555;">
+        <span>Customer Signature</span>
+        <span>Store Seal / Signature</span>
+      </div>
+    </div>
+  `;
+}
+
+export function printCreditNoteVoucher(
+  order: Order,
+  refundRecord: RefundRecord,
+  shopSettings: ShopSettings
+): void {
+  const html = generateCreditNoteVoucherHtml(order, refundRecord, shopSettings);
+  printThermalHtml(html, `CreditNote-#${refundRecord.creditNoteNumber}`);
 }

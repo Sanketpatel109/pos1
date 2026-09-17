@@ -35,6 +35,7 @@ import {
 export interface RefundResult {
   orderId: string;
   orderNumber: number;
+  creditNoteNumber: string;
   refundedItems: {
     id: string;
     name: string;
@@ -187,9 +188,11 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
   const handleProcessRefund = () => {
     if (selectedItems.length === 0 || totalRefundAmount <= 0) return;
 
+    const cnNumber = `CN-${Date.now().toString().slice(-6)}`;
     const result: RefundResult = {
       orderId: order.id,
       orderNumber: order.orderNumber,
+      creditNoteNumber: cnNumber,
       refundedItems: selectedItems.map((it) => ({
         id: it.id,
         name: it.name,
@@ -225,7 +228,7 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
     const slipHtml = `
       <div class="text-center" style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
         <h3 class="font-extrabold uppercase">CREDIT NOTE VOUCHER</h3>
-        <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">CN-${Date.now().toString().slice(-6)}</div>
+        <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">${lastRefund.creditNoteNumber}</div>
         <div style="font-size: 10px; color: #555;">Original Bill #${order.orderNumber}</div>
       </div>
       <div style="border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; font-size: 10px;">
@@ -246,7 +249,7 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
       </div>
     `;
 
-    printThermalHtml(slipHtml, `Credit-Note-CN-${Date.now().toString().slice(-6)}`);
+    printThermalHtml(slipHtml, `Credit-Note-${lastRefund.creditNoteNumber}`);
   };
 
   return (
@@ -300,7 +303,7 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
                     Credit Note Voucher
                   </span>
                   <span className="font-mono text-foreground font-bold">
-                    CN-{Date.now().toString().slice(-6)}
+                    {lastRefund.creditNoteNumber}
                   </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">

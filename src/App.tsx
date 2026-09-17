@@ -14,6 +14,7 @@ import {
   Category,
   BillItem,
   Order,
+  RefundRecord,
   ShopSettings,
   Customer,
   StaffMember,
@@ -2168,6 +2169,21 @@ export default function App() {
             ((ord.refundAmount || 0) + refund.refundAmount).toFixed(2)
           );
 
+          const newRefundRecord: RefundRecord = {
+            id: refund.creditNoteNumber,
+            creditNoteNumber: refund.creditNoteNumber,
+            refundedAt: refund.refundedAt,
+            refundAmount: refund.refundAmount,
+            refundMethod: refund.refundMethod,
+            refundReason: refund.refundReason,
+            restockInventory: refund.restockInventory,
+            refundedItems: refund.refundedItems,
+            staffName: activeStaff?.name || ord.staffName || 'Staff',
+          };
+
+          const prevHistory = ord.refundHistory || [];
+          const updatedHistory = [...prevHistory, newRefundRecord];
+
           const refundOrder: Order = {
             ...ord,
             status: isFullyRefunded ? 'refunded' : 'partially_refunded',
@@ -2176,6 +2192,7 @@ export default function App() {
             refundedAt: refund.refundedAt,
             refundMethod: refund.refundMethod,
             refundedItems: mergedRefundedItems,
+            refundHistory: updatedHistory,
           };
           liveSaveOrder(refundOrder).catch(() => {});
           return refundOrder;

@@ -170,8 +170,27 @@ export interface Order {
   refundedAt?: string;
   refundMethod?: 'CASH' | 'KHATA' | 'ONLINE';
   refundedItems?: { id: string; name: string; quantity: number; amount: number }[];
+  refundHistory?: RefundRecord[];
   isDuplicate?: boolean;
   splitPaymentMode?: string;
+}
+
+export interface RefundRecord {
+  id: string;
+  creditNoteNumber: string;
+  refundedAt: string;
+  refundAmount: number;
+  refundMethod: 'CASH' | 'KHATA' | 'ONLINE';
+  refundReason: string;
+  restockInventory: boolean;
+  refundedItems: {
+    id: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }[];
+  staffName?: string;
 }
 
 
