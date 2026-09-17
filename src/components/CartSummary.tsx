@@ -206,15 +206,14 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
           </Button>
         )}
 
-        {/* Switch Register Mode Button - beside Print Button */}
+        {/* Switch Register Mode Button - always enabled so cashier can switch anytime */}
         {onSwitchMode && (
           <Button
             type="button"
             id="btn-cart-switch-mode"
             variant="outline"
             onClick={onSwitchMode}
-            disabled={disabled}
-            className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 text-muted-foreground hover:text-foreground"
+            className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
             title={
               currentMode === 'quick-bill'
                 ? 'Switch to Catalog & Barcode Billing (Product catalog & laser barcode billing)'
