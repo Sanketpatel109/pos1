@@ -74,6 +74,7 @@ import {
 import {
   User,
   signInWithPopup,
+  signInWithRedirect,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -343,11 +344,27 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
     try {
       setAuthLoading(true);
       setAuthError(null);
+      const isSafari =
+        typeof navigator !== 'undefined' &&
+        /Safari/i.test(navigator.userAgent) &&
+        !/Chrome|CriOS|Android|Edg|OPR/i.test(navigator.userAgent);
+      if (isSafari) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
       await signInWithPopup(auth, googleProvider);
       setSyncSuccessMsg('Signed in with Google successfully!');
       setTimeout(() => setSyncSuccessMsg(null), 3000);
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
+      if (
+        err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/cancelled-popup-request' ||
+        err.code === 'auth/internal-error'
+      ) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
       setAuthError(err.message || 'Failed to sign in with Google.');
     } finally {
       setAuthLoading(false);

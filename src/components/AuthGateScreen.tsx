@@ -79,11 +79,31 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
     }
   };
 
+  const isSafariOrIos = (): boolean => {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent;
+    const isIos =
+      /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isSafari =
+      /Safari/i.test(ua) && !/Chrome|CriOS|Android|Edg|OPR/i.test(ua);
+    return isSafari || isIos;
+  };
+
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setError(null);
       setIsUnauthorizedDomain(false);
+
+      // On Safari & iOS, third-party cookies and popup cross-window storage
+      // are blocked by Intelligent Tracking Prevention (ITP), causing a blank white popup.
+      // Seamlessly use full-page redirect for a smooth native login experience.
+      if (isSafariOrIos()) {
+        await handleGoogleRedirectSignIn();
+        return;
+      }
+
       const result = await signInWithPopup(auth, googleProvider);
       onAuthenticated(result.user);
     } catch (err: any) {
