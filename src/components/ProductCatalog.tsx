@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { CatalogItem, Category, PackagingOption } from '../types';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
-import { PackageOpen } from 'lucide-react';
+import { PackageOpen, Plus, Sparkles } from 'lucide-react';
 
 export interface ProductCatalogProps {
   catalog: CatalogItem[];
@@ -14,6 +14,8 @@ export interface ProductCatalogProps {
   currencySymbol?: string;
   itemQuantities?: Record<string, number>;
   onSelectItem: (item: CatalogItem, pack?: PackagingOption | null) => void;
+  onOpenQuickAdd?: () => void;
+  onLoadDemoProducts?: () => void;
   className?: string;
 }
 
@@ -27,6 +29,8 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   currencySymbol = '₹',
   itemQuantities = {},
   onSelectItem,
+  onOpenQuickAdd,
+  onLoadDemoProducts,
   className = '',
 }) => {
   // Filter catalog by category and search query
@@ -75,6 +79,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
         catalog={catalog}
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
+        onOpenQuickAdd={onOpenQuickAdd}
       />
 
       {/* 
@@ -109,20 +114,49 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
             <p className="text-[10px] text-muted-foreground max-w-xs mb-3">
               {searchQuery
                 ? `No items found matching "${searchQuery}". Try a different search term or check categories.`
+                : catalog.length === 0
+                ? 'Your store catalog is currently empty. Add your first product or load starter demo products to test scanning.'
                 : `No items available in the "${selectedCategory}" category.`}
             </p>
-            {(searchQuery || selectedCategory !== 'All Items') && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSearchChange('');
-                  onSelectCategory('All Items');
-                }}
-                className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md transition-all active:scale-95 shadow-xs cursor-pointer"
-              >
-                Show All Items
-              </button>
-            )}
+
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {onOpenQuickAdd && (
+                <button
+                  type="button"
+                  id="btn-empty-quick-add"
+                  onClick={onOpenQuickAdd}
+                  className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:opacity-95 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add First Product
+                </button>
+              )}
+
+              {catalog.length === 0 && onLoadDemoProducts && (
+                <button
+                  type="button"
+                  id="btn-empty-load-demo"
+                  onClick={onLoadDemoProducts}
+                  className="px-3 py-1.5 bg-secondary hover:bg-muted text-secondary-foreground text-xs font-semibold rounded-md active:scale-95 transition-all border border-border cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  Load Demo Products
+                </button>
+              )}
+
+              {(searchQuery || (selectedCategory !== 'All Items' && selectedCategory !== 'All')) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSearchChange('');
+                    onSelectCategory('All Items');
+                  }}
+                  className="px-3 py-1.5 bg-muted text-foreground text-xs font-semibold rounded-md transition-all active:scale-95 shadow-xs cursor-pointer"
+                >
+                  Show All Items
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

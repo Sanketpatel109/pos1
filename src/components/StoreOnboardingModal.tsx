@@ -50,6 +50,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
   // Clean slate for new merchants so they see clean fields with helpful placeholders instead of mock demo text
   const isDefaultMockData =
     !initialSettings.shopName ||
+    !initialSettings.onboarded ||
     initialSettings.shopName === 'MonoPOS Express' ||
     initialSettings.shopName === 'Anand Supermarket';
 
@@ -60,6 +61,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
   const [gstin, setGstin] = useState(isDefaultMockData ? '' : (initialSettings.gstin || ''));
   const [currencySymbol, setCurrencySymbol] = useState(initialSettings.currencySymbol || '₹');
   const [businessType, setBusinessType] = useState<string>('grocery');
+  const [loadDemoCatalog, setLoadDemoCatalog] = useState<boolean>(false);
   const [ownerPin, setOwnerPin] = useState<string>('1234');
   const [showPin, setShowPin] = useState<boolean>(false);
   const [pinError, setPinError] = useState<string>('');
@@ -77,7 +79,6 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
       setPinError('');
       setStep(2);
     } else {
-      // Production: Always launch 100% clean fresh store with zero fake sample items
       onComplete({
         shopSettings: {
           shopName: shopName.trim(),
@@ -88,7 +89,7 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
           currencySymbol,
           enableDailyToken: businessType === 'cafe',
         },
-        useSampleData: false,
+        useSampleData: loadDemoCatalog,
         businessType,
         ownerPin: ownerPin.trim() || '1234',
       });
@@ -307,11 +308,33 @@ export const StoreOnboardingModal: React.FC<StoreOnboardingModalProps> = ({
                 })}
               </div>
 
+              {/* Demo products toggle option */}
+              <label className="p-3 rounded-xl border border-border bg-muted/40 hover:bg-muted/70 flex items-center gap-3 cursor-pointer transition-all">
+                <input
+                  type="checkbox"
+                  id="ob-load-demo-catalog"
+                  checked={loadDemoCatalog}
+                  onChange={(e) => setLoadDemoCatalog(e.target.checked)}
+                  className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span>Include starter sample products</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Preloads a few items so you can test barcode scanning & checkout immediately.
+                  </p>
+                </div>
+              </label>
+
               {/* Clean store guarantee pill */}
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                 <p className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium">
-                  <strong>Clean Fresh Store:</strong> Initializes with ₹0 balance and 0 dummy data, ready for your real products and barcodes.
+                  {loadDemoCatalog
+                    ? 'Sample products will be loaded. You can edit, delete, or replace them anytime in Products & Stock.'
+                    : '100% Clean Store: Starts with 0 dummy items. You can add your own products anytime.'}
                 </p>
               </div>
             </div>

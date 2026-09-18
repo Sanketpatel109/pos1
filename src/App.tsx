@@ -130,7 +130,14 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Firebase Auth & Cloud Sync State
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('monopos_auth_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -143,37 +150,43 @@ export default function App() {
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState<boolean>(false);
   const [isStoreOnboardingOpen, setIsStoreOnboardingOpen] = useState<boolean>(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
 
-  // Settings State
+  // Settings State - strictly partitioned per user
   const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
-    const saved =
-      localStorage.getItem('monopos_retail_settings') ||
-      localStorage.getItem('monopos_industrial_settings');
-    if (!saved) return DEFAULT_SHOP_SETTINGS;
-
     try {
-      const parsed = JSON.parse(saved);
-      return {
-        ...DEFAULT_SHOP_SETTINGS,
-        ...parsed,
-        enableDailyToken: parsed.enableDailyToken !== undefined ? parsed.enableDailyToken : true,
-        enableLoyaltyPoints: parsed.enableLoyaltyPoints !== undefined ? parsed.enableLoyaltyPoints : true,
-        loyaltyEarnSpendAmount: parsed.loyaltyEarnSpendAmount || 100,
-        loyaltyPointValue: parsed.loyaltyPointValue || 1,
-        permissions: {
-          staff: {
-            ...DEFAULT_STORE_PERMISSIONS.staff,
-            ...(parsed.permissions?.staff || {}),
-          },
-          manager: {
-            ...DEFAULT_STORE_PERMISSIONS.manager,
-            ...(parsed.permissions?.manager || {}),
-          },
-        },
-      };
-    } catch {
-      return DEFAULT_SHOP_SETTINGS;
-    }
+      const savedUser = localStorage.getItem('monopos_auth_user');
+      const uid = savedUser ? JSON.parse(savedUser)?.uid : null;
+      if (uid) {
+        const saved = localStorage.getItem(`monopos_retail_settings_${uid}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            ...DEFAULT_SHOP_SETTINGS,
+            ...parsed,
+            enableDailyToken: parsed.enableDailyToken !== undefined ? parsed.enableDailyToken : true,
+            enableLoyaltyPoints: parsed.enableLoyaltyPoints !== undefined ? parsed.enableLoyaltyPoints : true,
+            loyaltyEarnSpendAmount: parsed.loyaltyEarnSpendAmount || 100,
+            loyaltyPointValue: parsed.loyaltyPointValue || 1,
+            permissions: {
+              staff: {
+                ...DEFAULT_STORE_PERMISSIONS.staff,
+                ...(parsed.permissions?.staff || {}),
+              },
+              manager: {
+                ...DEFAULT_STORE_PERMISSIONS.manager,
+                ...(parsed.permissions?.manager || {}),
+              },
+            },
+          };
+        }
+      }
+    } catch {}
+    return {
+      ...DEFAULT_SHOP_SETTINGS,
+      shopName: '',
+      onboarded: false,
+    };
   });
 
   // Listen to Firebase Auth state with local persistence
@@ -232,76 +245,132 @@ export default function App() {
 
   // Sync active tenant ID for Firestore isolation and check first-time onboarding
   useEffect(() => {
+    // Purge legacy unscoped keys unconditionally so they never bleed into user accounts
+    try {
+      localStorage.removeItem('monopos_retail_settings');
+      localStorage.removeItem('monopos_industrial_settings');
+      localStorage.removeItem('monopos_onboarded');
+      localStorage.removeItem('monopos_staff_list');
+      localStorage.removeItem('monopos_active_staff_id');
+      localStorage.removeItem('monopos_is_demo');
+      localStorage.removeItem('monopos_live_catalog');
+      localStorage.removeItem('monopos_orders');
+      localStorage.removeItem('monopos_categories');
+      localStorage.removeItem('monopos_customers');
+      localStorage.removeItem('monopos_cash_entries');
+      localStorage.removeItem('monopos_held_orders');
+    } catch {}
+
     if (currentUser) {
-      const tenantId = `tenant_${currentUser.uid}`;
+      const uid = currentUser.uid;
+      const tenantId = `tenant_${uid}`;
       setActiveTenantId(tenantId);
-      const onboardedKey = `monopos_onboarded_${currentUser.uid}`;
-      const userSettingsKey = `monopos_retail_settings_${currentUser.uid}`;
+      const onboardedKey = `monopos_onboarded_${uid}`;
+      const userSettingsKey = `monopos_retail_settings_${uid}`;
+      const userStaffKey = `monopos_staff_list_${uid}`;
+      const userActiveStaffKey = `monopos_active_staff_id_${uid}`;
 
-      // Check if store is already active/onboarded via tenant-scoped keys
-      const hasExistingCatalog = (() => {
+      // 1. Staff isolation: Ensure logged-in user is the OWNER
+      const savedStaff = localStorage.getItem(userStaffKey);
+      let resolvedStaff: StaffMember[] = [];
+      if (savedStaff) {
         try {
-          const raw = localStorage.getItem(`monopos_live_catalog_${currentUser.uid}`);
-          return raw ? JSON.parse(raw).length > 0 : false;
-        } catch {
-          return false;
-        }
-      })();
-
-      const hasExistingOrders = (() => {
-        try {
-          const raw = localStorage.getItem(`monopos_orders_${currentUser.uid}`);
-          return raw ? JSON.parse(raw).length > 0 : false;
-        } catch {
-          return false;
-        }
-      })();
-
-      const localAlreadyOnboarded =
-        localStorage.getItem(onboardedKey) === 'true' ||
-        localStorage.getItem('monopos_onboarded') === 'true' ||
-        Boolean(shopSettings.onboarded) ||
-        hasExistingCatalog ||
-        hasExistingOrders;
-
-      // 1. Check local storage for this user's specific store settings
-      const userSavedSettings =
-        localStorage.getItem(userSettingsKey) ||
-        localStorage.getItem('monopos_retail_settings');
-
-      if (userSavedSettings) {
-        try {
-          const parsed = JSON.parse(userSavedSettings);
-          if (parsed && typeof parsed === 'object') {
-            setShopSettings((prev) => ({ ...prev, ...parsed }));
+          const parsed = JSON.parse(savedStaff);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            resolvedStaff = parsed.map((s: any) => ({ ...s, role: normalizeRole(s.role) }));
           }
         } catch {}
       }
 
-      if (localAlreadyOnboarded) {
-        localStorage.setItem(onboardedKey, 'true');
-        localStorage.setItem('monopos_onboarded', 'true');
-        setIsStoreOnboardingOpen(false);
+      if (resolvedStaff.length === 0) {
+        const ownerName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Store Owner';
+        resolvedStaff = [
+          {
+            id: 'staff-owner',
+            name: `${ownerName} (Owner)`,
+            role: 'OWNER',
+            pin: '1234',
+            active: true,
+          },
+          {
+            id: 'staff-cashier-1',
+            name: 'Cashier 1',
+            role: 'CASHIER',
+            pin: '0000',
+            active: true,
+          },
+        ];
+        try {
+          localStorage.setItem(userStaffKey, JSON.stringify(resolvedStaff));
+        } catch {}
+      }
+      setStaffList(resolvedStaff);
+
+      const savedActiveId = localStorage.getItem(userActiveStaffKey);
+      const activeMember = resolvedStaff.find((s) => s.id === savedActiveId);
+      if (activeMember) {
+        setActiveStaffId(activeMember.id);
       } else {
-        // 2. Query Firestore directly before opening onboarding modal to avoid race conditions
+        const owner = resolvedStaff.find((s) => normalizeRole(s.role) === 'OWNER') || resolvedStaff[0];
+        const defaultOwnerId = owner ? owner.id : 'staff-owner';
+        setActiveStaffId(defaultOwnerId);
+        try {
+          localStorage.setItem(userActiveStaffKey, defaultOwnerId);
+        } catch {}
+      }
+
+      // 2. Settings & Onboarding isolation
+      const localOnboarded = localStorage.getItem(onboardedKey) === 'true';
+      const userSavedSettings = localStorage.getItem(userSettingsKey);
+
+      if (userSavedSettings && localOnboarded) {
+        try {
+          const parsed = JSON.parse(userSavedSettings);
+          if (parsed && typeof parsed === 'object') {
+            setShopSettings((prev) => ({
+              ...DEFAULT_SHOP_SETTINGS,
+              ...prev,
+              ...parsed,
+              onboarded: true,
+            }));
+            setIsStoreOnboardingOpen(false);
+          }
+        } catch {
+          setIsStoreOnboardingOpen(true);
+        }
+      } else {
+        // Query Firestore under this tenant to see if store was already onboarded on another device
         getDoc(getTenantDoc('settings', 'store_config', tenantId))
           .then((snap) => {
             if (snap.exists()) {
               const remote = snap.data() as ShopSettings;
-              setShopSettings((prev) => ({ ...prev, ...remote }));
-              localStorage.setItem(onboardedKey, 'true');
-              localStorage.setItem('monopos_onboarded', 'true');
-              localStorage.setItem(userSettingsKey, JSON.stringify(remote));
+              setShopSettings((prev) => ({
+                ...DEFAULT_SHOP_SETTINGS,
+                ...prev,
+                ...remote,
+                onboarded: true,
+              }));
+              try {
+                localStorage.setItem(onboardedKey, 'true');
+                localStorage.setItem(userSettingsKey, JSON.stringify(remote));
+              } catch {}
               setIsStoreOnboardingOpen(false);
               return;
             }
-            // Only show onboarding if user has never configured a store and has 0 data
+            // Genuine new merchant account - open onboarding so merchant can name their store!
+            const freshDefaults: ShopSettings = {
+              ...DEFAULT_SHOP_SETTINGS,
+              shopName: '',
+              onboarded: false,
+            };
+            setShopSettings(freshDefaults);
             setIsStoreOnboardingOpen(true);
           })
           .catch((err) => {
             console.warn('Firestore store config check deferred:', err);
-            // Default to not showing onboarding modal when offline
-            setIsStoreOnboardingOpen(false);
+            if (!localOnboarded) {
+              setIsStoreOnboardingOpen(true);
+            }
           });
       }
     } else {
@@ -312,13 +381,20 @@ export default function App() {
 
   // Clean up legacy unscoped keys if present
   useEffect(() => {
-    localStorage.removeItem('monopos_is_demo');
-    localStorage.removeItem('monopos_live_catalog');
-    localStorage.removeItem('monopos_orders');
-    localStorage.removeItem('monopos_categories');
-    localStorage.removeItem('monopos_customers');
-    localStorage.removeItem('monopos_cash_entries');
-    localStorage.removeItem('monopos_held_orders');
+    try {
+      localStorage.removeItem('monopos_retail_settings');
+      localStorage.removeItem('monopos_industrial_settings');
+      localStorage.removeItem('monopos_onboarded');
+      localStorage.removeItem('monopos_staff_list');
+      localStorage.removeItem('monopos_active_staff_id');
+      localStorage.removeItem('monopos_is_demo');
+      localStorage.removeItem('monopos_live_catalog');
+      localStorage.removeItem('monopos_orders');
+      localStorage.removeItem('monopos_categories');
+      localStorage.removeItem('monopos_customers');
+      localStorage.removeItem('monopos_cash_entries');
+      localStorage.removeItem('monopos_held_orders');
+    } catch {}
   }, []);
 
   // Handle sign-out: fully clear in-memory state so nothing bleeds into the next user
@@ -338,41 +414,61 @@ export default function App() {
       setCashEntries([]);
       setHeldOrders([]);
       cartClearCart();
-      setShopSettings(DEFAULT_SHOP_SETTINGS);
-      setStaffList(SAMPLE_STAFF);
+      setShopSettings({
+        ...DEFAULT_SHOP_SETTINGS,
+        shopName: '',
+        onboarded: false,
+      });
+      setStaffList([
+        {
+          id: 'staff-owner',
+          name: 'Store Owner',
+          role: 'OWNER',
+          pin: '1234',
+          active: true,
+        },
+      ]);
+      setActiveStaffId('staff-owner');
     } catch (err) {
       console.error('Sign out failed:', err);
     }
   };
 
-  // Staff State
+  // Staff State - strictly partitioned per user
   const [staffList, setStaffList] = useState<StaffMember[]>(() => {
     const uid = currentUser?.uid;
     const saved = uid ? localStorage.getItem(`monopos_staff_list_${uid}`) : null;
-    if (!saved) return SAMPLE_STAFF;
-    try {
-      const parsed: StaffMember[] = JSON.parse(saved);
-      const existingIds = new Set(parsed.map((s) => s.id));
-      const merged = [...parsed];
-      for (const sample of SAMPLE_STAFF) {
-        if (!existingIds.has(sample.id)) {
-          merged.push(sample);
+    if (saved) {
+      try {
+        const parsed: StaffMember[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s) => ({ ...s, role: normalizeRole(s.role) }));
         }
-      }
-      return merged
-        .filter((s) => s.id !== 'staff-worker')
-        .map((s) => ({
-          ...s,
-          role: normalizeRole(s.role),
-        }));
-    } catch {
-      return SAMPLE_STAFF;
+      } catch {}
     }
+    const ownerName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Store Owner';
+    return [
+      {
+        id: 'staff-owner',
+        name: `${ownerName} (Owner)`,
+        role: 'OWNER',
+        pin: '1234',
+        active: true,
+      },
+      {
+        id: 'staff-cashier-1',
+        name: 'Cashier 1',
+        role: 'CASHIER',
+        pin: '0000',
+        active: true,
+      },
+    ];
   });
+
   const [activeStaffId, setActiveStaffId] = useState<string>(() => {
     const uid = currentUser?.uid;
     const saved = uid ? localStorage.getItem(`monopos_active_staff_id_${uid}`) : null;
-    return saved || 'staff-1';
+    return saved || 'staff-owner';
   });
 
   // Categories & Catalog State - strictly partitioned per user
@@ -908,6 +1004,7 @@ export default function App() {
     ownerPin?: string;
   }) => {
     const newSettings: ShopSettings = {
+      ...DEFAULT_SHOP_SETTINGS,
       ...shopSettings,
       ...updatedSettings,
       onboarded: true,
@@ -931,78 +1028,72 @@ export default function App() {
       liveSaveCategory(cat).catch(() => {});
     });
 
-    // Update Owner PIN and Name if provided
-    if (ownerPin && ownerPin.trim().length === 4) {
-      const pinToSet = ownerPin.trim();
-      const ownerName = newSettings.shopName ? `${newSettings.shopName} (Owner)` : 'Store Owner';
-      setStaffList((prev) => {
-        let found = false;
-        const updated = prev.map((s) => {
-          if (normalizeRole(s.role) === 'OWNER' || s.id === 'staff-owner') {
-            found = true;
-            return { ...s, pin: pinToSet, name: ownerName };
-          }
-          return s;
-        });
-        if (!found) {
-          updated.unshift({
-            id: 'staff-owner',
-            name: ownerName,
-            role: 'OWNER',
-            pin: pinToSet,
-            active: true,
-          });
-        }
-        if (currentUser) {
-          localStorage.setItem(`monopos_staff_list_${currentUser.uid}`, JSON.stringify(updated));
-        }
-        const ownerMember = updated.find((s) => normalizeRole(s.role) === 'OWNER');
-        if (ownerMember) {
-          liveSaveStaff(ownerMember).catch(() => {});
-        }
-        return updated;
-      });
+    // Update Owner PIN and Name and guarantee active staff is OWNER
+    const pinToSet = ownerPin && ownerPin.trim().length === 4 ? ownerPin.trim() : '1234';
+    const ownerName = newSettings.shopName
+      ? `${newSettings.shopName} (Owner)`
+      : (currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Store Owner') + ' (Owner)';
+
+    const updatedStaff: StaffMember[] = [
+      {
+        id: 'staff-owner',
+        name: ownerName,
+        role: 'OWNER',
+        pin: pinToSet,
+        active: true,
+      },
+      {
+        id: 'staff-cashier-1',
+        name: 'Cashier 1',
+        role: 'CASHIER',
+        pin: '0000',
+        active: true,
+      },
+    ];
+    setStaffList(updatedStaff);
+    setActiveStaffId('staff-owner');
+    if (currentUser) {
+      localStorage.setItem(`monopos_staff_list_${currentUser.uid}`, JSON.stringify(updatedStaff));
+      localStorage.setItem(`monopos_active_staff_id_${currentUser.uid}`, 'staff-owner');
+      liveSaveStaff(updatedStaff[0]).catch(() => {});
+      liveSaveStaff(updatedStaff[1]).catch(() => {});
     }
 
-    // If catalog already has items, preserve them; only initialize if empty
-    const hasExistingCatalog = (() => {
-      if (!currentUser) return false;
-      try {
-        const raw = localStorage.getItem(`monopos_live_catalog_${currentUser.uid}`);
-        return raw ? JSON.parse(raw).length > 0 : false;
-      } catch {
-        return false;
+    if (useSampleData) {
+      const sampleItems = INITIAL_CATALOG;
+      setCatalog(sampleItems);
+      if (currentUser) {
+        localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify(sampleItems));
       }
-    })();
-
-    if (catalog.length === 0 && !hasExistingCatalog) {
+      sampleItems.forEach((it) => {
+        liveSaveProduct(it).catch(() => {});
+      });
+    } else {
       setCatalog([]);
       if (currentUser) {
         localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify([]));
       }
     }
 
-    const hasExistingOrders = (() => {
-      if (!currentUser) return false;
-      try {
-        const raw = localStorage.getItem(`monopos_orders_${currentUser.uid}`);
-        return raw ? JSON.parse(raw).length > 0 : false;
-      } catch {
-        return false;
-      }
-    })();
-
-    if (orders.length === 0 && !hasExistingOrders) {
-      setOrders([]);
-      if (currentUser) {
-        localStorage.setItem(`monopos_orders_${currentUser.uid}`, JSON.stringify([]));
-      }
-    }
-
     if (currentUser) {
-      localStorage.setItem(`monopos_onboarded_${currentUser.uid}`, 'true');
+      localStorage.setItem(`monopos_orders_${currentUser.uid}`, JSON.stringify([]));
+      setOrders([]);
     }
     setIsStoreOnboardingOpen(false);
+  };
+
+  const handleLoadDemoProducts = () => {
+    const demoItems = INITIAL_CATALOG;
+    setCatalog(demoItems);
+    if (currentUser?.uid) {
+      try {
+        localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify(demoItems));
+      } catch {}
+    }
+    demoItems.forEach((it) => {
+      liveSaveProduct(it).catch(() => {});
+    });
+    playSfx('success');
   };
 
   // Audio helper
@@ -2487,6 +2578,8 @@ export default function App() {
               onOpenAddCustomProduct={() => setIsCustomProductModalOpen(true)}
               onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
               onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
+              onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+              onLoadDemoProducts={handleLoadDemoProducts}
               onPrintBill={() => {
                 if (currentBillItems.length === 0) return;
                 const draftOrder: Order = {
@@ -2927,11 +3020,14 @@ export default function App() {
 
       {/* Quick Add Product Modal with Automatic Open Food Facts Lookup */}
       <QuickAddProductModal
-        isOpen={Boolean(quickAddBarcode)}
+        isOpen={Boolean(quickAddBarcode) || isQuickAddOpen}
         barcode={quickAddBarcode || ''}
         currencySymbol={shopSettings.currencySymbol}
         categories={categories}
-        onClose={() => setQuickAddBarcode(null)}
+        onClose={() => {
+          setQuickAddBarcode(null);
+          setIsQuickAddOpen(false);
+        }}
         onSaveAndAddToBill={handleQuickAddProduct}
       />
 

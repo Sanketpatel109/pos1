@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 import { CatalogItem, Category } from '../types';
 import { ensureAllItemsFirst } from '../utils/categories';
 
@@ -12,6 +12,7 @@ export interface CategoryBarProps {
   onSearchChange?: (query: string) => void;
   placeholder?: string;
   onOpenScanner?: () => void;
+  onOpenQuickAdd?: () => void;
 }
 
 export const CategoryBar: React.FC<CategoryBarProps> = ({
@@ -22,6 +23,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   searchQuery = '',
   onSearchChange = (_query: string) => {},
   placeholder = 'Search products, barcode, SKU...',
+  onOpenQuickAdd,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(Boolean(searchQuery));
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +133,21 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary ring-2 ring-background" />
             )}
           </button>
+
+          {/* Quick Add Product Button (Direct from screen) */}
+          {onOpenQuickAdd && (
+            <button
+              type="button"
+              id="btn-category-quick-add"
+              onClick={onOpenQuickAdd}
+              aria-label="Quick Add Product"
+              title="Add product directly from this screen"
+              className="h-8 sm:h-9 px-2.5 shrink-0 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs text-xs font-semibold"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="text-[11px] sm:text-xs">Add</span>
+            </button>
+          )}
 
           {/* Scrollable Category Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none py-0.5 flex-1 min-w-0">

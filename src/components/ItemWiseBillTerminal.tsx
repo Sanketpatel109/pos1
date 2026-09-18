@@ -34,6 +34,8 @@ interface ItemWiseBillTerminalProps {
   onOpenScanner?: (mode?: 'add-to-bill' | 'price-check' | 'search') => void;
   onOpenPriceCheck?: () => void;
   onSwitchMode?: () => void;
+  onOpenQuickAdd?: () => void;
+  onLoadDemoProducts?: () => void;
 }
 
 export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
@@ -59,6 +61,8 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   onOpenScanner,
   onOpenPriceCheck,
   onSwitchMode,
+  onOpenQuickAdd,
+  onLoadDemoProducts,
 }) => {
   const {
     currentBillItems: cartItems,
@@ -216,6 +220,8 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
           currencySymbol={currencySymbol}
           itemQuantities={itemQuantitiesMap}
           onSelectItem={handleItemClick}
+          onOpenQuickAdd={onOpenQuickAdd}
+          onLoadDemoProducts={onLoadDemoProducts}
         />
       </div>
 

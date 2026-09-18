@@ -148,8 +148,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
       hasUserEditedNameRef.current = false;
       hasPopulatedFromLookupRef.current = false;
 
-      const defaultCat =
-        categories.find((c) => c.name !== 'ALL' && c.name !== 'All Items')?.name || 'General';
+      const defaultCat = 'All Items';
       setCategory(defaultCat);
       setGstRate('0');
       setCustomGstRate('');
@@ -538,6 +537,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="All Items">None (Show under All Items)</SelectItem>
                     {categories
                       .filter((c) => c.name !== 'ALL' && c.name !== 'All Items')
                       .map((cat) => (
