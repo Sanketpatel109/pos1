@@ -322,7 +322,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       video.setAttribute('muted', 'true');
       video.style.setProperty('width', '100%', 'important');
       video.style.setProperty('height', '100%', 'important');
-      video.style.setProperty('object-fit', 'cover', 'important');
+      video.style.setProperty('object-fit', 'contain', 'important');
       video.style.setProperty('border-radius', '0.75rem', 'important');
       video.style.setProperty('display', 'block', 'important');
       if (video.paused) {
@@ -397,14 +397,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         },
       });
 
-      // Wide rectangular scanning box optimized for 1D retail barcodes (EAN-13, Code 128, UPC)
+      // Full-frame scanning without downscaled box: preserves sharp 1D barcode lines
       const scanConfig = {
         fps: isMobile ? 15 : 20,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const w = Math.floor(Math.min(viewfinderWidth * 0.85, 360));
-          const h = Math.floor(Math.min(viewfinderHeight * 0.55, 180));
-          return { width: Math.max(w, 220), height: Math.max(h, 110) };
-        },
       };
 
       const onScanSuccess = (decodedText: string) => {

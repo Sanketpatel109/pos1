@@ -561,62 +561,124 @@ export interface NativeDetectorResult {
 export async function createHardwareBarcodeDetector(): Promise<
   ((video: HTMLVideoElement) => Promise<NativeDetectorResult | null>) | null
 > {
-  if (typeof window === 'undefined' || !('BarcodeDetector' in window)) {
-    return null;
+  // 1. Check native BarcodeDetector
+  let nativeDetector: any = null;
+  if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+    try {
+      const BarcodeDetectorClass = (window as any).BarcodeDetector;
+      let formats: string[] = [];
+      if (typeof BarcodeDetectorClass.getSupportedFormats === 'function') {
+        try {
+          formats = await BarcodeDetectorClass.getSupportedFormats();
+        } catch {
+          formats = [];
+        }
+      }
+      if (!formats || formats.length === 0) {
+        formats = [
+          'qr_code',
+          'ean_13',
+          'ean_8',
+          'code_128',
+          'code_39',
+          'upc_a',
+          'upc_e',
+          'itf',
+          'data_matrix',
+        ];
+      }
+      nativeDetector = new BarcodeDetectorClass({ formats });
+    } catch (e) {
+      console.warn('Native BarcodeDetector init error:', e);
+    }
   }
 
-  try {
-    const BarcodeDetectorClass = (window as any).BarcodeDetector;
-    let formats: string[] = [];
-    if (typeof BarcodeDetectorClass.getSupportedFormats === 'function') {
+  // 2. Prepare canvas and ZXing MultiFormatReader with TRY_HARDER=true
+  let canvas: HTMLCanvasElement | null = null;
+  let ctx: CanvasRenderingContext2D | null = null;
+  let zxingReader: any = null;
+
+  const initZXing = () => {
+    if (typeof window === 'undefined') return null;
+    const ZXing = (window as any).ZXing;
+    if (!ZXing) return null;
+    if (!zxingReader) {
       try {
-        formats = await BarcodeDetectorClass.getSupportedFormats();
-      } catch {
-        formats = [];
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        const formats = [
+          ZXing.BarcodeFormat.UPC_A,
+          ZXing.BarcodeFormat.UPC_E,
+          ZXing.BarcodeFormat.EAN_13,
+          ZXing.BarcodeFormat.EAN_8,
+          ZXing.BarcodeFormat.CODE_128,
+          ZXing.BarcodeFormat.CODE_39,
+          ZXing.BarcodeFormat.ITF,
+          ZXing.BarcodeFormat.QR_CODE,
+          ZXing.BarcodeFormat.DATA_MATRIX,
+        ];
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+        zxingReader = new ZXing.MultiFormatReader();
+        zxingReader.setHints(hints);
+      } catch (e) {
+        console.warn('ZXing tryHarder init error:', e);
       }
     }
+    return zxingReader;
+  };
 
-    // Default fallback format list if getSupportedFormats is not implemented
-    if (!formats || formats.length === 0) {
-      formats = [
-        'qr_code',
-        'ean_13',
-        'ean_8',
-        'code_128',
-        'code_39',
-        'upc_a',
-        'upc_e',
-        'itf',
-        'data_matrix',
-        'codabar',
-        'aztec',
-      ];
+  return async (video: HTMLVideoElement): Promise<NativeDetectorResult | null> => {
+    if (!video || video.readyState < 2 || video.videoWidth === 0) return null;
+
+    // Fast Path: Native hardware detector
+    if (nativeDetector) {
+      try {
+        const barcodes = await nativeDetector.detect(video);
+        if (barcodes && barcodes.length > 0 && barcodes[0]?.rawValue) {
+          return {
+            rawValue: String(barcodes[0].rawValue).trim(),
+            format: String(barcodes[0].format || 'native'),
+          };
+        }
+      } catch {}
     }
 
-    const detector = new BarcodeDetectorClass({ formats });
-
-    return async (video: HTMLVideoElement): Promise<NativeDetectorResult | null> => {
-      if (!video || video.readyState < 2 || video.videoWidth === 0) return null;
-      try {
-        const barcodes = await detector.detect(video);
-        if (barcodes && barcodes.length > 0) {
-          const item = barcodes[0];
-          if (item && item.rawValue) {
+    // High-Precision Path: ZXing with TRY_HARDER = true on sharp unscaled canvas
+    try {
+      const reader = initZXing();
+      const ZXing = (window as any).ZXing;
+      if (reader && ZXing) {
+        if (!canvas) {
+          canvas = document.createElement('canvas');
+          ctx = canvas.getContext('2d', { willReadFrequently: true });
+        }
+        if (canvas && ctx) {
+          // Downscale only if camera resolution > 960px to maintain maximum bar contrast
+          const scale = Math.min(1, 960 / video.videoWidth);
+          const w = Math.floor(video.videoWidth * scale);
+          const h = Math.floor(video.videoHeight * scale);
+          if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+          }
+          ctx.drawImage(video, 0, 0, w, h);
+          const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+          const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+          const result = reader.decode(binaryBitmap);
+          if (result && result.text) {
             return {
-              rawValue: String(item.rawValue).trim(),
-              format: String(item.format || 'unknown'),
+              rawValue: String(result.text).trim(),
+              format: String(result.format || '1D'),
             };
           }
         }
-      } catch {
-        // Individual frame detection error is non-fatal
       }
-      return null;
-    };
-  } catch (err) {
-    console.warn('Native BarcodeDetector creation error:', err);
+    } catch {
+      // Frame scan non-fatal
+    }
+
     return null;
-  }
+  };
 }
 
 /**
