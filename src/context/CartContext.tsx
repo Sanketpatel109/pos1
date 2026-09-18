@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
-import { BillItem, CatalogItem } from '../types';
+import { BillItem, CatalogItem, PromotionOffer, AppliedPromotion } from '../types';
 import { calculateItemTaxSnapshot, calculateOrderTaxFromSnapshot } from '../constants/taxRates';
+import {
+  calculateCartPromotions,
+  getStoredOffers,
+  saveStoredOffers,
+} from '../utils/promotionsEngine';
 
 export interface CartContextType {
   currentBillItems: BillItem[];
@@ -35,6 +40,11 @@ export interface CartContextType {
   discountType: 'percentage' | 'flat';
   discountAmount: number;
   setDiscount: (amount: number, type?: 'percentage' | 'flat') => void;
+  offers: PromotionOffer[];
+  setOffers: React.Dispatch<React.SetStateAction<PromotionOffer[]>>;
+  appliedPromotions: AppliedPromotion[];
+  promotionsDiscount: number;
+  totalSavings: number;
   grandTotal: number;
   itemCount: number;
   taxRate: number;
@@ -147,6 +157,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({
     } catch {}
     return 'percentage';
   });
+
+  const [offers, setOffersState] = useState<PromotionOffer[]>(() => getStoredOffers());
+
+  const setOffers: React.Dispatch<React.SetStateAction<PromotionOffer[]>> = useCallback((val) => {
+    setOffersState((prev) => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      saveStoredOffers(next);
+      return next;
+    });
+  }, []);
 
   // Automatically persist active cart items to localStorage on every change
   useEffect(() => {
@@ -360,6 +380,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({
     return calculateOrderTaxFromSnapshot(currentBillItems);
   }, [currentBillItems]);
 
+  const { appliedPromotions, totalPromotionsDiscount: promotionsDiscount } = useMemo(() => {
+    return calculateCartPromotions(currentBillItems, offers);
+  }, [currentBillItems, offers]);
+
   const subtotal = useMemo(() => {
     return currentBillItems.reduce(
       (acc, item) => acc + item.unitPrice * item.quantity,
@@ -373,15 +397,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({
 
   const discountAmount = useMemo(() => {
     if (discount <= 0) return 0;
+    const baseForManualDiscount = Math.max(0, subtotal - promotionsDiscount);
     if (discountType === 'percentage') {
-      return Number(((subtotal * discount) / 100).toFixed(2));
+      return Number(((baseForManualDiscount * discount) / 100).toFixed(2));
     }
-    return Math.min(subtotal, discount);
-  }, [subtotal, discount, discountType]);
+    return Math.min(baseForManualDiscount, discount);
+  }, [subtotal, promotionsDiscount, discount, discountType]);
+
+  const totalSavings = useMemo(() => {
+    return Number((promotionsDiscount + discountAmount).toFixed(2));
+  }, [promotionsDiscount, discountAmount]);
 
   const grandTotal = useMemo(() => {
-    return Math.max(0, subtotal - discountAmount) + gst;
-  }, [subtotal, discountAmount, gst]);
+    return Math.max(0, subtotal - promotionsDiscount - discountAmount) + gst;
+  }, [subtotal, promotionsDiscount, discountAmount, gst]);
 
   const itemCount = useMemo(() => {
     return currentBillItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -404,6 +433,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       discountType,
       discountAmount,
       setDiscount,
+      offers,
+      setOffers,
+      appliedPromotions,
+      promotionsDiscount,
+      totalSavings,
       grandTotal,
       itemCount,
       taxRate,
@@ -422,6 +456,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({
       discountType,
       discountAmount,
       setDiscount,
+      offers,
+      setOffers,
+      appliedPromotions,
+      promotionsDiscount,
+      totalSavings,
       grandTotal,
       itemCount,
       taxRate,

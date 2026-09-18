@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight, RotateCcw } from 'lucide-react';
+import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useCart } from '../context/CartContext';
 
 export interface CartSummaryProps {
@@ -46,6 +47,9 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
     discountType = 'percentage',
     discountAmount = 0,
     setDiscount,
+    appliedPromotions = [],
+    promotionsDiscount = 0,
+    totalSavings = 0,
   } = useCart();
 
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
@@ -68,23 +72,24 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
     setIsDiscountModalOpen(false);
   };
 
-  const handleQuickPreset = (presetPercent: number) => {
+  const handleApplyPresetPercent = (presetPercent: number) => {
     setDiscount(presetPercent, 'percentage');
     setIsDiscountModalOpen(false);
   };
 
-  const handleRoundOff = () => {
-    const rawTotal = subtotal + taxAmount;
-    const roundedTotal = Math.floor(rawTotal);
-    const diff = Number((rawTotal - roundedTotal).toFixed(2));
+  const handleApplyRoundOff = () => {
+    // Round down to nearest whole currency unit
+    const currentGrandTotal = Math.max(0, subtotal - promotionsDiscount) + taxAmount;
+    const roundedDown = Math.floor(currentGrandTotal);
+    const diff = currentGrandTotal - roundedDown;
     if (diff > 0) {
       setDiscount(diff, 'flat');
     }
     setIsDiscountModalOpen(false);
   };
 
-  // Compute final net total including discount
-  const finalTotal = Math.max(0, subtotal - discountAmount) + taxAmount;
+  // Compute final net total including auto-promotions and manual discount
+  const finalTotal = Math.max(0, subtotal - promotionsDiscount - discountAmount) + taxAmount;
 
   return (
     <div className="px-3 py-2 sm:px-4 sm:py-3.5 bg-accent border-t border-border shrink-0 z-20 shadow-xs select-none relative">
@@ -113,6 +118,26 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
           </span>
         </div>
 
+        {/* Automatic Offers / Promotions Line (if triggered) */}
+        {promotionsDiscount > 0 &&
+          appliedPromotions.map((promo, idx) => (
+            <div
+              key={promo.offerId || idx}
+              className="flex justify-between items-center text-xs text-primary font-medium animate-in fade-in duration-150"
+            >
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Sparkles className="size-3 text-primary shrink-0" />
+                <span className="truncate">{promo.offerName}</span>
+                <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 shrink-0">
+                  {promo.offerType === 'COMBO' ? 'Combo' : 'BOGO'}
+                </Badge>
+              </span>
+              <span className="tabular-nums font-semibold shrink-0">
+                -{currencySymbol}{promo.discountAmount.toFixed(2)}
+              </span>
+            </div>
+          ))}
+
         {/* Discount Line (if applied) */}
         {discountAmount > 0 && (
           <div className="flex justify-between items-center text-xs text-emerald-600 dark:text-emerald-400 font-medium animate-in fade-in duration-150">
@@ -131,6 +156,14 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
             <span className="tabular-nums font-semibold">
               -{currencySymbol}{discountAmount.toFixed(2)}
             </span>
+          </div>
+        )}
+
+        {/* Total Savings Indicator */}
+        {totalSavings > 0 && (
+          <div className="flex justify-between items-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 pt-0.5 border-t border-dashed border-border/60">
+            <span>Total Savings</span>
+            <span className="tabular-nums">You saved {currencySymbol}{totalSavings.toFixed(2)}!</span>
           </div>
         )}
 

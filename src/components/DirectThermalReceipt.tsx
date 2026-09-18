@@ -200,6 +200,12 @@ export const DirectThermalReceipt: React.FC<DirectThermalReceiptProps> = ({
               <td className="w-[60%] text-left py-0.5">Subtotal:</td>
               <td className="w-[40%] text-right py-0.5">{currencySymbol}{displaySubtotal.toFixed(2)}</td>
             </tr>
+            {order.promotionsDiscount !== undefined && order.promotionsDiscount > 0 && (
+              <tr className="text-emerald-700 font-medium">
+                <td className="text-left py-0.5">Offer Savings:</td>
+                <td className="text-right py-0.5 font-bold">-{currencySymbol}{order.promotionsDiscount.toFixed(2)}</td>
+              </tr>
+            )}
             {order.discount > 0 && (
               <tr>
                 <td className="text-left py-0.5">Discount:</td>
@@ -537,6 +543,11 @@ export function generateThermalReceiptHtml(
           <td style="width: 60%; text-align: left; padding: 1.5px 0;">Subtotal:</td>
           <td style="width: 40%; text-align: right; padding: 1.5px 0;">${currencySymbol}${displaySubtotal.toFixed(2)}</td>
         </tr>
+        ${order.promotionsDiscount !== undefined && order.promotionsDiscount > 0 ? `
+        <tr style="color: #166534; font-weight: bold;">
+          <td style="text-align: left; padding: 1.5px 0;">Offer Savings:</td>
+          <td style="text-align: right; padding: 1.5px 0;">-${currencySymbol}${order.promotionsDiscount.toFixed(2)}</td>
+        </tr>` : ''}
         ${order.discount > 0 ? `
         <tr>
           <td style="text-align: left; padding: 1.5px 0;">Discount:</td>

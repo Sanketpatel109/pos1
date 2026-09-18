@@ -173,6 +173,8 @@ export interface Order {
   refundHistory?: RefundRecord[];
   isDuplicate?: boolean;
   splitPaymentMode?: string;
+  appliedPromotions?: AppliedPromotion[];
+  promotionsDiscount?: number;
 }
 
 export interface RefundRecord {
@@ -396,3 +398,35 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanInfo[] = [
     ],
   },
 ];
+
+export type OfferType = 'COMBO' | 'BOGO';
+
+export interface PromotionOffer {
+  id: string;
+  name: string;
+  type: OfferType;
+  enabled: boolean;
+  description?: string;
+  createdAt: string;
+
+  // COMBO DEALS (e.g. Coke + Drink + Sweet = ₹10)
+  comboItems?: {
+    productName: string;
+    quantity: number;
+  }[];
+  bundlePrice?: number;
+
+  // BOGO DEALS (e.g. Buy 1 Coke get 1 Free)
+  targetProductName?: string;
+  buyQuantity?: number;
+  getQuantity?: number;
+  discountPercent?: number; // 100 for 100% free, 50 for 50% off
+}
+
+export interface AppliedPromotion {
+  offerId: string;
+  offerName: string;
+  offerType: OfferType;
+  discountAmount: number;
+  description: string;
+}

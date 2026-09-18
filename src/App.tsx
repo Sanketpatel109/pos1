@@ -121,6 +121,7 @@ import { useCart } from './context/CartContext';
 import { DirectThermalReceipt, printDirectThermalReceipt, printCreditNoteVoucher } from './components/DirectThermalReceipt';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { StoreOnboardingModal } from './components/StoreOnboardingModal';
+import { OffersModal } from './components/OffersModal';
 import { soundbox } from './utils/soundbox';
 
 export default function App() {
@@ -467,7 +468,12 @@ export default function App() {
     discountType,
     discountAmount,
     setDiscount,
+    offers,
+    appliedPromotions,
+    promotionsDiscount,
   } = useCart();
+
+  const [isOffersModalOpen, setIsOffersModalOpen] = useState<boolean>(false);
 
   // Orders and Invoices History
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -1362,6 +1368,8 @@ export default function App() {
       upiRefNumber: data.upiRefNumber,
       isVerified: data.isVerified,
       verificationMethod: data.verificationMethod,
+      appliedPromotions: appliedPromotions.length > 0 ? appliedPromotions : undefined,
+      promotionsDiscount: promotionsDiscount > 0 ? promotionsDiscount : undefined,
     };
 
     // If payment was CREDIT or SPLIT with credit, update customer khata balance & loyalty points
@@ -2429,6 +2437,8 @@ export default function App() {
           onOpenStaffSwitch={() => setIsStaffSwitchModalOpen(true)}
           onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
           onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
+          onOpenOffers={() => setIsOffersModalOpen(true)}
+          activeOffersCount={offers?.filter((o) => o.enabled).length || 0}
           licenseStatus={licenseStatus}
           onOpenSubscription={() => setIsSubscriptionModalOpen(true)}
         />
@@ -2980,6 +2990,13 @@ export default function App() {
         onDeleteOrder={handleDeleteHeldOrder}
         onClearAllHeld={handleClearAllHeldOrders}
         onHoldCurrentCart={() => handleHoldBill(currentBillItems)}
+      />
+
+      {/* Store Offers & Promotions Engine Modal */}
+      <OffersModal
+        isOpen={isOffersModalOpen}
+        onClose={() => setIsOffersModalOpen(false)}
+        currencySymbol={shopSettings.currencySymbol}
       />
 
       {/* Fast Quick Refund Lookup & Barcode Scan Modal */}

@@ -6,6 +6,7 @@ import {
   Minimize2,
   Plus,
   Camera,
+  Tag,
 } from 'lucide-react';
 
 import { ActiveScreen, StaffRole } from '../types';
@@ -36,6 +37,8 @@ export interface HeaderProps {
   onOpenStaffSwitch?: () => void;
   onOpenPriceCheck?: () => void;
   onOpenHeldOrders?: () => void;
+  onOpenOffers?: () => void;
+  activeOffersCount?: number;
   licenseStatus?: LicenseStatus | null;
   onOpenSubscription?: () => void;
 }
@@ -52,6 +55,8 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onOpenStaffSwitch,
   onOpenHeldOrders,
+  onOpenOffers,
+  activeOffersCount = 0,
   onOpenCustomItem,
   onOpenScanner,
   licenseStatus,
@@ -212,6 +217,34 @@ export const Header: React.FC<HeaderProps> = ({
                 className="px-1.5 py-0 text-xs h-4 min-w-[16px] justify-center tabular-nums sm:hidden"
               >
                 {heldOrdersCount}
+              </Badge>
+            )}
+          </Button>
+        )}
+
+        {/* Deals & Offers Button */}
+        {onOpenOffers && (
+          <Button
+            id="btn-header-offers"
+            variant="outline"
+            size="sm"
+            onClick={onOpenOffers}
+            aria-label="Deals & Offers"
+            title={
+              activeOffersCount > 0
+                ? `${activeOffersCount} active store offer(s). Tap to view or configure.`
+                : 'Manage Offers & Combos'
+            }
+            className="h-9 px-2.5 gap-1.5 shrink-0 cursor-pointer text-xs font-semibold"
+          >
+            <Tag className="size-4 text-primary" />
+            <span className="hidden sm:inline">Offers</span>
+            {activeOffersCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="px-1.5 py-0 text-[10px] h-4 min-w-[16px] justify-center tabular-nums"
+              >
+                {activeOffersCount}
               </Badge>
             )}
           </Button>
