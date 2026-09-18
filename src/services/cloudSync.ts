@@ -214,7 +214,12 @@ export async function pullAllFromCloud(): Promise<Partial<CloudStoreData>> {
     const staffSnap = await getDocs(getTenantCollection('staff'));
     if (!staffSnap.empty) {
       const pulledStaff: StaffMember[] = [];
-      staffSnap.forEach((d) => pulledStaff.push(d.data() as StaffMember));
+      staffSnap.forEach((d) => {
+        const member = d.data() as StaffMember;
+        if (!(member.id === 'staff-cashier-1' && member.name === 'Cashier 1')) {
+          pulledStaff.push(member);
+        }
+      });
       result.staff = pulledStaff;
     }
 

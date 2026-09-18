@@ -103,6 +103,7 @@ import {
   liveSaveSettings,
   liveSaveStaff,
   liveUpdateStaffPin,
+  liveDeleteStaff,
   liveSaveHeldOrder,
   liveDeleteHeldOrder,
   liveClearAllHeldOrders,
@@ -269,7 +270,9 @@ export default function App() {
         try {
           const parsed = JSON.parse(savedStaff);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            resolvedStaff = parsed.map((s: any) => ({ ...s, role: normalizeRole(s.role) }));
+            resolvedStaff = parsed
+              .filter((s: any) => !(s.id === 'staff-cashier-1' && s.name === 'Cashier 1'))
+              .map((s: any) => ({ ...s, role: normalizeRole(s.role) }));
           }
         } catch {}
       }
@@ -284,14 +287,11 @@ export default function App() {
             pin: '1234',
             active: true,
           },
-          {
-            id: 'staff-cashier-1',
-            name: 'Cashier 1',
-            role: 'CASHIER',
-            pin: '0000',
-            active: true,
-          },
         ];
+        try {
+          localStorage.setItem(userStaffKey, JSON.stringify(resolvedStaff));
+        } catch {}
+      } else {
         try {
           localStorage.setItem(userStaffKey, JSON.stringify(resolvedStaff));
         } catch {}
@@ -434,7 +434,10 @@ export default function App() {
       try {
         const parsed: StaffMember[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((s) => ({ ...s, role: normalizeRole(s.role) }));
+          const clean = parsed
+            .filter((s) => !(s.id === 'staff-cashier-1' && s.name === 'Cashier 1'))
+            .map((s) => ({ ...s, role: normalizeRole(s.role) }));
+          if (clean.length > 0) return clean;
         }
       } catch {}
     }
@@ -445,13 +448,6 @@ export default function App() {
         name: `${ownerName} (Owner)`,
         role: 'OWNER',
         pin: '1234',
-        active: true,
-      },
-      {
-        id: 'staff-cashier-1',
-        name: 'Cashier 1',
-        role: 'CASHIER',
-        pin: '0000',
         active: true,
       },
     ];
@@ -944,11 +940,16 @@ export default function App() {
 
     const unsubStaff = listenToLiveStaff(
       (staff) => {
-        if (staff.length > 0) {
-          setStaffList(staff);
+        const dummy = staff.find((s) => s.id === 'staff-cashier-1' && s.name === 'Cashier 1');
+        if (dummy) {
+          liveDeleteStaff('staff-cashier-1').catch(() => {});
+        }
+        const cleanStaff = staff.filter((s) => !(s.id === 'staff-cashier-1' && s.name === 'Cashier 1'));
+        if (cleanStaff.length > 0) {
+          setStaffList(cleanStaff);
           if (currentUser?.uid) {
             try {
-              localStorage.setItem(`monopos_staff_list_${currentUser.uid}`, JSON.stringify(staff));
+              localStorage.setItem(`monopos_staff_list_${currentUser.uid}`, JSON.stringify(cleanStaff));
             } catch {}
           }
         }
@@ -1032,13 +1033,6 @@ export default function App() {
         pin: pinToSet,
         active: true,
       },
-      {
-        id: 'staff-cashier-1',
-        name: 'Cashier 1',
-        role: 'CASHIER',
-        pin: '0000',
-        active: true,
-      },
     ];
     setStaffList(updatedStaff);
     setActiveStaffId('staff-owner');
@@ -1046,7 +1040,7 @@ export default function App() {
       localStorage.setItem(`monopos_staff_list_${currentUser.uid}`, JSON.stringify(updatedStaff));
       localStorage.setItem(`monopos_active_staff_id_${currentUser.uid}`, 'staff-owner');
       liveSaveStaff(updatedStaff[0]).catch(() => {});
-      liveSaveStaff(updatedStaff[1]).catch(() => {});
+      liveDeleteStaff('staff-cashier-1').catch(() => {});
     }
 
     // Completely clean store: 0 demo products
@@ -2096,6 +2090,39 @@ export default function App() {
     liveSaveStaff(newMember).catch((err) => console.warn('Live staff save:', err));
   };
 
+  const handleDeleteStaff = async (staffId: string) => {
+    playSfx('tap');
+    const target = staffList.find((s) => s.id === staffId);
+    if (!target || normalizeRole(target.role) === 'OWNER') return;
+
+    setStaffList((prev) => {
+      const updated = prev.filter((s) => s.id !== staffId);
+      if (currentUser?.uid) {
+        try {
+          localStorage.setItem(`monopos_staff_list_${currentUser.uid}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+
+    if (activeStaffId === staffId) {
+      const owner = staffList.find((s) => normalizeRole(s.role) === 'OWNER') || staffList[0];
+      const fallbackId = owner ? owner.id : 'staff-owner';
+      setActiveStaffId(fallbackId);
+      if (currentUser?.uid) {
+        try {
+          localStorage.setItem(`monopos_active_staff_id_${currentUser.uid}`, fallbackId);
+        } catch {}
+      }
+    }
+
+    try {
+      await liveDeleteStaff(staffId);
+    } catch (err) {
+      console.warn('Live staff delete:', err);
+    }
+  };
+
   const handleUpdatePin = async (staffId: string, newPin: string) => {
     playSfx('tap');
     setStaffList((prev) => {
@@ -2674,6 +2701,7 @@ export default function App() {
               onSelectStaff={handleSwitchStaff}
               onAddStaff={handleAddStaff}
               onUpdatePin={handleUpdatePin}
+              onDeleteStaff={handleDeleteStaff}
               onUpdatePermissions={handleUpdatePermissions}
             />
           )}

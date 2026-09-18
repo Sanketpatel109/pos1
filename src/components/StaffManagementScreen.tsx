@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, KeyRound, Plus, Check, X, Lock, ShieldCheck, UserCheck, Settings2 } from 'lucide-react';
+import { Shield, KeyRound, Plus, Check, X, Lock, ShieldCheck, UserCheck, Settings2, Trash2 } from 'lucide-react';
 import { StaffMember, StaffRole, StorePermissions, DEFAULT_STORE_PERMISSIONS } from '../types';
 import { normalizeRole, ROLE_DEFINITIONS } from '../utils/permissions';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ interface StaffManagementScreenProps {
   onSelectStaff: (staffId: string) => void;
   onAddStaff: (staff: Omit<StaffMember, 'id'>) => void;
   onUpdatePin: (staffId: string, newPin: string) => void;
+  onDeleteStaff?: (staffId: string) => void;
   onUpdatePermissions?: (newPermissions: StorePermissions) => void;
 }
 
@@ -25,6 +26,7 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
   onSelectStaff,
   onAddStaff,
   onUpdatePin,
+  onDeleteStaff,
   onUpdatePermissions,
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -173,18 +175,35 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
                         </div>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedStaffForPin(staff);
-                          setIsPinModalOpen(true);
-                        }}
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        title="Change 4-digit PIN"
-                      >
-                        <KeyRound className="w-3.5 h-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-0.5">
+                        {onDeleteStaff && normRole !== 'OWNER' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to remove operator "${staff.name}"?`)) {
+                                onDeleteStaff(staff.id);
+                              }
+                            }}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                            title={`Delete ${staff.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedStaffForPin(staff);
+                            setIsPinModalOpen(true);
+                          }}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+                          title="Change 4-digit PIN"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
 
                     <p className="text-[11px] text-muted-foreground mt-2 line-clamp-2">

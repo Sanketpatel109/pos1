@@ -848,6 +848,23 @@ export async function liveUpdateStaffPin(staffId: string, newPin: string): Promi
 }
 
 /**
+ * Live Delete Staff Member
+ */
+export async function liveDeleteStaff(staffId: string): Promise<void> {
+  try {
+    await deleteDoc(getTenantDoc('staff', staffId));
+    updateSyncState({
+      lastSyncAt: new Date(),
+      lastEvent: `Deleted staff member ${staffId}`,
+    });
+  } catch (err) {
+    handleFirestoreError(err, 'delete', `staff/${staffId}`);
+    throw err;
+  }
+}
+
+
+/**
  * Live Save / Park Held Order
  */
 export async function liveSaveHeldOrder(order: Order): Promise<void> {
