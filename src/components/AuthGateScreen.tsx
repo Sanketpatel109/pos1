@@ -79,15 +79,12 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
     }
   };
 
-  const isSafariOrIos = (): boolean => {
-    if (typeof navigator === 'undefined') return false;
-    const ua = navigator.userAgent;
-    const isIos =
-      /iPad|iPhone|iPod/.test(ua) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari =
-      /Safari/i.test(ua) && !/Chrome|CriOS|Android|Edg|OPR/i.test(ua);
-    return isSafari || isIos;
+  const isStandaloneMode = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return (
+      ('standalone' in window.navigator && (window.navigator as any).standalone === true) ||
+      window.matchMedia('(display-mode: standalone)').matches
+    );
   };
 
   const handleGoogleSignIn = async () => {
@@ -96,14 +93,8 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       setError(null);
       setIsUnauthorizedDomain(false);
 
-      // On Safari & iOS, third-party cookies and popup cross-window storage
-      // are blocked by Intelligent Tracking Prevention (ITP), causing a blank white popup.
-      // Seamlessly use full-page redirect for a smooth native login experience.
-      if (isSafariOrIos()) {
-        await handleGoogleRedirectSignIn();
-        return;
-      }
-
+      // Attempt popup sign-in across all modern browsers and standalone PWAs.
+      // Same-origin authDomain prevents ITP cookie issues.
       const result = await signInWithPopup(auth, googleProvider);
       onAuthenticated(result.user);
     } catch (err: any) {
@@ -111,18 +102,25 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       if (err.code === 'auth/unauthorized-domain') {
         setIsUnauthorizedDomain(true);
         setError('Domain unauthorized in Firebase: "localhost" is not added to Authorized Domains in your Firebase console.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError(null);
       } else if (
         err.code === 'auth/popup-blocked' ||
         err.code === 'auth/cancelled-popup-request' ||
-        err.code === 'auth/internal-error'
+        err.code === 'auth/internal-error' ||
+        err.code === 'auth/operation-not-supported-in-this-environment'
       ) {
-        // Automatically fallback to redirect if popup was blocked
-        await handleGoogleRedirectSignIn();
-        return;
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setError(null);
+        // In iOS Standalone PWA (Home Screen mode), signInWithRedirect causes WebKit
+        // to freeze on a blank white /__/auth/handler screen. Do NOT redirect in standalone mode!
+        if (isStandaloneMode()) {
+          setError('Google popup was blocked in Home Screen mode. Enter your email above or use Quick Demo Mode below.');
+        } else {
+          // Regular browser tab: safe to fallback to redirect
+          await handleGoogleRedirectSignIn();
+          return;
+        }
       } else {
-        setError(err.message || 'Google sign-in failed. Please try again or use redirect.');
+        setError(err.message || 'Google sign-in failed. Please try again or use email login.');
       }
     } finally {
       setLoading(false);
@@ -395,17 +393,39 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
               </svg>
               Continue with Google
             </Button>
-            <div className="flex items-center justify-center text-[11px] text-muted-foreground gap-1">
-              <span>Popup blank or blocked?</span>
-              <button
-                type="button"
-                onClick={handleGoogleRedirectSignIn}
-                disabled={loading}
-                className="underline underline-offset-2 hover:text-foreground font-medium cursor-pointer"
-              >
-                Sign in with redirect
-              </button>
-            </div>
+            {!isStandaloneMode() ? (
+              <div className="flex items-center justify-center text-[11px] text-muted-foreground gap-1">
+                <span>Popup blocked?</span>
+                <button
+                  type="button"
+                  onClick={handleGoogleRedirectSignIn}
+                  disabled={loading}
+                  className="underline underline-offset-2 hover:text-foreground font-medium cursor-pointer"
+                >
+                  Sign in with redirect
+                </button>
+              </div>
+            ) : (
+              <p className="text-[11px] text-center text-muted-foreground">
+                Installed Web App Mode
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-center pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                onAuthenticated({
+                  uid: 'local_admin',
+                  email: 'admin@monopos.local',
+                  displayName: 'Store Manager (Demo)',
+                });
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer font-medium transition-colors"
+            >
+              Continue in Demo Mode (No Sign-In Required) →
+            </button>
           </div>
 
           {/* Feedback Alerts using standard shadcn tokens */}
