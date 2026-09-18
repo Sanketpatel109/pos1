@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const currentRole = normalizeRole(activeStaffRole);
   const roleMeta = ROLE_DEFINITIONS[currentRole];
-  const operatorDisplayName = activeStaffName || 'Anand';
+  const operatorDisplayName = activeStaffName || 'Staff';
 
   return (
     <header className="flex items-center justify-between gap-1 sm:gap-2 px-2.5 sm:px-3 py-1.5 h-14 w-full bg-card border-b border-border sticky top-0 z-40 shrink-0 select-none">
@@ -127,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-tight shrink-0 shadow-xs">
-              {storeName ? storeName.charAt(0).toUpperCase() : 'A'}
+              {storeName ? storeName.charAt(0).toUpperCase() : 'M'}
             </div>
           )}
           <div className="flex items-center gap-1.5 min-w-0 truncate">
