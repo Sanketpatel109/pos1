@@ -39,14 +39,14 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
     it('Store Owner should have unrestricted access to all screens', () => {
       expect(canAccessScreen('OWNER', 'staff-management')).toBe(true);
       expect(canAccessScreen('OWNER', 'reports')).toBe(true);
-      expect(canAccessScreen('OWNER', 'inventory')).toBe(true);
+      expect(canAccessScreen('OWNER', 'categories-products')).toBe(true);
       expect(canAccessScreen('OWNER', 'print-settings')).toBe(true);
       expect(canAccessScreen('OWNER', 'quick-bill')).toBe(true);
     });
 
     it('Store Manager should access operational screens but NOT staff-management PIN settings', () => {
       expect(canAccessScreen('MANAGER', 'reports')).toBe(true);
-      expect(canAccessScreen('MANAGER', 'inventory')).toBe(true);
+      expect(canAccessScreen('MANAGER', 'categories-products')).toBe(true);
       expect(canAccessScreen('MANAGER', 'quick-bill')).toBe(true);
       expect(canAccessScreen('MANAGER', 'staff-management')).toBe(false);
     });
@@ -54,7 +54,7 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
     it('Cashier should be locked out of reports, inventory, and staff management', () => {
       // Locked screens
       expect(canAccessScreen('CASHIER', 'reports')).toBe(false);
-      expect(canAccessScreen('CASHIER', 'inventory')).toBe(false);
+      expect(canAccessScreen('CASHIER', 'categories-products')).toBe(false);
       expect(canAccessScreen('CASHIER', 'staff-management')).toBe(false);
       expect(canAccessScreen('CASHIER', 'print-settings')).toBe(false);
 
@@ -69,7 +69,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
   describe('Auditing and Cost Price Permissions', () => {
     const mockPermissions: StorePermissions = {
       staff: {
-        allowDiscount: false,
         allowPriceOverride: false,
         allowKhata: false,
         allowStockInward: true,
@@ -77,12 +76,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
       manager: {
         viewCostPrice: false,
         allowBillVoid: true,
-        allowRegisterReset: false,
-      },
-      audit: {
-        requirePinOnVoid: true,
-        requirePinOnPriceChange: true,
-        notifyOwnerOnVoid: false,
       },
     };
 
@@ -115,13 +108,11 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
     it('Cashier Khata and Price Override flags should follow store policy', () => {
       const restrictedPermissions: StorePermissions = {
         staff: {
-          allowDiscount: false,
           allowPriceOverride: false,
           allowKhata: false,
           allowStockInward: false,
         },
-        manager: { viewCostPrice: true, allowBillVoid: true, allowRegisterReset: true },
-        audit: { requirePinOnVoid: true, requirePinOnPriceChange: true, notifyOwnerOnVoid: false },
+        manager: { viewCostPrice: true, allowBillVoid: true },
       };
 
       expect(canStaffSellKhata('CASHIER', restrictedPermissions)).toBe(false);
@@ -131,7 +122,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
       const openPermissions: StorePermissions = {
         ...restrictedPermissions,
         staff: {
-          allowDiscount: true,
           allowPriceOverride: true,
           allowKhata: true,
           allowStockInward: true,
@@ -153,7 +143,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
         pin: '1234',
         active: true,
         phone: '9999999999',
-        createdAt: '',
       },
       {
         id: '2',
@@ -162,7 +151,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
         pin: '9999',
         active: false,
         phone: '8888888888',
-        createdAt: '',
       },
       {
         id: '3',
@@ -171,7 +159,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
         pin: '5678',
         active: true,
         phone: '7777777777',
-        createdAt: '',
       },
       {
         id: '4',
@@ -180,7 +167,6 @@ describe('Role-Based Access Control (RBAC) & Permissions Engine', () => {
         pin: '0000',
         active: true,
         phone: '6666666666',
-        createdAt: '',
       },
     ];
 

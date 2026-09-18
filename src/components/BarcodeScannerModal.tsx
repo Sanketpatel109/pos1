@@ -153,6 +153,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>(() =>
     typeof window !== 'undefined' && isMobileDevice() ? 'environment' : 'user'
   );
+  const [torchOn, setTorchOn] = useState<boolean>(false);
+  const [torchSupported, setTorchSupported] = useState<boolean>(false);
   const [zoomSupported, setZoomSupported] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(() =>
     typeof window !== 'undefined' ? getDefaultZoomForDevice() : 1

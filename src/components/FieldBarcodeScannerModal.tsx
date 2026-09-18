@@ -68,6 +68,7 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
   const [cameraErrorType, setCameraErrorType] = useState<string | null>(null);
   const [cameraFixInstructions, setCameraFixInstructions] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
   const [manualCode, setManualCode] = useState<string>('');
   const [showFallbackPanel, setShowFallbackPanel] = useState<boolean>(false);
   const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
