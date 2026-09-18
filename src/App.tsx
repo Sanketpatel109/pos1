@@ -2653,6 +2653,10 @@ export default function App() {
           setIsSidebarOpen(false);
           setIsSubscriptionModalOpen(true);
         }}
+        onOpenOffers={() => {
+          setIsSidebarOpen(false);
+          setIsOffersModalOpen(true);
+        }}
         onSignOut={handleSignOut}
         licenseStatus={licenseStatus}
       />
@@ -2997,6 +3001,8 @@ export default function App() {
         isOpen={isOffersModalOpen}
         onClose={() => setIsOffersModalOpen(false)}
         currencySymbol={shopSettings.currencySymbol}
+        catalog={catalog}
+        categories={categories}
       />
 
       {/* Fast Quick Refund Lookup & Barcode Scan Modal */}

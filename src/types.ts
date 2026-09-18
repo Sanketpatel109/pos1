@@ -399,7 +399,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanInfo[] = [
   },
 ];
 
-export type OfferType = 'COMBO' | 'BOGO';
+export type OfferType = 'COMBO' | 'BOGO' | 'MIN_SPEND' | 'CATEGORY';
 
 export interface PromotionOffer {
   id: string;
@@ -409,18 +409,30 @@ export interface PromotionOffer {
   description?: string;
   createdAt: string;
 
-  // COMBO DEALS (e.g. Coke + Drink + Sweet = ₹10)
+  // COMBO DEALS (e.g. French Fries + Cold Coffee = ₹80)
   comboItems?: {
+    productId?: string;
     productName: string;
     quantity: number;
+    price?: number;
   }[];
   bundlePrice?: number;
 
-  // BOGO DEALS (e.g. Buy 1 Coke get 1 Free)
+  // BOGO DEALS (e.g. Buy 1 Samosa get 1 Free)
+  targetProductId?: string;
   targetProductName?: string;
   buyQuantity?: number;
   getQuantity?: number;
   discountPercent?: number; // 100 for 100% free, 50 for 50% off
+
+  // MIN_SPEND DEALS (e.g. Spend ₹500 get ₹50 off / 10% off)
+  minSpendAmount?: number;
+  discountType?: 'flat' | 'percentage';
+  discountValue?: number;
+
+  // CATEGORY DEALS (e.g. 15% off on all Beverages)
+  targetCategory?: string;
+  categoryDiscountPercent?: number;
 }
 
 export interface AppliedPromotion {

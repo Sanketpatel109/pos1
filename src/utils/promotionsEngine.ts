@@ -7,30 +7,40 @@ export interface PromotionCalculationResult {
 
 export const DEFAULT_PROMOTION_OFFERS: PromotionOffer[] = [
   {
-    id: 'offer-coke-combo-default',
-    name: 'Coke, Drink & Sweet Combo',
+    id: 'offer-fries-coffee-combo',
+    name: 'Fries & Cold Coffee Combo',
     type: 'COMBO',
     enabled: true,
-    description: 'Get Coke + Drink + Sweet combo for only ₹10.00',
+    description: 'French Fries + Cold Coffee bundle for only ₹80.00 (Save ₹15)',
     createdAt: new Date().toISOString(),
     comboItems: [
-      { productName: 'coke', quantity: 1 },
-      { productName: 'drink', quantity: 1 },
-      { productName: 'sweet', quantity: 1 },
+      { productName: 'French Fries', quantity: 1, price: 50 },
+      { productName: 'Cold Coffee', quantity: 1, price: 45 },
     ],
-    bundlePrice: 10.0,
+    bundlePrice: 80.0,
   },
   {
-    id: 'offer-coke-bogo-default',
-    name: 'Buy 1 Get 1 Free on Coke',
+    id: 'offer-samosa-bogo',
+    name: 'Buy 2 Samosa, Get 1 Free',
     type: 'BOGO',
     enabled: true,
-    description: 'Buy 1 Coke, get 1 Coke 100% FREE',
+    description: 'Buy 2 Samosa, get 3rd Samosa 100% FREE',
     createdAt: new Date().toISOString(),
-    targetProductName: 'coke',
-    buyQuantity: 1,
+    targetProductName: 'Samosa',
+    buyQuantity: 2,
     getQuantity: 1,
     discountPercent: 100,
+  },
+  {
+    id: 'offer-min-spend-500',
+    name: 'Spend ₹500, Get ₹50 OFF',
+    type: 'MIN_SPEND',
+    enabled: true,
+    description: 'Instant ₹50 discount on all orders of ₹500 or more',
+    createdAt: new Date().toISOString(),
+    minSpendAmount: 500,
+    discountType: 'flat',
+    discountValue: 50,
   },
 ];
 
@@ -59,6 +69,24 @@ export function saveStoredOffers(offers: PromotionOffer[]): void {
   }
 }
 
+function itemMatches(
+  cartItem: BillItem,
+  targetProductId?: string,
+  targetProductName?: string
+): boolean {
+  if (targetProductId) {
+    if (cartItem.itemId && cartItem.itemId === targetProductId) return true;
+    if (cartItem.id === targetProductId) return true;
+  }
+  if (targetProductName) {
+    const query = targetProductName.toLowerCase().trim();
+    if (!query) return false;
+    const itemName = cartItem.name.toLowerCase();
+    return itemName.includes(query) || query.includes(itemName);
+  }
+  return false;
+}
+
 /**
  * Evaluates active promotion offers against current cart items in real time.
  */
@@ -84,10 +112,14 @@ export function calculateCartPromotions(
     itemQuantities[item.id] = (itemQuantities[item.id] || 0) + item.quantity;
   });
 
+  const cartSubtotal = cartItems.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0
+  );
+
   for (const offer of activeOffers) {
+    // 1. COMBO / BUNDLE DEALS
     if (offer.type === 'COMBO' && offer.comboItems && offer.comboItems.length > 0) {
-      // 1. Evaluate Combo / Bundle Deals
-      // Find candidate items for each required part of the combo
       const matchFoundForSlots: {
         requiredQty: number;
         matchingCartItems: { id: string; unitPrice: number; name: string }[];
@@ -96,10 +128,9 @@ export function calculateCartPromotions(
       let canFormAtLeastOneCombo = true;
 
       for (const reqItem of offer.comboItems) {
-        const query = reqItem.productName.toLowerCase().trim();
         const matches = cartItems.filter(
           (c) =>
-            c.name.toLowerCase().includes(query) &&
+            itemMatches(c, reqItem.productId, reqItem.productName) &&
             (itemQuantities[c.id] || 0) > 0
         );
 
@@ -120,7 +151,6 @@ export function calculateCartPromotions(
       }
 
       if (canFormAtLeastOneCombo && matchFoundForSlots.length === offer.comboItems.length) {
-        // Calculate max sets
         let maxSets = Infinity;
         for (let i = 0; i < offer.comboItems.length; i++) {
           const req = offer.comboItems[i];
@@ -134,13 +164,11 @@ export function calculateCartPromotions(
         }
 
         if (maxSets > 0 && maxSets !== Infinity) {
-          // Calculate standard price for 1 combo set
           let standardPricePerSet = 0;
           for (let i = 0; i < offer.comboItems.length; i++) {
             const req = offer.comboItems[i];
             const slot = matchFoundForSlots[i];
-            const avgUnitPrice =
-              slot.matchingCartItems[0]?.unitPrice || 0;
+            const avgUnitPrice = slot.matchingCartItems[0]?.unitPrice || req.price || 0;
             standardPricePerSet += avgUnitPrice * req.quantity;
           }
 
@@ -169,24 +197,24 @@ export function calculateCartPromotions(
               offerName: offer.name,
               offerType: 'COMBO',
               discountAmount: totalDiscount,
-              description: `${maxSets}x combo set${maxSets > 1 ? 's' : ''} applied at ₹${bundlePrice.toFixed(2)} each (saved ₹${totalDiscount.toFixed(2)})`,
+              description: `${maxSets}x Combo Bundle applied at ₹${bundlePrice.toFixed(2)} each (saved ₹${totalDiscount.toFixed(2)})`,
             });
             totalPromotionsDiscount += totalDiscount;
           }
         }
       }
-    } else if (offer.type === 'BOGO' && offer.targetProductName) {
-      // 2. Evaluate Buy X Get Y Free (BOGO)
-      const targetQuery = offer.targetProductName.toLowerCase().trim();
+    }
+
+    // 2. BUY X GET Y FREE (BOGO)
+    else if (offer.type === 'BOGO' && (offer.targetProductId || offer.targetProductName)) {
       const buyQty = Math.max(1, offer.buyQuantity || 1);
       const getQty = Math.max(1, offer.getQuantity || 1);
       const discountPct = (offer.discountPercent ?? 100) / 100;
       const cycleSize = buyQty + getQty; // e.g. Buy 1 Get 1 -> 2 units
 
-      // Find matching items
       const matchingItems = cartItems.filter(
         (c) =>
-          c.name.toLowerCase().includes(targetQuery) &&
+          itemMatches(c, offer.targetProductId, offer.targetProductName) &&
           (itemQuantities[c.id] || 0) > 0
       );
 
@@ -212,6 +240,67 @@ export function calculateCartPromotions(
             totalPromotionsDiscount += discountForThisItem;
           }
         }
+      }
+    }
+
+    // 3. MINIMUM ORDER SPEND DISCOUNT
+    else if (offer.type === 'MIN_SPEND' && offer.minSpendAmount && offer.minSpendAmount > 0) {
+      if (cartSubtotal >= offer.minSpendAmount) {
+        let discount = 0;
+        if (offer.discountType === 'percentage' && offer.discountValue) {
+          discount = Number(((cartSubtotal * offer.discountValue) / 100).toFixed(2));
+        } else if (offer.discountValue) {
+          discount = Number(Math.min(cartSubtotal, offer.discountValue).toFixed(2));
+        }
+
+        if (discount > 0) {
+          appliedPromotions.push({
+            offerId: offer.id,
+            offerName: offer.name,
+            offerType: 'MIN_SPEND',
+            discountAmount: discount,
+            description: `Order over ₹${offer.minSpendAmount.toFixed(2)} qualifying discount (saved ₹${discount.toFixed(2)})`,
+          });
+          totalPromotionsDiscount += discount;
+        }
+      }
+    }
+
+    // 4. CATEGORY DISCOUNT
+    else if (offer.type === 'CATEGORY' && offer.targetCategory && offer.categoryDiscountPercent) {
+      const targetCat = offer.targetCategory.toLowerCase().trim();
+      const pct = (offer.categoryDiscountPercent || 0) / 100;
+
+      const matchingCategoryItems = cartItems.filter(
+        (c) =>
+          c.category &&
+          c.category.toLowerCase().trim() === targetCat &&
+          (itemQuantities[c.id] || 0) > 0
+      );
+
+      let categoryTotalDiscount = 0;
+      let eligibleItemsCount = 0;
+
+      for (const item of matchingCategoryItems) {
+        const avail = itemQuantities[item.id] || 0;
+        if (avail > 0) {
+          const discountOnItem = Number((avail * item.unitPrice * pct).toFixed(2));
+          categoryTotalDiscount += discountOnItem;
+          eligibleItemsCount += avail;
+          itemQuantities[item.id] = 0; // consumed
+        }
+      }
+
+      if (categoryTotalDiscount > 0) {
+        const roundedDiscount = Number(categoryTotalDiscount.toFixed(2));
+        appliedPromotions.push({
+          offerId: offer.id,
+          offerName: offer.name,
+          offerType: 'CATEGORY',
+          discountAmount: roundedDiscount,
+          description: `${offer.categoryDiscountPercent}% OFF on ${offer.targetCategory} (${eligibleItemsCount} items, saved ₹${roundedDiscount.toFixed(2)})`,
+        });
+        totalPromotionsDiscount += roundedDiscount;
       }
     }
   }

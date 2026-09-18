@@ -16,6 +16,7 @@ import {
   LogOut,
   Sparkles,
   Barcode,
+  Tag,
 } from 'lucide-react';
 import { ActiveScreen, ShopSettings, StaffRole } from '../types';
 import { User } from '../firebase';
@@ -47,12 +48,14 @@ export interface NavigationDrawerProps {
   onOpenPermissionsModal?: () => void;
   onOpenZReport?: () => void;
   onOpenSubscription?: () => void;
+  onOpenOffers?: () => void;
+  offersCount?: number;
   onSignOut?: () => void;
   licenseStatus?: LicenseStatus | null;
 }
 
 interface MenuItem {
-  id: ActiveScreen;
+  id: ActiveScreen | 'offers';
   label: string;
   description: string;
   icon: React.ElementType;
@@ -76,6 +79,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onRequestManagerOverride,
   onOpenStaffSwitch,
   onOpenSubscription,
+  onOpenOffers,
+  offersCount,
   onSignOut,
   licenseStatus,
 }) => {
@@ -122,6 +127,12 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           label: 'Products & Stock Inventory',
           description: 'Manage items, barcodes & stock levels',
           icon: Package,
+        },
+        {
+          id: 'offers',
+          label: 'Offers & Promotions',
+          description: 'Combo bundles, BOGO & cart deals',
+          icon: Tag,
         },
         {
           id: 'barcode-generator',
@@ -247,21 +258,31 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
+                  const isOffersItem = item.id === 'offers';
                   const isActive = activeScreen === item.id;
-                  const isAccessible = canAccessScreen(currentRole, item.id);
-                  const reqRole = getRequiredRoleForScreen(item.id);
+                  const isAccessible = isOffersItem
+                    ? true
+                    : canAccessScreen(currentRole, item.id as ActiveScreen);
+                  const reqRole = isOffersItem
+                    ? ''
+                    : getRequiredRoleForScreen(item.id as ActiveScreen);
 
                   return (
                     <button
                       key={item.id}
                       id={`nav-item-${item.id}`}
                       onClick={() => {
+                        if (isOffersItem) {
+                          onClose();
+                          if (onOpenOffers) onOpenOffers();
+                          return;
+                        }
                         if (isAccessible) {
-                          onSelectScreen(item.id);
+                          onSelectScreen(item.id as ActiveScreen);
                           onClose();
                         } else if (onRequestManagerOverride) {
                           onClose();
-                          onRequestManagerOverride(item.id);
+                          onRequestManagerOverride(item.id as ActiveScreen);
                         }
                       }}
                       className={`w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left cursor-pointer ${
@@ -292,6 +313,11 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                           >
                             {item.label}
                           </p>
+                          {isOffersItem && typeof offersCount === 'number' && offersCount > 0 && (
+                            <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                              {offersCount} Active
+                            </span>
+                          )}
                           {!isAccessible && (
                             <span className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-amber-500/30">
                               <Lock className="w-2.5 h-2.5" />
