@@ -121,11 +121,11 @@ export function detectPackagingTier(
     detectedUnit = 'bottle';
   } else if (/can\b/i.test(combined)) {
     detectedUnit = 'can';
-  } else if (/ml\b/i.test(combined)) {
+  } else if (/(?:\b|\d)ml\b/i.test(combined)) {
     detectedUnit = 'ml';
-  } else if (/\bkg\b/i.test(combined)) {
+  } else if (/(?:\b|\d)kg\b/i.test(combined)) {
     detectedUnit = 'kg';
-  } else if (/\bg\b/i.test(combined)) {
+  } else if (/(?:\b|\d)g\b/i.test(combined)) {
     detectedUnit = 'g';
   }
 
