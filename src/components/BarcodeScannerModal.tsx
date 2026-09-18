@@ -149,10 +149,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     actionTaken: string;
   } | null>(null);
 
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [torchOn, setTorchOn] = useState<boolean>(false);
-  const [torchSupported, setTorchSupported] = useState<boolean>(false);
   const isMobile = typeof window !== 'undefined' && isMobileDevice();
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>(() =>
+    typeof window !== 'undefined' && isMobileDevice() ? 'environment' : 'user'
+  );
   const [zoomSupported, setZoomSupported] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(() =>
     typeof window !== 'undefined' ? getDefaultZoomForDevice() : 1
@@ -339,7 +339,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     setCameraErrorType(null);
     setCameraFixInstructions(null);
     setTorchOn(false);
-    const modeToUse = targetFacing || facingMode;
+    const defaultFacing = isMobile ? 'environment' : 'user';
+    const modeToUse = targetFacing || facingMode || defaultFacing;
 
     try {
       // Step 1: Check getUserMedia support
@@ -385,19 +386,23 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         return;
       }
 
-      // Helper: create a fresh Html5Qrcode instance with native BarcodeDetector enabled
+      // Helper: create a fresh Html5Qrcode instance with ZXing engine for full 1D retail barcode decoding
       const createScanner = () => new Html5Qrcode(scannerContainerId, {
         formatsToSupport: SUPPORTED_FORMATS,
         verbose: false,
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: false,
         },
       });
 
-      // 15 FPS: optimal balance of smooth detection and low CPU/battery consumption on mobile
-      // Omit qrbox to scan full frame without cropping distortion or dimension crashes
+      // Wide rectangular scanning box optimized for 1D retail barcodes (EAN-13, Code 128, UPC)
       const scanConfig = {
-        fps: 15,
+        fps: isMobile ? 15 : 20,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const w = Math.floor(Math.min(viewfinderWidth * 0.85, 360));
+          const h = Math.floor(Math.min(viewfinderHeight * 0.55, 180));
+          return { width: Math.max(w, 220), height: Math.max(h, 110) };
+        },
       };
 
       const onScanSuccess = (decodedText: string) => {
@@ -419,26 +424,53 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       let startedSuccessfully = false;
       let activeScanner: Html5Qrcode | null = null;
 
+      // Attempt 0: On laptops/desktops, directly select the webcam device for instant 1-shot start
+      if (!isMobile) {
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            const preferredCam =
+              cameras.find((c) => /facetime|front|user|integrated|webcam/i.test(c.label)) ||
+              cameras[0];
+            activeScanner = createScanner();
+            await activeScanner.start(
+              preferredCam.id,
+              scanConfig,
+              onScanSuccess,
+              onScanFailure
+            );
+            setFacingMode('user');
+            startedSuccessfully = true;
+          }
+        } catch (desktopErr) {
+          console.warn('Desktop camera direct selection fallback:', desktopErr);
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+        }
+      }
+
       // Attempt 1: HD resolution with requested facing mode & continuous autofocus
-      try {
-        activeScanner = createScanner();
-        await activeScanner.start(
-          {
-            facingMode: modeToUse,
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 },
-          },
-          scanConfig,
-          onScanSuccess,
-          onScanFailure
-        );
-        setFacingMode(modeToUse);
-        startedSuccessfully = true;
-      } catch (err1) {
-        console.warn(`Camera HD ${modeToUse} failed:`, err1);
-        await destroyScanner(activeScanner);
-        activeScanner = null;
-        await new Promise((r) => setTimeout(r, 200));
+      if (!startedSuccessfully) {
+        try {
+          activeScanner = createScanner();
+          await activeScanner.start(
+            {
+              facingMode: modeToUse,
+              width: { ideal: 1280, min: 640 },
+              height: { ideal: 720, min: 480 },
+            },
+            scanConfig,
+            onScanSuccess,
+            onScanFailure
+          );
+          setFacingMode(modeToUse);
+          startedSuccessfully = true;
+        } catch (err1) {
+          console.warn(`Camera HD ${modeToUse} failed:`, err1);
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+          await new Promise((r) => setTimeout(r, 200));
+        }
       }
 
       // Attempt 2: Simple facingMode constraint (fallback for Chrome on iOS / older mobile browsers)
@@ -1092,13 +1124,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               </div>
             )}
 
-            {/* Micro-tip for focal distance & double-tap shortcut */}
+            {/* Micro-tip for focal distance & lighting */}
             {cameraActive && isScanning && (
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center pointer-events-none z-15">
-                <span className="bg-black/80 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/15 shadow-sm flex items-center gap-1.5">
-                  <span>💡 Hold 8-12 in away</span>
+                <span className="bg-black/85 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-3 py-1 rounded-full border border-white/20 shadow-sm flex items-center gap-1.5">
+                  <span>💡 {!isMobile ? 'Hold barcode 8–12 in (20–30 cm) away in good light' : 'Hold 6–10 in away'}</span>
                   <span className="text-slate-500">•</span>
-                  <span className="text-emerald-400 font-semibold">Double-tap video for 1x/2x</span>
+                  <span className="text-emerald-400 font-semibold">{!isMobile ? 'Keep steady in box' : 'Double-tap for 1x/2x'}</span>
                 </span>
               </div>
             )}

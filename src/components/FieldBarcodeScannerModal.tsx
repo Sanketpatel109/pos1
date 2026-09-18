@@ -68,13 +68,14 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
   const [cameraErrorType, setCameraErrorType] = useState<string | null>(null);
   const [cameraFixInstructions, setCameraFixInstructions] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
   const [manualCode, setManualCode] = useState<string>('');
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [showFallbackPanel, setShowFallbackPanel] = useState<boolean>(false);
   const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
   const [hasMultipleCams, setHasMultipleCams] = useState<boolean>(false);
   const isMobile = typeof window !== 'undefined' && isMobileDevice();
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>(() =>
+    typeof window !== 'undefined' && isMobileDevice() ? 'environment' : 'user'
+  );
   const isPhone = typeof window !== 'undefined' && getDeviceType() === 'phone';
   const [zoomSupported, setZoomSupported] = useState<boolean>(true);
   const [zoomLevel, setZoomLevel] = useState<number>(() =>
@@ -158,7 +159,8 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
     setCameraErrorType(null);
     setCameraFixInstructions(null);
     hasCapturedRef.current = false;
-    const modeToUse = targetFacing || facingMode;
+    const defaultFacing = isMobile ? 'environment' : 'user';
+    const modeToUse = targetFacing || facingMode || defaultFacing;
 
     try {
       // Step 1: Check getUserMedia support
@@ -200,19 +202,23 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
         return;
       }
 
-      // Helper: create fresh scanner instance with native BarcodeDetector enabled
+      // Helper: create fresh scanner instance with ZXing engine for reliable 1D retail barcode decoding
       const createScanner = () => new Html5Qrcode(scannerContainerId, {
         formatsToSupport: SUPPORTED_FORMATS,
         verbose: false,
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: false,
         },
       });
 
-      // 15 FPS: optimal balance of smooth detection and low CPU/battery consumption on mobile
-      // Omit qrbox to scan full frame without cropping distortion or dimension crashes
+      // Wide rectangular scanning box optimized for 1D retail barcodes (EAN-13, Code 128, UPC)
       const scanConfig = {
-        fps: 15,
+        fps: isMobile ? 15 : 20,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const w = Math.floor(Math.min(viewfinderWidth * 0.85, 360));
+          const h = Math.floor(Math.min(viewfinderHeight * 0.55, 180));
+          return { width: Math.max(w, 220), height: Math.max(h, 110) };
+        },
       };
 
       // Helper: fully destroy a scanner instance and release OS camera
@@ -227,26 +233,53 @@ export const FieldBarcodeScannerModal: React.FC<FieldBarcodeScannerModalProps> =
       let startedSuccessfully = false;
       let activeScanner: Html5Qrcode | null = null;
 
+      // Attempt 0: On laptops/desktops, directly select the webcam device for instant 1-shot start
+      if (!isMobile) {
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            const preferredCam =
+              cameras.find((c) => /facetime|front|user|integrated|webcam/i.test(c.label)) ||
+              cameras[0];
+            activeScanner = createScanner();
+            await activeScanner.start(
+              preferredCam.id,
+              scanConfig,
+              (text) => handleDetected(text),
+              () => {}
+            );
+            setFacingMode('user');
+            startedSuccessfully = true;
+          }
+        } catch (desktopErr) {
+          console.warn('Desktop camera direct selection fallback:', desktopErr);
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+        }
+      }
+
       // Attempt 1: HD resolution with requested facing mode & continuous autofocus
-      try {
-        activeScanner = createScanner();
-        await activeScanner.start(
-          {
-            facingMode: modeToUse,
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 },
-          },
-          scanConfig,
-          (text) => handleDetected(text),
-          () => {}
-        );
-        setFacingMode(modeToUse);
-        startedSuccessfully = true;
-      } catch {
-        console.warn(`Camera HD ${modeToUse} failed, trying simple constraint`);
-        await destroyScanner(activeScanner);
-        activeScanner = null;
-        await new Promise((r) => setTimeout(r, 200));
+      if (!startedSuccessfully) {
+        try {
+          activeScanner = createScanner();
+          await activeScanner.start(
+            {
+              facingMode: modeToUse,
+              width: { ideal: 1280, min: 640 },
+              height: { ideal: 720, min: 480 },
+            },
+            scanConfig,
+            (text) => handleDetected(text),
+            () => {}
+          );
+          setFacingMode(modeToUse);
+          startedSuccessfully = true;
+        } catch {
+          console.warn(`Camera HD ${modeToUse} failed, trying simple constraint`);
+          await destroyScanner(activeScanner);
+          activeScanner = null;
+          await new Promise((r) => setTimeout(r, 200));
+        }
       }
 
       // Attempt 2: Simple facingMode constraint
