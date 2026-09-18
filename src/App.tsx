@@ -73,7 +73,8 @@ import { auth, onAuthStateChanged, signOut, User, getDoc } from './firebase';
 import { QuickStaffSwitchModal } from './components/QuickStaffSwitchModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { AuthGateScreen } from './components/AuthGateScreen';
-import { RefundResult } from './components/ProcessReturnModal';
+import { ProcessReturnModal, RefundResult } from './components/ProcessReturnModal';
+import { QuickRefundModal } from './components/QuickRefundModal';
 import { TenantLicense } from './types';
 
 import {
@@ -117,7 +118,7 @@ import {
   getTenantDoc,
 } from './services/liveSync';
 import { useCart } from './context/CartContext';
-import { DirectThermalReceipt, printDirectThermalReceipt } from './components/DirectThermalReceipt';
+import { DirectThermalReceipt, printDirectThermalReceipt, printCreditNoteVoucher } from './components/DirectThermalReceipt';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { StoreOnboardingModal } from './components/StoreOnboardingModal';
 import { soundbox } from './utils/soundbox';
@@ -517,6 +518,9 @@ export default function App() {
   // Modals
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
+  const [isQuickRefundModalOpen, setIsQuickRefundModalOpen] = useState<boolean>(false);
+  const [quickRefundTargetOrder, setQuickRefundTargetOrder] = useState<Order | null>(null);
+  const [isQuickReturnModalOpen, setIsQuickReturnModalOpen] = useState<boolean>(false);
 
   const [isReceiptDuplicate, setIsReceiptDuplicate] = useState<boolean>(false);
   const [isCustomProductModalOpen, setIsCustomProductModalOpen] = useState<boolean>(false);
@@ -2262,6 +2266,28 @@ export default function App() {
         return updated;
       });
     }
+
+    // 5. Automatically print Credit Note voucher slip
+    const matchingOrder = orders.find((o) => o.id === refund.orderId);
+    if (matchingOrder) {
+      const creditNoteRecord: RefundRecord = {
+        id: refund.creditNoteNumber,
+        creditNoteNumber: refund.creditNoteNumber,
+        refundedAt: refund.refundedAt,
+        refundAmount: refund.refundAmount,
+        refundMethod: refund.refundMethod,
+        refundReason: refund.refundReason,
+        restockInventory: refund.restockInventory,
+        refundedItems: refund.refundedItems,
+        staffName: activeStaff?.name || matchingOrder.staffName || 'Staff',
+      };
+      try {
+        printCreditNoteVoucher(matchingOrder, creditNoteRecord, shopSettings);
+      } catch (printErr) {
+        console.warn('Auto print credit note voucher:', printErr);
+      }
+    }
+    playSfx('success');
   };
 
   // Navigation router with RBAC access control
@@ -2383,6 +2409,7 @@ export default function App() {
           activeScreen={activeScreen}
           orderNumber={orderNumber}
           heldOrdersCount={heldOrders.length}
+          currentCartCount={currentBillItems.reduce((sum, i) => sum + i.quantity, 0)}
           soundEnabled={shopSettings.soundEnabled}
           activeStaffName={activeStaff.name}
           activeStaffRole={activeStaff.role}
@@ -2419,7 +2446,6 @@ export default function App() {
               'staff-management',
             ].includes(activeScreen)) && (
             <ItemWiseBillTerminal
-
               currentBillItems={currentBillItems}
               catalog={catalog}
               categories={categories}
@@ -2447,6 +2473,7 @@ export default function App() {
               onClearBill={handleClearBill}
               onHoldBill={handleHoldBill}
               onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
+              onOpenRefund={() => setIsQuickRefundModalOpen(true)}
               onOpenAddCustomProduct={() => setIsCustomProductModalOpen(true)}
               onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
               onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
@@ -2465,7 +2492,6 @@ export default function App() {
                   taxAmount,
                   discount: discountAmount || 0,
                   total: grandTotal,
-
                   paymentMethod: 'NONE',
                   staffName: activeStaff.name,
                 };
@@ -2490,6 +2516,7 @@ export default function App() {
               onHoldBill={(items) => handleHoldBill(items)}
               onClearBill={handleClearBill}
               onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
+              onOpenRefund={() => setIsQuickRefundModalOpen(true)}
               onSaveQuickBill={handleSaveQuickBill}
               onPrintQuickBill={handlePrintQuickBill}
               onSwitchMode={() => {
@@ -2952,6 +2979,37 @@ export default function App() {
         onResumeOrder={handleResumeHeldOrder}
         onDeleteOrder={handleDeleteHeldOrder}
         onClearAllHeld={handleClearAllHeldOrders}
+        onHoldCurrentCart={() => handleHoldBill(currentBillItems)}
+      />
+
+      {/* Fast Quick Refund Lookup & Barcode Scan Modal */}
+      <QuickRefundModal
+        isOpen={isQuickRefundModalOpen}
+        orders={orders}
+        currencySymbol={shopSettings.currencySymbol}
+        onClose={() => setIsQuickRefundModalOpen(false)}
+        onSelectOrder={(order) => {
+          setIsQuickRefundModalOpen(false);
+          setQuickRefundTargetOrder(order);
+          setIsQuickReturnModalOpen(true);
+        }}
+        onOpenScanner={() => handleOpenScanner('price-check')}
+      />
+
+      {/* Instant Item-Level Return / Refund Execution Modal */}
+      <ProcessReturnModal
+        isOpen={isQuickReturnModalOpen}
+        order={quickRefundTargetOrder}
+        currencySymbol={shopSettings.currencySymbol}
+        onClose={() => {
+          setIsQuickReturnModalOpen(false);
+          setQuickRefundTargetOrder(null);
+        }}
+        onConfirmRefund={(refund) => {
+          handleProcessRefund(refund);
+          setIsQuickReturnModalOpen(false);
+          setQuickRefundTargetOrder(null);
+        }}
       />
 
       {/* Official Day-End Close & Z-Report Shift Audit Modal */}

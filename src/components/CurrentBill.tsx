@@ -36,6 +36,7 @@ export interface CurrentBillProps {
   }) => void;
   onResetAndNewBill?: () => void;
   onOpenHeldOrders?: () => void;
+  onOpenRefund?: () => void;
   onCloseMobile?: () => void;
   onSwitchMode?: () => void;
 }
@@ -59,6 +60,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
   onCompleteSale,
   onResetAndNewBill,
   onOpenHeldOrders,
+  onOpenRefund,
   onCloseMobile,
   onSwitchMode,
 }) => {
@@ -348,6 +350,7 @@ export const CurrentBill: React.FC<CurrentBillProps> = ({
           }
         }}
         onOpenHeldOrders={onOpenHeldOrders}
+        onOpenRefund={onOpenRefund}
         disabled={items.length === 0}
         onSwitchMode={onSwitchMode}
         currentMode="item-wise"

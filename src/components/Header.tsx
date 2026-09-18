@@ -21,6 +21,7 @@ export interface HeaderProps {
   activeScreen?: ActiveScreen;
   orderNumber?: number;
   heldOrdersCount?: number;
+  currentCartCount?: number;
   soundEnabled?: boolean;
   activeStaffName?: string;
   activeStaffRole?: StaffRole;
@@ -44,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   storeLogoUrl = '',
   activeScreen = 'item-wise',
   heldOrdersCount = 0,
+  currentCartCount = 0,
   activeStaffName = 'Store Owner',
   activeStaffRole = 'OWNER',
   onOpenMenu,
@@ -191,20 +193,27 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label={`Held Bills (${heldOrdersCount})`}
             title={
               heldOrdersCount > 0
-                ? `${heldOrdersCount} parked bill(s). Tap to recall.`
+                ? `${heldOrdersCount} parked bill(s). Tap to recall or hold.`
+                : currentCartCount > 0
+                ? `Park / Hold Current Bill (${currentCartCount} items)`
                 : 'Held Bills (0)'
             }
-            className={`h-9 px-2.5 gap-1 shrink-0 ${
-              heldOrdersCount > 0 ? 'ring-2 ring-primary/30' : ''
+            className={`h-9 px-2.5 gap-1.5 shrink-0 cursor-pointer ${
+              heldOrdersCount > 0 ? 'ring-2 ring-primary/30 font-bold' : ''
             }`}
           >
             <PauseCircle className="size-4" />
-            <Badge
-              variant="default"
-              className="px-1.5 py-0 text-xs h-4 min-w-[16px] justify-center tabular-nums"
-            >
-              {heldOrdersCount}
-            </Badge>
+            <span className="hidden sm:inline text-xs font-semibold">
+              {heldOrdersCount > 0 ? `Held (${heldOrdersCount})` : 'Hold'}
+            </span>
+            {heldOrdersCount > 0 && (
+              <Badge
+                variant="default"
+                className="px-1.5 py-0 text-xs h-4 min-w-[16px] justify-center tabular-nums sm:hidden"
+              >
+                {heldOrdersCount}
+              </Badge>
+            )}
           </Button>
         )}
 

@@ -23,6 +23,7 @@ export interface QuickBillPOSProps {
   onHoldBill?: (items: BillItem[]) => void;
   onClearBill?: () => void;
   onOpenHeldOrders?: () => void;
+  onOpenRefund?: () => void;
   onSaveQuickBill: (items: BillItem[]) => void;
   onPrintQuickBill: (items: BillItem[]) => void;
   onSwitchMode?: () => void;
@@ -38,6 +39,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
   onHoldBill,
   onClearBill,
   onOpenHeldOrders,
+  onOpenRefund,
   onSaveQuickBill,
   onPrintQuickBill,
   onSwitchMode,
@@ -392,6 +394,7 @@ export const QuickBillPOS: React.FC<QuickBillPOSProps> = ({
             heldOrdersCount={heldOrdersCount}
             onClearBill={handleClearAll}
             onHoldBill={handleHold}
+            onOpenRefund={onOpenRefund}
             onPrintBill={() => onPrintQuickBill(items)}
             onPay={() => onSaveQuickBill(items)}
             disabled={items.length === 0}

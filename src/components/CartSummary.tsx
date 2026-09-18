@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight } from 'lucide-react';
+import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '../context/CartContext';
 
@@ -17,6 +17,7 @@ export interface CartSummaryProps {
   onPay: () => void;
   heldOrdersCount?: number;
   onOpenHeldOrders?: () => void;
+  onOpenRefund?: () => void;
   disabled?: boolean;
   onSwitchMode?: () => void;
   currentMode?: 'item-wise' | 'quick-bill' | 'catalog';
@@ -35,6 +36,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
   onPay,
   heldOrdersCount = 0,
   onOpenHeldOrders,
+  onOpenRefund,
   disabled = false,
   onSwitchMode,
   currentMode = 'item-wise',
@@ -173,8 +175,20 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
           </Button>
         )}
 
-        {/* Hold / Recall Bill Button */}
-        {(onHoldBill || onOpenHeldOrders) && (
+        {/* Quick Refund / Return Button (replaced bottom hold button; held orders combined into header) */}
+        {onOpenRefund ? (
+          <Button
+            type="button"
+            id="btn-cart-refund"
+            variant="outline"
+            size="icon-lg"
+            onClick={onOpenRefund}
+            title="Quick Return / Refund (Scan receipt barcode or search invoice)"
+            className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-700 cursor-pointer border-amber-500/30"
+          >
+            <RotateCcw className="size-4" />
+          </Button>
+        ) : (onHoldBill || onOpenHeldOrders) ? (
           <Button
             type="button"
             id="btn-cart-hold"
@@ -204,7 +218,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
               </span>
             )}
           </Button>
-        )}
+        ) : null}
 
         {/* Switch Register Mode Button - always enabled so cashier can switch anytime */}
         {onSwitchMode && (

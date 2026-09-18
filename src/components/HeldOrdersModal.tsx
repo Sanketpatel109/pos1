@@ -39,6 +39,7 @@ export interface HeldOrdersModalProps {
   onResumeOrder: (order: Order, strategy: 'replace' | 'merge' | 'swap') => void;
   onDeleteOrder: (orderId: string) => void;
   onClearAllHeld?: () => void;
+  onHoldCurrentCart?: () => void;
 }
 
 export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
@@ -52,6 +53,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
   onResumeOrder,
   onDeleteOrder,
   onClearAllHeld,
+  onHoldCurrentCart,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [orderToResume, setOrderToResume] = useState<Order | null>(null);
@@ -245,22 +247,33 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
             </div>
           )}
 
-          {/* Informational Cart Notice */}
-          {currentCartCount > 0 && heldOrders.length > 0 && (
-            <div className="px-4 py-2 bg-primary/10 border-b border-primary/20 text-xs text-primary flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-primary" />
-                <span>
-                  Register currently has{' '}
+          {/* Informational Cart Notice & 1-Click Park Button */}
+          {currentCartCount > 0 && (
+            <div className="px-4 py-2.5 bg-primary/10 border-b border-primary/20 text-xs text-primary flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
+                <span className="truncate">
+                  Active Cart:{' '}
                   <strong className="font-bold">
                     {currentCartCount} {currentCartCount === 1 ? 'item' : 'items'} ({currencySymbol}
                     {currentCartTotal.toFixed(2)})
                   </strong>
                 </span>
               </div>
-              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 text-xs">
-                Safe Swap Available
-              </Badge>
+              {onHoldCurrentCart && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => {
+                    onHoldCurrentCart();
+                    onClose();
+                  }}
+                  className="h-7 text-xs font-bold shrink-0 gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <PauseCircle className="size-3.5" />
+                  <span>Park Current Cart</span>
+                </Button>
+              )}
             </div>
           )}
 

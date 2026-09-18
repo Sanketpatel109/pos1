@@ -27,6 +27,7 @@ interface ItemWiseBillTerminalProps {
   onClearBill?: () => void;
   onHoldBill?: () => void;
   onOpenHeldOrders?: () => void;
+  onOpenRefund?: () => void;
   onOpenAddCustomProduct?: () => void;
   onPrintBill: () => void;
   onSaveBill: () => void;
@@ -52,6 +53,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   onClearBill: propOnClearBill,
   onHoldBill,
   onOpenHeldOrders,
+  onOpenRefund,
   onPrintBill,
   onSaveBill,
   onOpenScanner,
@@ -188,6 +190,7 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
           onPrintBill={onPrintBill}
           onPay={onSaveBill}
           onOpenHeldOrders={onOpenHeldOrders}
+          onOpenRefund={onOpenRefund}
           onSwitchMode={onSwitchMode}
         />
       </div>
