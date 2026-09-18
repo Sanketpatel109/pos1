@@ -854,18 +854,18 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl max-h-[96vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-lg md:max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl rounded-2xl">
         {/* Header */}
-        <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
+        <DialogHeader className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border bg-card/80 backdrop-blur-xs shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
               <Scan className="w-5 h-5" />
             </div>
-            <div>
-              <DialogTitle className="text-base font-bold text-foreground leading-tight">
+            <div className="min-w-0">
+              <DialogTitle className="text-base font-bold text-foreground leading-tight truncate">
                 Barcode & QR Scanner
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+              <DialogDescription className="text-xs text-muted-foreground mt-0.5 truncate">
                 {isDesktop
                   ? 'USB Scanner • Photo upload • Manual SKU'
                   : 'Live camera • Photo upload • USB Laser Gun • Manual SKU'}
@@ -874,47 +874,61 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           </div>
         </DialogHeader>
 
-        {/* Mode Selector Tabs */}
-        <div className="px-3.5 py-2 bg-muted/40 border-b border-border flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
-          <Button
-            type="button"
-            variant={currentMode === 'add-to-bill' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCurrentMode('add-to-bill')}
-            className="gap-1.5 text-xs whitespace-nowrap"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Scan & Add to Bill</span>
-          </Button>
+        {/* Mode Selector Segmented Tabs */}
+        <div className="px-3.5 py-2.5 bg-muted/40 border-b border-border shrink-0">
+          <div className="grid grid-cols-3 gap-1 bg-muted/80 p-1 rounded-xl border border-border/40 text-xs">
+            <button
+              type="button"
+              onClick={() => setCurrentMode('add-to-bill')}
+              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                currentMode === 'add-to-bill'
+                  ? 'bg-background text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                <span className="hidden sm:inline">Scan & </span>Bill
+              </span>
+            </button>
 
-          <Button
-            type="button"
-            variant={currentMode === 'price-check' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCurrentMode('price-check')}
-            className="gap-1.5 text-xs whitespace-nowrap"
-          >
-            <Tag className="w-3.5 h-3.5" />
-            <span>Check Price & Info</span>
-          </Button>
+            <button
+              type="button"
+              onClick={() => setCurrentMode('price-check')}
+              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                currentMode === 'price-check'
+                  ? 'bg-background text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Tag className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                <span className="hidden sm:inline">Check </span>Price
+              </span>
+            </button>
 
-          <Button
-            type="button"
-            variant={currentMode === 'search' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCurrentMode('search')}
-            className="gap-1.5 text-xs whitespace-nowrap"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>Scan to Filter Menu</span>
-          </Button>
+            <button
+              type="button"
+              onClick={() => setCurrentMode('search')}
+              className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                currentMode === 'search'
+                  ? 'bg-background text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                <span className="hidden sm:inline">Scan to </span>Filter
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-card">
           {/* Camera Viewfinder Box */}
           <div
-            className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center min-h-[220px] max-h-[280px] select-none cursor-pointer touch-none"
+            className="bg-slate-950 rounded-xl overflow-hidden relative shadow-inner border border-slate-800 flex flex-col items-center justify-center h-44 sm:h-52 select-none cursor-pointer touch-none"
             onDoubleClick={handleViewfinderDoubleTap}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
@@ -923,21 +937,46 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             {/* HTML5 QR Container */}
             <div
               id={scannerContainerId}
-              className="w-full h-full min-h-[220px] max-h-[300px] flex items-center justify-center overflow-hidden relative bg-black [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[300px] [&_video]:!object-contain [&_video]:!rounded-xl [&_video]:!block [&#qr-shaded-region]:!hidden"
+              className="w-full h-full flex items-center justify-center overflow-hidden relative bg-black [&_video]:!w-full [&_video]:!h-full [&_video]:!object-contain [&_video]:!rounded-xl [&_video]:!block [&#qr-shaded-region]:!hidden"
             ></div>
 
             {/* Transient Zoom Toast Badge */}
             {zoomToast && (
               <div className="absolute z-25 pointer-events-none px-3.5 py-1.5 rounded-full bg-black/90 border border-white/30 text-white font-bold text-xs backdrop-blur-md shadow-2xl animate-in fade-in zoom-in-90 duration-150 flex items-center gap-1.5">
-                <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
+                <ZoomIn className="w-3.5 h-3.5 text-primary" />
                 <span>{zoomToast}</span>
               </div>
             )}
 
+            {/* Floating Top Chip: Uncataloged Notice inside camera stream (doesn't block camera) */}
+            {lastScannedResult && !lastScannedResult.item && (
+              <div className="absolute top-2 left-2 right-2 flex items-center justify-between bg-black/85 backdrop-blur-md border border-amber-500/40 text-white text-xs px-2.5 py-1.5 rounded-lg z-25 shadow-lg">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="truncate text-[11px] sm:text-xs">
+                    Uncataloged: <strong className="text-amber-400 font-mono">{lastScannedResult.code}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLastScannedResult(null);
+                    setFetchedOnlineProduct(null);
+                    setUnrecognizedPromptCode(null);
+                    lastScannedCodeRef.current = '';
+                  }}
+                  className="p-0.5 text-slate-400 hover:text-white rounded"
+                  title="Dismiss"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* Overlaid Animated Targeting Reticle - Wide format for 1D retail barcodes */}
-            {cameraActive && isScanning && (
+            {cameraActive && isScanning && !lastScannedResult && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                <div className="w-64 sm:w-72 h-36 sm:h-40 border-2 border-primary rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.3)] animate-pulse">
+                <div className="w-52 sm:w-64 h-28 sm:h-36 border-2 border-primary rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.25)] animate-pulse">
                   {/* Corner accents */}
                   <div className="absolute -top-1 -left-1 w-3.5 h-3.5 border-t-3 border-l-3 border-primary rounded-tl"></div>
                   <div className="absolute -top-1 -right-1 w-3.5 h-3.5 border-t-3 border-r-3 border-primary rounded-tr"></div>
@@ -976,7 +1015,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 {/* Device-specific fix instructions */}
                 {cameraFixInstructions && (
                   <div className="flex items-start gap-1.5 bg-white/10 rounded-lg px-3 py-2 max-w-xs">
-                    <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                    <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                     <p className="text-[11px] text-slate-300 text-left leading-relaxed">
                       {cameraFixInstructions}
                     </p>
@@ -1059,7 +1098,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       onClick={() => handleSetZoom(1)}
                       className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
                         zoomLevel === 1
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-slate-300 hover:text-white'
                       }`}
                       title="1x Zoom"
@@ -1071,7 +1110,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       onClick={() => handleSetZoom(2)}
                       className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer flex items-center gap-0.5 ${
                         zoomLevel === 2
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-slate-300 hover:text-white'
                       }`}
                       title="2x Zoom (Recommended for Phone Barcode Scanning)"
@@ -1084,7 +1123,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       onClick={() => handleSetZoom(3)}
                       className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
                         zoomLevel === 3
-                          ? 'bg-blue-600 text-white shadow-xs'
+                          ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'text-slate-300 hover:text-white'
                       }`}
                       title="3x Zoom for small/dense barcodes"
@@ -1124,18 +1163,15 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             {/* Micro-tip for focal distance & lighting */}
             {cameraActive && isScanning && (
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center pointer-events-none z-15">
-                <span className="bg-black/85 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-3 py-1 rounded-full border border-white/20 shadow-sm flex items-center gap-1.5">
-                  <span>💡 {!isMobile ? 'Hold barcode 8–12 in (20–30 cm) away in good light' : 'Hold 6–10 in away'}</span>
+                <span className="bg-black/85 backdrop-blur-xs text-slate-200 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/20 shadow-xs flex items-center gap-1.5">
+                  <span>💡 {!isMobile ? 'Hold 8–12 in away' : 'Hold 6–10 in away'}</span>
                   <span className="text-slate-500">•</span>
-                  <span className="text-emerald-400 font-semibold">{!isMobile ? 'Keep steady in box' : 'Double-tap for 1x/2x'}</span>
+                  <span className="text-primary font-semibold">{!isMobile ? 'Keep steady' : 'Tap 2x'}</span>
                 </span>
               </div>
             )}
 
             {/* Hidden file input for Photo/Image QR scan */}
-            {/* NOTE: capture attribute intentionally REMOVED to prevent mobile browsers
-                from forcing the native camera app (which conflicts with the live camera
-                stream). Users can now choose gallery OR camera from the OS file picker. */}
             <input
               ref={fileInputRef}
               type="file"
@@ -1143,189 +1179,6 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               onChange={handleFileUpload}
               className="hidden"
             />
-
-            {/* New Product Detected Prompt Overlay with Live Online Fetching */}
-            {unrecognizedPromptCode && (
-              <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xs z-30 flex flex-col items-center justify-center p-4 text-center animate-in fade-in zoom-in-95">
-                {isFetchingOnline ? (
-                  <div className="flex flex-col items-center gap-3 py-6">
-                    <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center animate-spin">
-                      <Loader2 className="w-6 h-6" />
-                    </div>
-                    <h4 className="text-white text-sm font-bold">
-                      Fetching Product Details...
-                    </h4>
-                    <p className="text-slate-300 text-xs font-mono bg-white/10 px-2 py-1 rounded">
-                      Barcode: {unrecognizedPromptCode}
-                    </p>
-                    <p className="text-slate-400 text-[11px]">
-                      Searching India & global retail databases...
-                    </p>
-                  </div>
-                ) : fetchedOnlineProduct ? (
-                  <div className="w-full max-w-xs flex flex-col items-center gap-2">
-                    {fetchedOnlineProduct.imageUrl ? (
-                      <img
-                        src={fetchedOnlineProduct.imageUrl}
-                        alt={fetchedOnlineProduct.name}
-                        className="w-16 h-16 object-contain rounded-xl bg-white p-1 shadow-md border border-white/20"
-                      />
-                    ) : (
-                      <div className="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                        <Sparkles className="w-6 h-6" />
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                      <span>{fetchedOnlineProduct.sourceRegistry || 'Product Found Online'}</span>
-                    </div>
-
-                    <h4 className="text-white text-sm font-extrabold line-clamp-2 px-1 text-center leading-snug">
-                      {fetchedOnlineProduct.brand && !fetchedOnlineProduct.name.toLowerCase().includes(fetchedOnlineProduct.brand.toLowerCase())
-                        ? `${fetchedOnlineProduct.brand} - ${fetchedOnlineProduct.name}`
-                        : fetchedOnlineProduct.name}
-                    </h4>
-
-                    {fetchedOnlineProduct.brand && (
-                      <p className="text-slate-300 text-xs font-medium -mt-0.5">
-                        Brand: <span className="text-white font-bold">{fetchedOnlineProduct.brand}</span>
-                      </p>
-                    )}
-
-                    {/* Price Input */}
-                    <div className="w-full bg-white/10 rounded-xl px-3 py-2 flex items-center justify-between gap-2 border border-white/15 mt-1">
-                      <span className="text-xs text-slate-300 font-medium">Selling Price:</span>
-                      <div className="flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-lg border border-white/20">
-                        <span className="text-xs font-bold text-amber-400">{currencySymbol}</span>
-                        <input
-                          type="number"
-                          placeholder="0.00"
-                          value={onlinePriceInput}
-                          onChange={(e) => setOnlinePriceInput(e.target.value)}
-                          className="w-20 text-xs font-bold text-white bg-transparent focus:outline-hidden text-right"
-                          autoFocus
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-2 mt-2 w-full">
-                      {currentMode === 'add-to-bill' && onAddCustomBillItem && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const price = parseFloat(onlinePriceInput) || fetchedOnlineProduct.suggestedPrice || 0;
-                            const itemTitle = fetchedOnlineProduct.brand && !fetchedOnlineProduct.name.toLowerCase().includes(fetchedOnlineProduct.brand.toLowerCase())
-                              ? `${fetchedOnlineProduct.brand} - ${fetchedOnlineProduct.name}`
-                              : fetchedOnlineProduct.name;
-                            onAddCustomBillItem({
-                              id: `custom-${Date.now()}`,
-                              name: itemTitle,
-                              unitPrice: price,
-                              quantity: 1,
-                              category: fetchedOnlineProduct.category || 'General',
-                              gstRate: 0,
-                            });
-                            posSound.playBeep();
-                            setUnrecognizedPromptCode(null);
-                            setFetchedOnlineProduct(null);
-                          }}
-                          className="flex-1 py-2 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                        >
-                          <ShoppingBag className="w-3.5 h-3.5" />
-                          <span>Add to Bill</span>
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const code = unrecognizedPromptCode;
-                          setUnrecognizedPromptCode(null);
-                          setFetchedOnlineProduct(null);
-                          if (registerBarcodeCallback) {
-                            registerBarcodeCallback(code);
-                            onClose();
-                          }
-                        }}
-                        className="flex-1 py-2 px-2.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Save to POS</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUnrecognizedPromptCode(null);
-                          setFetchedOnlineProduct(null);
-                          lastScannedCodeRef.current = '';
-                          lastScannedTimeRef.current = 0;
-                        }}
-                        className="p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-lg cursor-pointer"
-                        title="Dismiss"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full max-w-xs flex flex-col items-center">
-                    <div className="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-2 shadow-inner">
-                      <Barcode className="w-5 h-5" />
-                    </div>
-                    <h4 className="text-white text-sm font-extrabold tracking-wide">
-                      New Product Detected
-                    </h4>
-                    <p className="text-slate-300 text-xs mt-1 max-w-[280px]">
-                      Barcode <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded-sm">{unrecognizedPromptCode}</span> is not in your POS catalog.
-                    </p>
-                    {unrecognizedPromptCode && (
-                      <a
-                        href={getWebSearchUrl(unrecognizedPromptCode)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[11px] text-blue-400 hover:text-blue-300 mt-2 underline underline-offset-2 transition-colors cursor-pointer"
-                        title="Search web / Google for this barcode"
-                      >
-                        <Globe className="w-3.5 h-3.5" />
-                        <span>Search Web for Barcode</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                    <div className="flex items-center gap-2 mt-3.5 w-full max-w-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const code = unrecognizedPromptCode;
-                          setUnrecognizedPromptCode(null);
-                          if (registerBarcodeCallback) {
-                            registerBarcodeCallback(code);
-                            onClose();
-                          }
-                        }}
-                        className="flex-1 py-2 px-3 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-lg shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                      >
-                        <Plus className="w-4 h-4 stroke-[3]" />
-                        <span>Add to POS</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUnrecognizedPromptCode(null);
-                          lastScannedCodeRef.current = '';
-                          lastScannedTimeRef.current = 0;
-                        }}
-                        className="py-2 px-3 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-lg cursor-pointer active:scale-95 transition-all"
-                      >
-                        Dismiss & Scan Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Manual Input / Hardware Scanner Form */}
@@ -1341,18 +1194,18 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 placeholder={
                   isDesktop
                     ? 'Scan with USB gun or type Barcode / SKU...'
-                    : 'Enter or scan Barcode / SKU / QR text...'
+                    : 'Scan or type Barcode / SKU...'
                 }
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                className="pl-9 h-10 text-xs bg-background"
+                className="pl-9 h-9 sm:h-10 text-xs bg-background"
                 autoComplete="off"
               />
             </div>
             <Button
               type="submit"
               disabled={!manualCode.trim()}
-              className="h-10 text-xs px-4"
+              className="h-9 sm:h-10 text-xs px-3.5 sm:px-4 shrink-0 font-semibold"
             >
               Lookup
             </Button>
@@ -1360,60 +1213,47 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
           {/* USB / Bluetooth Scanner Notice (shown when camera is off) */}
           {!cameraActive && (
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground">
-              <Keyboard className="w-4 h-4 text-foreground shrink-0" />
-              <p className="leading-relaxed">
-                <strong className="text-foreground font-semibold">USB / Bluetooth scanner ready.</strong> Barcode guns are auto-detected — just scan and the code appears above.
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border border-border rounded-xl text-xs text-muted-foreground">
+              <Keyboard className="w-3.5 h-3.5 text-foreground shrink-0" />
+              <p className="leading-snug text-[11px] sm:text-xs">
+                <strong className="text-foreground font-semibold">Barcode scanner ready.</strong> USB & Bluetooth laser guns type directly into the field above.
               </p>
             </div>
           )}
 
-          {/* Real-time Scan Result Card */}
+          {/* SINGLE UNIFIED HERO SCAN RESULT CARD */}
           {lastScannedResult && (
-            <Card className="border-border bg-card shadow-xs">
-              <CardContent className="p-3.5 space-y-3">
-                <div className="flex items-start justify-between gap-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        lastScannedResult.item
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-amber-500 text-white'
-                      }`}
-                    >
-                      {lastScannedResult.item ? (
+            <Card className="border-border bg-card shadow-xs overflow-hidden">
+              <CardContent className="p-3 sm:p-3.5 space-y-3">
+                {/* CASE 1: Item Found in Local Catalog */}
+                {lastScannedResult.item ? (
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
                         <Check className="w-4 h-4 stroke-[3]" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-bold text-foreground truncate max-w-[200px]">
-                          {lastScannedResult.code}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => handleCopyCode(lastScannedResult.code)}
-                          title="Copy code"
-                        >
-                          {copiedCode ? (
-                            <CheckCheck className="w-3 h-3 text-primary" />
-                          ) : (
-                            <Copy className="w-3 h-3 text-muted-foreground" />
-                          )}
-                        </Button>
-                        <Badge
-                          variant={lastScannedResult.item ? 'default' : 'secondary'}
-                          className="text-[10px]"
-                        >
-                          {lastScannedResult.actionTaken}
-                        </Badge>
                       </div>
-
-                      {lastScannedResult.item && (
-                        <div className="mt-1 flex items-baseline gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-mono font-bold text-foreground">
+                            {lastScannedResult.code}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => handleCopyCode(lastScannedResult.code)}
+                            title="Copy barcode"
+                          >
+                            {copiedCode ? (
+                              <CheckCheck className="w-3 h-3 text-primary" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-muted-foreground" />
+                            )}
+                          </Button>
+                          <Badge variant="default" className="text-[10px]">
+                            {lastScannedResult.actionTaken}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 flex items-baseline gap-2 flex-wrap">
                           <h4 className="text-xs sm:text-sm font-bold text-foreground">
                             {lastScannedResult.item.name}
                           </h4>
@@ -1425,13 +1265,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                             ({lastScannedResult.item.category})
                           </span>
                         </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Direct Action Buttons */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {lastScannedResult.item && currentMode !== 'add-to-bill' && (
+                    {currentMode !== 'add-to-bill' && (
                       <Button
                         size="sm"
                         onClick={() => {
@@ -1439,120 +1276,218 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                             addItemCallback(lastScannedResult.item);
                           }
                         }}
-                        className="gap-1 text-xs"
+                        className="gap-1 text-xs shrink-0 h-8 font-semibold"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add</span>
                       </Button>
                     )}
-
-                    {!lastScannedResult.item && registerBarcodeCallback && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          registerBarcodeCallback(lastScannedResult.code);
-                          onClose();
-                        }}
-                        className="gap-1 text-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Register Item</span>
-                      </Button>
-                    )}
                   </div>
-                </div>
-
-                {/* Unrecognized item: Quick Add to Bill as Custom Item option */}
-                {!lastScannedResult.item && onAddCustomBillItem && (
-                  <div className="pt-2 border-t border-border flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground">Quick Add to Bill:</span>
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex items-center border border-input rounded-md bg-background px-2 py-0.5">
-                        <span className="text-xs font-bold text-muted-foreground">{currencySymbol}</span>
-                        <input
-                          type="number"
-                          placeholder="Price"
-                          value={customPriceInput}
-                          onChange={(e) => setCustomPriceInput(e.target.value)}
-                          className="w-16 text-xs font-bold text-foreground focus:outline-hidden ml-1"
-                        />
+                ) : (
+                  /* CASE 2: Uncataloged Barcode (Single unified display) */
+                  <div className="space-y-3">
+                    {/* Header row: Code, Registry status, Web search, Close */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
+                          <AlertCircle className="w-4 h-4" />
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-bold text-xs text-foreground bg-muted px-1.5 py-0.5 rounded-md border border-border">
+                            {lastScannedResult.code}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => handleCopyCode(lastScannedResult.code)}
+                            title="Copy barcode"
+                          >
+                            {copiedCode ? (
+                              <CheckCheck className="w-3 h-3 text-primary" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-muted-foreground" />
+                            )}
+                          </Button>
+                          <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5">
+                            Not in Catalog
+                          </Badge>
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={handleAddAsCustomItem}
-                        disabled={!customPriceInput || parseFloat(customPriceInput) <= 0}
-                        className="text-xs h-7"
-                      >
-                        Add to Bill
-                      </Button>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={getWebSearchUrl(lastScannedResult.code)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2 py-1 rounded-md border border-border transition-colors cursor-pointer"
+                          title="Search Web for this barcode"
+                        >
+                          <Globe className="w-3 h-3" />
+                          <span className="hidden sm:inline">Search Web</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => {
+                            setLastScannedResult(null);
+                            setFetchedOnlineProduct(null);
+                            setUnrecognizedPromptCode(null);
+                            lastScannedCodeRef.current = '';
+                          }}
+                          title="Dismiss"
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Online search in progress */}
+                    {isFetchingOnline && (
+                      <div className="flex items-center gap-2.5 p-2 bg-muted/40 rounded-lg text-xs text-muted-foreground border border-border/60">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                        <span className="text-[11px] leading-tight">
+                          Searching India & global retail databases (Open Food Facts)...
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Online product details found */}
+                    {fetchedOnlineProduct && !isFetchingOnline && (
+                      <div className="flex items-start gap-3 p-2.5 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+                        {fetchedOnlineProduct.imageUrl ? (
+                          <img
+                            src={fetchedOnlineProduct.imageUrl}
+                            alt={fetchedOnlineProduct.name}
+                            className="w-12 h-12 object-contain rounded-lg bg-white p-1 shadow-xs border border-border shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                            <Sparkles className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                            <Badge variant="outline" className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 py-0">
+                              <Check className="w-2.5 h-2.5 mr-1 stroke-[3]" />
+                              {fetchedOnlineProduct.sourceRegistry || 'Retail Database'}
+                            </Badge>
+                            {fetchedOnlineProduct.brand && (
+                              <span className="text-[11px] text-muted-foreground font-medium">
+                                {fetchedOnlineProduct.brand}
+                              </span>
+                            )}
+                          </div>
+                          <h5 className="text-xs sm:text-sm font-bold text-foreground leading-snug line-clamp-2">
+                            {fetchedOnlineProduct.brand && !fetchedOnlineProduct.name.toLowerCase().includes(fetchedOnlineProduct.brand.toLowerCase())
+                              ? `${fetchedOnlineProduct.brand} - ${fetchedOnlineProduct.name}`
+                              : fetchedOnlineProduct.name}
+                          </h5>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Single action section: Price & Quick Add / Register */}
+                    <div className="pt-2 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                      {/* Quick Add to Bill input */}
+                      {onAddCustomBillItem && (
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                            Price:
+                          </span>
+                          <div className="flex items-center border border-input rounded-md bg-background px-2 py-0.5 h-8 w-28 shrink-0">
+                            <span className="text-xs font-bold text-muted-foreground">{currencySymbol}</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              value={fetchedOnlineProduct ? onlinePriceInput : customPriceInput}
+                              onChange={(e) => {
+                                if (fetchedOnlineProduct) {
+                                  setOnlinePriceInput(e.target.value);
+                                } else {
+                                  setCustomPriceInput(e.target.value);
+                                }
+                              }}
+                              className="w-full text-xs font-bold text-foreground focus:outline-hidden ml-1 text-right"
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const priceVal = fetchedOnlineProduct
+                                ? (parseFloat(onlinePriceInput) || fetchedOnlineProduct.suggestedPrice || 0)
+                                : (parseFloat(customPriceInput) || 0);
+
+                              if (priceVal <= 0) return;
+
+                              const itemTitle = fetchedOnlineProduct
+                                ? (fetchedOnlineProduct.brand && !fetchedOnlineProduct.name.toLowerCase().includes(fetchedOnlineProduct.brand.toLowerCase())
+                                  ? `${fetchedOnlineProduct.brand} - ${fetchedOnlineProduct.name}`
+                                  : fetchedOnlineProduct.name)
+                                : `Scanned Item (${lastScannedResult.code.slice(0, 12)})`;
+
+                              onAddCustomBillItem({
+                                id: `custom-${Date.now()}`,
+                                itemId: `custom-${lastScannedResult.code}`,
+                                name: itemTitle,
+                                unitPrice: priceVal,
+                                quantity: 1,
+                                category: fetchedOnlineProduct?.category || 'General',
+                                gstRate: 0,
+                              });
+                              posSound.playAdd();
+                              setLastScannedResult(null);
+                              setFetchedOnlineProduct(null);
+                              setCustomPriceInput('');
+                              setOnlinePriceInput('');
+                              onClose();
+                            }}
+                            disabled={
+                              fetchedOnlineProduct
+                                ? (!onlinePriceInput && !fetchedOnlineProduct.suggestedPrice) || (parseFloat(onlinePriceInput) || fetchedOnlineProduct.suggestedPrice || 0) <= 0
+                                : !customPriceInput || parseFloat(customPriceInput) <= 0
+                            }
+                            className="text-xs h-8 gap-1.5 font-semibold"
+                          >
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                            <span>Add to Bill</span>
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Register in Catalog */}
+                      {registerBarcodeCallback && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const code = lastScannedResult.code;
+                            setLastScannedResult(null);
+                            setFetchedOnlineProduct(null);
+                            registerBarcodeCallback(code);
+                            onClose();
+                          }}
+                          className="text-xs h-8 gap-1 font-semibold shrink-0"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Save to Catalog</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
           )}
-
-          {/* Quick Demo Simulator Barcode Chips (Instant testing - Development only) */}
-          {((typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') || Boolean(import.meta.env?.DEV)) && (
-            <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span>Instant Test Barcodes & QR Codes</span>
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  Tap any product to simulate scan
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                {catalog.slice(0, 5).map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleCodeDetected(item.barcode || item.sku || item.name)}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 active:scale-95 border border-slate-200 text-left transition-all cursor-pointer flex flex-col justify-between"
-                  >
-                    <span className="text-[11px] font-bold text-slate-900 truncate">
-                      {item.name}
-                    </span>
-                    <div className="flex items-center justify-between mt-0.5 text-[10px] text-slate-500">
-                      <span className="truncate max-w-[80px]">{item.barcode || item.sku || 'SKU'}</span>
-                      <span className="font-bold text-slate-900">
-                        {currencySymbol}
-                        {item.price}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={() => handleCodeDetected('8901063012480')}
-                  className="px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/15 active:scale-95 border border-primary/20 text-left transition-all cursor-pointer flex flex-col justify-between"
-                  title="Simulate scanning an unrecognized barcode (Bourbon Biscuit)"
-                >
-                  <span className="text-xs font-bold text-foreground truncate flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-primary shrink-0" />
-                    <span>Unknown EAN Scan</span>
-                  </span>
-                  <div className="flex items-center justify-between mt-0.5 text-xs text-primary">
-                    <span className="truncate">8901063012480</span>
-                    <span className="font-bold">Lookup</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Modal Bottom Action Footer */}
-        <DialogFooter className="p-3 sm:px-4 sm:py-3 bg-muted/30 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+        <DialogFooter className="px-3.5 py-2.5 sm:px-4 sm:py-3 bg-muted/40 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
           <div className="flex items-center justify-between sm:justify-start gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <Keyboard className="w-3.5 h-3.5 hidden sm:inline" />
-              <span className="hidden sm:inline">Laser & Bluetooth barcode guns auto-detected</span>
+              <span className="hidden sm:inline">Laser & Bluetooth scanner auto-detected</span>
             </div>
             {billItemCount > 0 && (
               <Badge variant="secondary" className="font-semibold text-xs">
@@ -1561,18 +1496,16 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              id="btn-scanner-done"
-              onClick={onClose}
-              className="w-full sm:w-auto font-bold text-xs sm:text-sm"
-            >
-              <span>Done Scanning</span>
-              <span className="opacity-50 mx-1">•</span>
-              <span>Back to Bill</span>
-            </Button>
-          </div>
+          <Button
+            type="button"
+            id="btn-scanner-done"
+            onClick={onClose}
+            className="w-full sm:w-auto font-bold text-xs sm:text-sm h-9 sm:h-10"
+          >
+            <span>Done Scanning</span>
+            <span className="opacity-50 mx-1">•</span>
+            <span>Back to Bill</span>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
