@@ -38,8 +38,6 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isUnauthorizedDomain, setIsUnauthorizedDomain] = useState(false);
 
-  const [showPasswordField, setShowPasswordField] = useState(false);
-
   // Check for return from redirect Google sign-in
   useEffect(() => {
     getRedirectResult(auth)
@@ -135,55 +133,45 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       return;
     }
 
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+
+    if (isSignUp && password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      // If user typed a password and is in explicit password mode, try Firebase
-      if (password && (isSignUp || showPasswordField)) {
-        try {
-          if (isSignUp) {
-            const res = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-            onAuthenticated(res.user);
-            return;
-          } else {
-            const res = await signInWithEmailAndPassword(auth, cleanEmail, password);
-            onAuthenticated(res.user);
-            return;
-          }
-        } catch (firebaseErr: any) {
-          // If email/password is disabled in Firebase console, allow clean local access with this email
-          if (
-            firebaseErr.code === 'auth/operation-not-allowed' ||
-            firebaseErr.code === 'auth/unauthorized-domain'
-          ) {
-            const localUser = {
-              uid: 'user_' + btoa(cleanEmail.toLowerCase()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
-              email: cleanEmail,
-              displayName: cleanEmail.split('@')[0],
-            };
-            onAuthenticated(localUser);
-            return;
-          }
-          throw firebaseErr;
-        }
+      if (isSignUp) {
+        const res = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        onAuthenticated(res.user);
+      } else {
+        const res = await signInWithEmailAndPassword(auth, cleanEmail, password);
+        onAuthenticated(res.user);
       }
-
-      // Default clean flow: direct login with email
-      const localUser = {
-        uid: 'user_' + btoa(cleanEmail.toLowerCase()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16),
-        email: cleanEmail,
-        displayName: cleanEmail.split('@')[0],
-      };
-      onAuthenticated(localUser);
     } catch (err: any) {
       console.error('Email auth failed:', err);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Invalid credentials. Check your password or use Google sign-in.');
+      if (
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-credential'
+      ) {
+        setError('Incorrect email or password. Please check your credentials or click "Forgot password?".');
       } else if (err.code === 'auth/email-already-in-use') {
-        setError('This email is already registered. Try signing in instead.');
+        setError('This email is already registered. Please sign in instead.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password is too weak. Please use at least 6 characters.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Email/Password authentication is disabled in Firebase Console. Please continue with Google or use Demo Mode.');
       } else {
-        setError(err.message || 'Authentication failed.');
+        setError(err.message || 'Authentication failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -235,7 +223,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
                     type="button"
                     onClick={() => {
                       setIsSignUp(false);
-                      setShowPasswordField(false);
+                      setPassword('');
                       setError(null);
                     }}
                     className="underline underline-offset-4 hover:text-primary cursor-pointer font-medium text-foreground"
@@ -264,7 +252,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
                     type="button"
                     onClick={() => {
                       setIsSignUp(true);
-                      setShowPasswordField(true);
+                      setPassword('');
                       setError(null);
                     }}
                     className="underline underline-offset-4 hover:text-primary cursor-pointer font-medium text-foreground"
@@ -316,47 +304,44 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
                 />
               </div>
 
-              {(isSignUp || showPasswordField) && (
-                <div className="grid gap-2 animate-in fade-in-50 duration-200">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auth-password">Password</Label>
-                    {!isSignUp && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsForgotPassword(true);
-                          setError(null);
-                          setSuccessMessage(null);
-                        }}
-                        className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer"
-                      >
-                        Forgot password?
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="auth-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••••••"
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                      autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                      autoFocus={showPasswordField && !isSignUp}
-                      className="pr-9"
-                      required
-                    />
+              <div className="grid gap-2 animate-in fade-in-50 duration-200">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="auth-password">Password</Label>
+                  {!isSignUp && (
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        setError(null);
+                        setSuccessMessage(null);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer"
                     >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      Forgot password?
                     </button>
-                  </div>
+                  )}
                 </div>
-              )}
+                <div className="relative">
+                  <Input
+                    id="auth-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={isSignUp ? 'Create password (min 6 chars)' : '••••••••••••'}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                    className="pr-9"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
 
               <Button
                 id="btn-submit-auth"
@@ -365,7 +350,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
                 disabled={loading}
               >
                 {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
-                {isSignUp ? 'Sign Up' : 'Login'}
+                {isSignUp ? 'Create Account' : 'Sign In'}
               </Button>
             </form>
           )}
