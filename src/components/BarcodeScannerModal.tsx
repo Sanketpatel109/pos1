@@ -923,7 +923,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             {/* HTML5 QR Container */}
             <div
               id={scannerContainerId}
-              className="w-full h-full min-h-[220px] max-h-[280px] flex items-center justify-center overflow-hidden relative [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[280px] [&_video]:!object-cover [&_video]:!rounded-xl [&_video]:!block [&#qr-shaded-region]:!hidden"
+              className="w-full h-full min-h-[220px] max-h-[300px] flex items-center justify-center overflow-hidden relative bg-black [&_video]:!w-full [&_video]:!h-full [&_video]:!max-h-[300px] [&_video]:!object-contain [&_video]:!rounded-xl [&_video]:!block [&#qr-shaded-region]:!hidden"
             ></div>
 
             {/* Transient Zoom Toast Badge */}
@@ -934,15 +934,15 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               </div>
             )}
 
-            {/* Overlaid Animated Targeting Reticle */}
+            {/* Overlaid Animated Targeting Reticle - Wide format for 1D retail barcodes */}
             {cameraActive && isScanning && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                <div className="w-52 h-36 border-2 border-primary rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.3)] animate-pulse">
+                <div className="w-64 sm:w-72 h-36 sm:h-40 border-2 border-primary rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.3)] animate-pulse">
                   {/* Corner accents */}
-                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-3 border-l-3 border-primary rounded-tl"></div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-3 border-r-3 border-primary rounded-tr"></div>
-                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-3 border-l-3 border-primary rounded-bl"></div>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-3 border-r-3 border-primary rounded-br"></div>
+                  <div className="absolute -top-1 -left-1 w-3.5 h-3.5 border-t-3 border-l-3 border-primary rounded-tl"></div>
+                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 border-t-3 border-r-3 border-primary rounded-tr"></div>
+                  <div className="absolute -bottom-1 -left-1 w-3.5 h-3.5 border-b-3 border-l-3 border-primary rounded-bl"></div>
+                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 border-b-3 border-r-3 border-primary rounded-br"></div>
                   {/* Red Laser Scan Line */}
                   <div className="absolute left-2 right-2 top-1/2 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-bounce"></div>
                 </div>
@@ -1260,6 +1260,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         onClick={() => {
                           setUnrecognizedPromptCode(null);
                           setFetchedOnlineProduct(null);
+                          lastScannedCodeRef.current = '';
+                          lastScannedTimeRef.current = 0;
                         }}
                         className="p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-lg cursor-pointer"
                         title="Dismiss"
@@ -1310,10 +1312,14 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setUnrecognizedPromptCode(null)}
+                        onClick={() => {
+                          setUnrecognizedPromptCode(null);
+                          lastScannedCodeRef.current = '';
+                          lastScannedTimeRef.current = 0;
+                        }}
                         className="py-2 px-3 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-lg cursor-pointer active:scale-95 transition-all"
                       >
-                        Dismiss
+                        Dismiss & Scan Next
                       </button>
                     </div>
                   </div>
