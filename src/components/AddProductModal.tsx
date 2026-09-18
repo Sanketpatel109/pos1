@@ -26,13 +26,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -42,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export interface AddProductModalProps {
@@ -442,107 +436,62 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-6 gap-4 overflow-hidden">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
           {/* Dialog Header */}
-          <DialogHeader>
+          <DialogHeader className="p-6 pb-4 border-b border-border">
             <DialogTitle>
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </DialogTitle>
             <DialogDescription>
               {editingProduct
-                ? 'Update product specifications, pricing, tax rates, and inventory rules.'
+                ? 'Update product details, pricing, tax rates, inventory, and packaging.'
                 : 'Enter product details, pricing, tax rates, inventory, and packaging.'}
             </DialogDescription>
           </DialogHeader>
 
           {/* Form Container */}
-          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 gap-4">
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
             {/* shadcn Tabs Navigation */}
             <Tabs
               value={activeTab}
               onValueChange={(val) => setActiveTab(val as any)}
               className="flex-1 flex flex-col min-h-0"
             >
-              <div className="shrink-0">
+              <div className="px-6 pt-4 shrink-0">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="basic" className="text-xs font-medium gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>General & Pricing</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="inventory" className="text-xs font-medium gap-1.5">
-                    <Package className="w-3.5 h-3.5" />
-                    <span>Inventory & Stock</span>
-                    {parseInt(prodStock, 10) > 0 && (
-                      <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 ml-1">
-                        {prodStock}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="packs" className="text-xs font-medium gap-1.5">
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>Packaging & Photo</span>
-                    {(packagingOptions.length > 0 || Boolean(prodImageUrl)) && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary ml-1" />
-                    )}
-                  </TabsTrigger>
+                  <TabsTrigger value="basic">General & Pricing</TabsTrigger>
+                  <TabsTrigger value="inventory">Inventory & Stock</TabsTrigger>
+                  <TabsTrigger value="packs">Packaging & Media</TabsTrigger>
                 </TabsList>
               </div>
 
               {/* Scrollable Tab Contents */}
-              <div className="flex-1 overflow-y-auto py-2 space-y-4">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                 {/* TAB 1: GENERAL & PRICING */}
                 <TabsContent value="basic" className="space-y-4 mt-0">
-                  {/* Item Type Selector */}
-                  <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                    <Button
-                      type="button"
-                      variant={productType === 'packaged' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => handleSwitchProductType('packaged')}
-                      className="h-8 gap-1.5 text-xs font-medium"
-                    >
-                      <Package className="w-3.5 h-3.5" />
-                      <span>Packaged Item</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={productType === 'loose' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => handleSwitchProductType('loose')}
-                      className="h-8 gap-1.5 text-xs font-medium"
-                    >
-                      <Scale className="w-3.5 h-3.5" />
-                      <span>Loose / By Weight</span>
-                    </Button>
-                  </div>
-
-                  {/* Quick Barcode Scan Banner */}
-                  {productType === 'packaged' && !editingProduct && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        setFieldScannerTarget({ type: 'primary', label: 'New Product' })
-                      }
-                      className="w-full h-9 text-xs font-medium gap-2 border-dashed"
-                    >
-                      <Camera className="w-4 h-4" />
-                      <span>Scan Barcode to Auto-Fill Details</span>
-                    </Button>
-                  )}
-
                   {/* Feedback on barcode lookup */}
                   {lookupFeedback && (
-                    <div className="flex items-center gap-2 text-xs p-2.5 rounded-lg bg-muted text-muted-foreground border border-border">
-                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>{lookupFeedback.message}</span>
+                    <div className="flex items-center justify-between gap-2 p-3 text-xs rounded-md border border-border bg-muted/40 text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span>{lookupFeedback.message}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setLookupFeedback(null)}
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   )}
 
-                  {/* Product Name & Category */}
+                  {/* Row 1: Product Name & Category */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="input-prod-name" className="text-xs font-medium">
+                      <Label htmlFor="input-prod-name">
                         {productType === 'loose' ? 'Item Name' : 'Product Name'}{' '}
                         <span className="text-destructive">*</span>
                       </Label>
@@ -556,21 +505,17 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                         }
                         value={prodName}
                         onChange={(e) => setProdName(e.target.value)}
-                        autoFocus
                         required
-                        className="h-9 text-xs"
                       />
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="select-prod-category" className="text-xs font-medium">
-                        Category
-                      </Label>
+                      <Label htmlFor="select-prod-category">Category</Label>
                       <Select
                         value={prodCategory}
                         onValueChange={(val) => val && setProdCategory(val)}
                       >
-                        <SelectTrigger id="select-prod-category" className="w-full h-9 text-xs">
+                        <SelectTrigger id="select-prod-category" className="w-full">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -586,10 +531,26 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Price & GST Slab */}
+                  {/* Row 2: Item Format & Selling Price */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="input-prod-price" className="text-xs font-medium">
+                      <Label htmlFor="select-prod-type">Item Format</Label>
+                      <Select
+                        value={productType}
+                        onValueChange={(val) => handleSwitchProductType(val as 'packaged' | 'loose')}
+                      >
+                        <SelectTrigger id="select-prod-type" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="packaged">Packaged Item (Standard Barcode)</SelectItem>
+                          <SelectItem value="loose">Loose / Weighed (PLU Code)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="input-prod-price">
                         {productType === 'loose'
                           ? `Price per ${prodUnit} (${currencySymbol})`
                           : `Selling Price (${currencySymbol})`}{' '}
@@ -604,19 +565,22 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                         required
                         min="0"
                         step="any"
-                        className="h-9 text-xs tabular-nums font-semibold"
+                        className="font-medium tabular-nums"
                       />
                     </div>
+                  </div>
 
+                  {/* Row 3: GST Slab & Custom GST */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="select-prod-gst" className="text-xs font-medium">
+                      <Label htmlFor="select-prod-gst">
                         GST Slab (%) <span className="text-destructive">*</span>
                       </Label>
                       <Select
                         value={prodGstRate}
                         onValueChange={(val) => val && setProdGstRate(val)}
                       >
-                        <SelectTrigger id="select-prod-gst" className="w-full h-9 text-xs">
+                        <SelectTrigger id="select-prod-gst" className="w-full">
                           <SelectValue placeholder="Select GST slab" />
                         </SelectTrigger>
                         <SelectContent>
@@ -631,15 +595,12 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
 
-                  {/* Custom GST input */}
-                  {isCustom && (
-                    <div className="grid gap-2">
-                      <Label htmlFor="input-custom-gst" className="text-xs font-medium">
-                        Custom GST Percentage (%)
-                      </Label>
-                      <div className="flex items-center gap-2">
+                    {isCustom ? (
+                      <div className="grid gap-2">
+                        <Label htmlFor="input-custom-gst">
+                          Custom GST (%) <span className="text-destructive">*</span>
+                        </Label>
                         <Input
                           id="input-custom-gst"
                           type="number"
@@ -650,61 +611,66 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                           value={customGstRate}
                           onChange={(e) => setCustomGstRate(e.target.value)}
                           required
-                          className="h-9 text-xs tabular-nums"
+                          className="tabular-nums"
                         />
-                        <span className="text-xs font-bold text-muted-foreground">%</span>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="hidden sm:block" />
+                    )}
+                  </div>
 
-                  {/* Barcode & SKU */}
+                  {/* Row 4: Barcode & SKU */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="input-prod-barcode" className="text-xs font-medium">
-                        Barcode / EAN (Optional)
-                      </Label>
-                      <div className="relative flex items-center">
-                        <Input
-                          id="input-prod-barcode"
-                          type="text"
-                          placeholder="Scan or enter barcode"
-                          value={prodBarcode}
-                          onChange={(e) => {
-                            setProdBarcode(e.target.value);
-                            handleProcessBarcodeLookup(e.target.value);
-                          }}
-                          disabled={productType === 'loose'}
-                          className="h-9 text-xs font-mono pr-9"
-                        />
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="input-prod-barcode">
+                          {productType === 'loose' ? 'Barcode (N/A for loose)' : 'Barcode / EAN (Optional)'}
+                        </Label>
                         {productType === 'packaged' && (
                           <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={() =>
                               setFieldScannerTarget({ type: 'primary', label: 'Product Barcode' })
                             }
-                            className="absolute right-1 h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Scan with Camera"
+                            className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
                           >
                             <Camera className="w-3.5 h-3.5" />
+                            <span>Scan Camera</span>
                           </Button>
                         )}
                       </div>
+                      <Input
+                        id="input-prod-barcode"
+                        type="text"
+                        placeholder={
+                          productType === 'loose'
+                            ? 'Loose items use PLU codes'
+                            : 'Scan or enter barcode'
+                        }
+                        value={prodBarcode}
+                        onChange={(e) => {
+                          setProdBarcode(e.target.value);
+                          handleProcessBarcodeLookup(e.target.value);
+                        }}
+                        disabled={productType === 'loose'}
+                        className="font-mono"
+                      />
                     </div>
 
                     <div className="grid gap-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="input-prod-sku" className="text-xs font-medium">
-                          SKU Code (Optional)
+                        <Label htmlFor="input-prod-sku">
+                          {productType === 'loose' ? 'PLU Code' : 'SKU Code (Optional)'}
                         </Label>
                         {productType === 'loose' && (
                           <Button
                             type="button"
-                            variant="link"
+                            variant="ghost"
                             size="sm"
                             onClick={generateNewPlu}
-                            className="h-auto p-0 text-[11px] text-primary"
+                            className="h-auto p-0 text-xs text-primary hover:underline"
                           >
                             Generate PLU
                           </Button>
@@ -713,10 +679,10 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                       <Input
                         id="input-prod-sku"
                         type="text"
-                        placeholder="e.g. COCA-CAN-330"
+                        placeholder={productType === 'loose' ? 'PLU-1234' : 'e.g. COCA-CAN-330'}
                         value={prodSku}
                         onChange={(e) => setProdSku(e.target.value)}
-                        className="h-9 text-xs font-mono"
+                        className="font-mono"
                       />
                     </div>
                   </div>
@@ -724,357 +690,337 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
                 {/* TAB 2: INVENTORY & STOCK */}
                 <TabsContent value="inventory" className="space-y-4 mt-0">
-                  <Card>
-                    <CardHeader className="p-4 pb-3">
-                      <CardTitle className="text-xs font-semibold">
-                        Stock & Inventory Rules
-                      </CardTitle>
-                      <CardDescription className="text-[11px]">
-                        Track on-hand stock and configure automated reorder thresholds.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className="grid gap-2">
-                          <Label htmlFor="input-prod-stock" className="text-xs font-medium">
-                            Stock on Hand
-                          </Label>
-                          <Input
-                            id="input-prod-stock"
-                            type="number"
-                            min="0"
-                            value={prodStock}
-                            onChange={(e) => setProdStock(e.target.value)}
-                            required
-                            className="h-9 text-xs tabular-nums"
-                          />
-                        </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium">Inventory & Tracking</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Manage stock levels, reorder alerts, units of measure, and acquisition cost.
+                    </p>
+                  </div>
+                  <Separator />
 
-                        <div className="grid gap-2">
-                          <Label htmlFor="input-prod-threshold" className="text-xs font-medium">
-                            Reorder Alert (&lt;)
-                          </Label>
-                          <Input
-                            id="input-prod-threshold"
-                            type="number"
-                            min="0"
-                            value={prodThreshold}
-                            onChange={(e) => setProdThreshold(e.target.value)}
-                            className="h-9 text-xs tabular-nums"
-                          />
-                        </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="input-prod-stock">
+                        Stock on Hand ({prodUnit}) <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="input-prod-stock"
+                        type="number"
+                        min="0"
+                        value={prodStock}
+                        onChange={(e) => setProdStock(e.target.value)}
+                        required
+                        className="tabular-nums font-medium"
+                      />
+                    </div>
 
-                        <div className="grid gap-2">
-                          <Label htmlFor="select-prod-unit" className="text-xs font-medium">
-                            Inventory Unit
-                          </Label>
-                          <Select value={prodUnit} onValueChange={(val) => val && setProdUnit(val)}>
-                            <SelectTrigger id="select-prod-unit" className="w-full h-9 text-xs">
-                              <SelectValue placeholder="Select unit" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pcs">pcs (Pieces)</SelectItem>
-                              <SelectItem value="kg">kg (Kilogram)</SelectItem>
-                              <SelectItem value="gm">gm (Gram)</SelectItem>
-                              <SelectItem value="ltr">ltr (Litre)</SelectItem>
-                              <SelectItem value="ml">ml (Millilitre)</SelectItem>
-                              <SelectItem value="box">box (Box)</SelectItem>
-                              <SelectItem value="pack">pack (Pack)</SelectItem>
-                              <SelectItem value="bottle">bottle (Bottle)</SelectItem>
-                              <SelectItem value="can">can (Can)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="input-prod-threshold">Low Stock Alert Threshold</Label>
+                      <Input
+                        id="input-prod-threshold"
+                        type="number"
+                        min="0"
+                        placeholder="5"
+                        value={prodThreshold}
+                        onChange={(e) => setProdThreshold(e.target.value)}
+                        className="tabular-nums"
+                      />
+                    </div>
 
-                        {canSeeCost && (
-                          <div className="grid gap-2">
-                            <Label htmlFor="input-prod-cost" className="text-xs font-medium">
-                              Cost Price ({currencySymbol})
-                            </Label>
-                            <Input
-                              id="input-prod-cost"
-                              type="number"
-                              min="0"
-                              step="any"
-                              placeholder="Optional"
-                              value={prodCostPrice}
-                              onChange={(e) => setProdCostPrice(e.target.value)}
-                              className="h-9 text-xs tabular-nums"
-                            />
-                          </div>
-                        )}
+                    <div className="grid gap-2">
+                      <Label htmlFor="select-prod-unit">Inventory Unit</Label>
+                      <Select value={prodUnit} onValueChange={(val) => val && setProdUnit(val)}>
+                        <SelectTrigger id="select-prod-unit" className="w-full">
+                          <SelectValue placeholder="Select unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pcs">Pieces (pcs)</SelectItem>
+                          <SelectItem value="kg">Kilogram (kg)</SelectItem>
+                          <SelectItem value="gm">Gram (gm)</SelectItem>
+                          <SelectItem value="ltr">Litre (ltr)</SelectItem>
+                          <SelectItem value="ml">Millilitre (ml)</SelectItem>
+                          <SelectItem value="box">Box (box)</SelectItem>
+                          <SelectItem value="pack">Pack (pack)</SelectItem>
+                          <SelectItem value="bottle">Bottle (bottle)</SelectItem>
+                          <SelectItem value="can">Can (can)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {canSeeCost && (
+                      <div className="grid gap-2">
+                        <Label htmlFor="input-prod-cost">
+                          Cost Price ({currencySymbol})
+                        </Label>
+                        <Input
+                          id="input-prod-cost"
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder="Optional purchase cost"
+                          value={prodCostPrice}
+                          onChange={(e) => setProdCostPrice(e.target.value)}
+                          className="tabular-nums"
+                        />
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                  </div>
                 </TabsContent>
 
                 {/* TAB 3: PACKAGING & PHOTO */}
-                <TabsContent value="packs" className="space-y-4 mt-0">
-                  {/* Packaging Tiers Card */}
-                  {productType === 'packaged' ? (
-                    <Card>
-                      <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between space-y-0">
-                        <div>
-                          <CardTitle className="text-xs font-semibold">
-                            Packaging Tiers & Multi-Barcodes
-                          </CardTitle>
-                          <CardDescription className="text-[11px] mt-0.5">
-                            Link case/box barcodes and custom pack prices while tracking inventory in base {prodUnit}.
-                          </CardDescription>
+                <TabsContent value="packs" className="space-y-6 mt-0">
+                  {/* Packaging Tiers (Packaged Items Only) */}
+                  {productType === 'packaged' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-medium">Packaging Tiers & Multi-Barcodes</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Link carton/case barcodes and pack prices while tracking inventory in base {prodUnit}.
+                          </p>
                         </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           onClick={handleAddPackagingRow}
-                          className="h-8 text-xs font-medium gap-1"
+                          className="text-xs"
                         >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Tier</span>
+                          <Plus className="w-3.5 h-3.5 mr-1" /> Add Tier
                         </Button>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 space-y-3">
-                        {packagingOptions.length === 0 ? (
-                          <div className="text-center py-6 px-4 rounded-lg border border-dashed border-border text-muted-foreground text-xs space-y-1 bg-muted/10">
-                            <p className="font-medium text-foreground">No packaging tiers configured</p>
-                            <p className="text-[11px]">Standard single {prodUnit} pricing applies at checkout.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {packagingOptions.map((pack, idx) => (
-                              <div
-                                key={pack.id || idx}
-                                className="p-3 rounded-lg border border-border bg-muted/20 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
-                              >
-                                <div className="sm:col-span-4 grid gap-1.5">
-                                  <Label className="text-[11px] font-medium text-muted-foreground">
-                                    Pack Name
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    placeholder="e.g. 6-Pack, Box of 24"
-                                    value={pack.packName}
-                                    onChange={(e) =>
-                                      handleUpdatePackagingRow(pack.id, 'packName', e.target.value)
-                                    }
-                                    required
-                                    className="h-8 text-xs"
-                                  />
-                                </div>
+                      </div>
+                      <Separator />
 
-                                <div className="sm:col-span-2 grid gap-1.5">
-                                  <Label className="text-[11px] font-medium text-muted-foreground">
-                                    Qty (x {prodUnit})
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    min="2"
-                                    value={pack.multiplier}
-                                    onChange={(e) =>
-                                      handleUpdatePackagingRow(
-                                        pack.id,
-                                        'multiplier',
-                                        parseInt(e.target.value, 10) || 1
-                                      )
-                                    }
-                                    required
-                                    className="h-8 text-xs tabular-nums"
-                                  />
-                                </div>
-
-                                <div className="sm:col-span-3 grid gap-1.5">
-                                  <Label className="text-[11px] font-medium text-muted-foreground">
-                                    Pack Price ({currencySymbol})
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    step="any"
-                                    placeholder="0.00"
-                                    value={pack.sellingPrice || ''}
-                                    onChange={(e) =>
-                                      handleUpdatePackagingRow(
-                                        pack.id,
-                                        'sellingPrice',
-                                        parseFloat(e.target.value) || 0
-                                      )
-                                    }
-                                    required
-                                    className="h-8 text-xs tabular-nums font-semibold"
-                                  />
-                                </div>
-
-                                <div className="sm:col-span-3 flex items-center gap-1.5">
-                                  <div className="flex-1 grid gap-1.5">
-                                    <Label className="text-[11px] font-medium text-muted-foreground">
-                                      Pack Barcode
-                                    </Label>
-                                    <Input
-                                      type="text"
-                                      placeholder="Barcode"
-                                      value={pack.barcode}
-                                      onChange={(e) =>
-                                        handleUpdatePackagingRow(pack.id, 'barcode', e.target.value)
-                                      }
-                                      className="h-8 text-xs font-mono"
-                                    />
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleRemovePackagingRow(pack.id)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                                    title="Delete Tier"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ) : null}
-
-                  {/* Product Photo Card */}
-                  <Card>
-                    <CardHeader className="p-4 pb-3">
-                      <CardTitle className="text-xs font-semibold">
-                        Product Photo (Camera or Upload)
-                      </CardTitle>
-                      <CardDescription className="text-[11px]">
-                        Add a clear product image for touch grid recognition (auto-compressed).
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageCapture}
-                        className="hidden"
-                      />
-
-                      {isCompressing ? (
-                        <div className="py-8 flex flex-col items-center justify-center text-muted-foreground gap-2 border border-dashed border-border rounded-lg">
-                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                          <span className="text-xs font-medium">Optimizing image...</span>
-                        </div>
-                      ) : !prodImageUrl ? (
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => fileInputRef.current?.click()}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              fileInputRef.current?.click();
-                            }
-                          }}
-                          onDragOver={handleDragOver}
-                          onDragLeave={handleDragLeave}
-                          onDrop={handleDrop}
-                          className={`w-full py-6 px-4 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
-                            isDragOver
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50 bg-muted/10 hover:bg-muted/20'
-                          }`}
-                        >
-                          <div className="w-10 h-10 rounded-full bg-card border border-border shadow-xs flex items-center justify-center mb-2 text-muted-foreground">
-                            <Camera className="w-4 h-4" />
-                          </div>
-                          <span className="text-xs font-semibold text-foreground">
-                            Take Photo or Upload Image
-                          </span>
-                          <span className="text-[11px] text-muted-foreground mt-0.5">
-                            Tap for Camera / Gallery or Drag & Drop (Max 400x400)
-                          </span>
+                      {packagingOptions.length === 0 ? (
+                        <div className="rounded-md border border-dashed border-border p-6 text-center text-xs text-muted-foreground bg-muted/20">
+                          No packaging tiers configured. Standard single {prodUnit} pricing applies.
                         </div>
                       ) : (
-                        <div className="p-3 border border-border rounded-lg flex items-center justify-between gap-3 bg-muted/10">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <img
-                              src={prodImageUrl}
-                              alt="Product preview"
-                              className="w-14 h-14 rounded-md object-cover border border-border shrink-0 bg-background"
-                            />
-                            <div className="min-w-0">
-                              <span className="text-xs font-semibold text-foreground block truncate">
-                                Image attached
-                              </span>
-                              <span className="text-[11px] text-primary font-medium flex items-center gap-1">
-                                <Check className="w-3 h-3" />
-                                <span>Optimized</span>
-                              </span>
-                            </div>
-                          </div>
+                        <div className="space-y-3">
+                          {packagingOptions.map((pack) => (
+                            <div
+                              key={pack.id}
+                              className="p-3 rounded-md border border-border bg-muted/20 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
+                            >
+                              <div className="sm:col-span-4 grid gap-1.5">
+                                <Label className="text-xs">Pack Name</Label>
+                                <Input
+                                  placeholder="e.g. 6-Pack, Box of 24"
+                                  value={pack.packName}
+                                  onChange={(e) =>
+                                    handleUpdatePackagingRow(pack.id, 'packName', e.target.value)
+                                  }
+                                  required
+                                />
+                              </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="h-8 text-xs font-medium gap-1"
-                            >
-                              <RefreshCw className="w-3 h-3" />
-                              <span>Change</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setProdImageUrl('')}
-                              className="h-8 text-xs font-medium text-destructive hover:text-destructive gap-1"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>Remove</span>
-                            </Button>
-                          </div>
+                              <div className="sm:col-span-2 grid gap-1.5">
+                                <Label className="text-xs">Qty (x {prodUnit})</Label>
+                                <Input
+                                  type="number"
+                                  min="2"
+                                  value={pack.multiplier}
+                                  onChange={(e) =>
+                                    handleUpdatePackagingRow(
+                                      pack.id,
+                                      'multiplier',
+                                      parseInt(e.target.value, 10) || 1
+                                    )
+                                  }
+                                  required
+                                  className="tabular-nums"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-3 grid gap-1.5">
+                                <Label className="text-xs">Price ({currencySymbol})</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  placeholder="0.00"
+                                  value={pack.sellingPrice || ''}
+                                  onChange={(e) =>
+                                    handleUpdatePackagingRow(
+                                      pack.id,
+                                      'sellingPrice',
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  required
+                                  className="tabular-nums font-medium"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-3 flex items-center gap-2">
+                                <div className="flex-1 grid gap-1.5">
+                                  <Label className="text-xs">Barcode</Label>
+                                  <Input
+                                    placeholder="Barcode"
+                                    value={pack.barcode}
+                                    onChange={(e) =>
+                                      handleUpdatePackagingRow(pack.id, 'barcode', e.target.value)
+                                    }
+                                    className="font-mono"
+                                  />
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRemovePackagingRow(pack.id)}
+                                  className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                  title="Remove tier"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  )}
+
+                  {/* Product Photo */}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-medium">Product Photo</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Upload or capture an image for visual recognition in the POS catalog.
+                      </p>
+                    </div>
+                    <Separator />
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageCapture}
+                      className="hidden"
+                    />
+
+                    {isCompressing ? (
+                      <div className="py-8 flex flex-col items-center justify-center text-muted-foreground gap-2 border border-dashed border-border rounded-md">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        <span className="text-xs font-medium">Optimizing photo...</span>
+                      </div>
+                    ) : !prodImageUrl ? (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => fileInputRef.current?.click()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+                        }}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`py-6 px-4 border border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+                          isDragOver
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-muted-foreground/50 bg-muted/20 hover:bg-muted/30'
+                        }`}
+                      >
+                        <div className="w-9 h-9 rounded-full bg-background border border-border flex items-center justify-center mb-2 text-muted-foreground">
+                          <Camera className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs font-medium text-foreground">
+                          Click to upload photo or take picture
+                        </span>
+                        <span className="text-[11px] text-muted-foreground mt-0.5">
+                          Drag & drop image file (auto-optimized)
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-3 border border-border rounded-md flex items-center justify-between gap-3 bg-muted/20">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={prodImageUrl}
+                            alt="Product preview"
+                            className="w-12 h-12 rounded-md object-cover border border-border shrink-0 bg-background"
+                          />
+                          <div className="min-w-0">
+                            <span className="text-xs font-medium text-foreground block truncate">
+                              Product Image Attached
+                            </span>
+                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                              <Check className="w-3 h-3" /> Ready
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-xs gap-1"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" /> Change
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setProdImageUrl('')}
+                            className="text-xs text-destructive hover:text-destructive gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Remove
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
               </div>
 
               {/* Dialog Footer */}
-              <DialogFooter className="pt-2 flex items-center justify-between gap-2 sm:justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  className="h-9 px-4 text-xs font-medium"
-                >
+              <DialogFooter className="p-4 border-t border-border flex flex-row items-center justify-between sm:justify-between shrink-0">
+                <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
 
                 <div className="flex items-center gap-2">
+                  {activeTab === 'inventory' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setActiveTab('basic')}
+                    >
+                      Previous
+                    </Button>
+                  )}
+                  {activeTab === 'packs' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setActiveTab('inventory')}
+                    >
+                      Previous
+                    </Button>
+                  )}
                   {activeTab === 'basic' && (
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
                       onClick={() => setActiveTab('inventory')}
-                      className="h-9 text-xs font-medium"
                     >
-                      Next: Inventory ➔
+                      Next
                     </Button>
                   )}
                   {activeTab === 'inventory' && (
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
                       onClick={() => setActiveTab('packs')}
-                      className="h-9 text-xs font-medium"
                     >
-                      Next: Packs & Photo ➔
+                      Next
                     </Button>
                   )}
-                  <Button type="submit" variant="default" className="h-9 px-5 text-xs font-semibold">
-                    Save Product
+                  <Button type="submit">
+                    {editingProduct ? 'Save Changes' : 'Save Product'}
                   </Button>
                 </div>
               </DialogFooter>
