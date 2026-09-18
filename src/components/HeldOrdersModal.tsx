@@ -10,8 +10,7 @@ import {
   ShoppingCart,
   ArrowRightLeft,
   Layers,
-  AlertCircle,
-  FileText,
+  X,
 } from 'lucide-react';
 import { Order, ShopSettings } from '../types';
 import { printThermalHtml } from '../utils/thermalPrinter';
@@ -25,8 +24,17 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 export interface HeldOrdersModalProps {
   isOpen: boolean;
@@ -189,73 +197,60 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-2xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
           {/* Header */}
-          <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
-                  <PauseCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <DialogTitle className="text-base font-bold text-foreground leading-tight">
-                      Parked / Held Orders
-                    </DialogTitle>
-                    <Badge variant={heldOrders.length > 0 ? 'default' : 'secondary'} className="text-xs">
-                      {heldOrders.length} {heldOrders.length === 1 ? 'Order' : 'Orders'}
-                    </Badge>
-                  </div>
-                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                    Temporarily saved tickets waiting to be resumed or paid
-                  </DialogDescription>
-                </div>
-              </div>
+          <DialogHeader className="p-6 pb-4 border-b border-border shrink-0">
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-base font-semibold">Parked / Held Orders</DialogTitle>
+              <Badge variant={heldOrders.length > 0 ? 'default' : 'secondary'}>
+                {heldOrders.length} {heldOrders.length === 1 ? 'Order' : 'Orders'}
+              </Badge>
             </div>
+            <DialogDescription>
+              Temporarily saved tickets waiting to be resumed or paid
+            </DialogDescription>
           </DialogHeader>
 
-          {/* Search & Filter Bar */}
+          {/* Search & Action Bar */}
           {heldOrders.length > 0 && (
-            <div className="px-4 py-2.5 sm:px-5 bg-muted/30 border-b border-border flex items-center gap-2 shrink-0">
+            <div className="p-4 border-b border-border bg-muted/40 flex items-center gap-3 shrink-0">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by order #, item name, note, or cashier..."
-                  className="pl-9 h-9 text-xs bg-background"
+                  className="pl-9 pr-8 bg-background"
                 />
                 {searchQuery && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground font-bold cursor-pointer"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    ×
-                  </button>
+                    <X className="size-3.5" />
+                  </Button>
                 )}
               </div>
               {heldOrders.length > 1 && onClearAllHeld && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={onClearAllHeld}
-                  className="text-xs shrink-0"
-                >
+                <Button variant="destructive" size="sm" onClick={onClearAllHeld}>
                   Clear All
                 </Button>
               )}
             </div>
           )}
 
-          {/* Informational Cart Notice & 1-Click Park Button */}
+          {/* Active Cart Banner */}
           {currentCartCount > 0 && (
-            <div className="px-4 py-2.5 bg-primary/10 border-b border-primary/20 text-xs text-primary flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
-                <span className="truncate">
+            <div className="px-6 py-2.5 bg-muted/60 border-b border-border flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ShoppingCart className="size-4 text-primary" />
+                <span>
                   Active Cart:{' '}
-                  <strong className="font-bold">
-                    {currentCartCount} {currentCartCount === 1 ? 'item' : 'items'} ({currencySymbol}
+                  <strong className="text-foreground">
+                    {currentCartCount} items ({currencySymbol}
                     {currentCartTotal.toFixed(2)})
                   </strong>
                 </span>
@@ -263,12 +258,12 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
               {onHoldCurrentCart && (
                 <Button
                   size="sm"
-                  variant="default"
+                  variant="secondary"
                   onClick={() => {
                     onHoldCurrentCart();
                     onClose();
                   }}
-                  className="h-7 text-xs font-bold shrink-0 gap-1.5 cursor-pointer shadow-xs"
+                  className="h-7 text-xs gap-1.5"
                 >
                   <PauseCircle className="size-3.5" />
                   <span>Park Current Cart</span>
@@ -278,33 +273,27 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
           )}
 
           {/* Orders List Content */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-card">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {heldOrders.length === 0 ? (
-              <div className="py-12 sm:py-16 flex flex-col items-center justify-center text-center p-6 max-w-sm mx-auto">
-                <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center mb-3 text-muted-foreground">
-                  <PauseCircle className="w-6 h-6 stroke-[1.5]" />
+              <div className="py-12 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
+                <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3 text-muted-foreground">
+                  <PauseCircle className="size-6" />
                 </div>
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="text-base font-semibold text-foreground">
                   No Orders Currently on Hold
                 </h3>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                   When a customer needs time to retrieve cash or an extra item, tap the{' '}
                   <strong className="text-foreground font-semibold">Hold button</strong> in the bill
                   terminal to park their ticket and immediately serve the next person in line.
                 </p>
-                <Card className="mt-5 text-left text-xs bg-muted/40 border-border w-full">
-                  <CardHeader className="p-3 pb-1.5">
-                    <CardTitle className="text-xs font-bold text-foreground">
-                      How Cashiers Use Hold:
-                    </CardTitle>
+                <Card size="sm" className="mt-5 text-left w-full">
+                  <CardHeader>
+                    <CardTitle className="text-xs font-semibold">How Cashiers Use Hold:</CardTitle>
+                    <CardDescription className="text-xs">
+                      Cart is saved safely and restores with one click back to the register.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-3 pt-0 text-muted-foreground">
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                      <li>Cart is saved safely in memory & local storage</li>
-                      <li>Ticket counter advances for the next customer</li>
-                      <li>One-click resume restores items back to register</li>
-                    </ul>
-                  </CardContent>
                 </Card>
               </div>
             ) : filteredOrders.length === 0 ? (
@@ -313,7 +302,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                   No parked orders match "{searchQuery}"
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Try searching by a different order number or cashier name
+                  Try searching by order number, customer, or cashier
                 </p>
               </div>
             ) : (
@@ -323,124 +312,105 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 const exactTime = formatTime(order.createdAt);
 
                 return (
-                  <Card
-                    key={order.id}
-                    className="border-border hover:border-foreground/30 shadow-xs hover:shadow-sm transition-all"
-                  >
-                    <CardHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-border flex-row items-start justify-between gap-2 space-y-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="default" className="text-xs font-bold tracking-wider">
-                          Order #{order.orderNumber}
-                        </Badge>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
-                          <Clock className="w-3 h-3 text-muted-foreground" />
+                  <Card key={order.id} size="sm">
+                    <CardHeader className="border-b border-border">
+                      <CardTitle className="flex items-center gap-2 flex-wrap text-sm">
+                        <span>Order #{order.orderNumber}</span>
+                        <Badge variant="outline" className="font-normal text-xs gap-1">
+                          <Clock className="size-3" />
                           <span>
                             {relativeTime} ({exactTime})
                           </span>
-                        </span>
+                        </Badge>
                         {order.staffName && (
-                          <Badge variant="secondary" className="text-xs gap-1 font-semibold">
-                            <User className="w-3 h-3 text-muted-foreground" />
+                          <Badge variant="secondary" className="font-normal text-xs gap-1">
+                            <User className="size-3" />
                             <span>{order.staffName}</span>
                           </Badge>
                         )}
                         {(order as any).note && (
-                          <Badge variant="outline" className="text-xs font-medium">
+                          <Badge variant="outline" className="font-normal text-xs">
                             Note: {(order as any).note}
                           </Badge>
                         )}
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                          Total Due
-                        </span>
-                        <span className="text-base sm:text-lg font-extrabold text-foreground tabular-nums">
-                          {currencySymbol}
-                          {order.total.toFixed(2)}
-                        </span>
-                      </div>
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {itemsCount} {itemsCount === 1 ? 'unit' : 'units'} • Subtotal:{' '}
+                        {currencySymbol}
+                        {order.subtotal.toFixed(2)}
+                      </CardDescription>
+                      <CardAction>
+                        <div className="text-right">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider block font-semibold">
+                            Total Due
+                          </span>
+                          <span className="text-base font-bold text-foreground tabular-nums">
+                            {currencySymbol}
+                            {order.total.toFixed(2)}
+                          </span>
+                        </div>
+                      </CardAction>
                     </CardHeader>
 
-                    <CardContent className="p-3.5 sm:p-4 pt-3 space-y-3">
-                      {/* Items List Preview */}
-                      <div className="bg-muted/30 border border-border rounded-lg p-2.5">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground font-medium mb-1.5">
-                          <span>
-                            Items ({itemsCount} {itemsCount === 1 ? 'unit' : 'units'})
-                          </span>
-                          <span className="tabular-nums">
-                            Subtotal: {currencySymbol}
-                            {order.subtotal.toFixed(2)}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1.5">
-                          {order.items.map((item, idx) => (
-                            <span
-                              key={item.id || idx}
-                              className="bg-card border border-border rounded-md px-2 py-1 text-xs text-foreground font-medium flex items-center gap-1.5 shadow-2xs"
-                            >
-                              <Badge
-                                variant="default"
-                                className="h-4 w-4 p-0 text-[10px] font-bold flex items-center justify-center"
-                              >
-                                {item.quantity}
-                              </Badge>
-                              <span className="truncate max-w-[140px] sm:max-w-[200px]">
-                                {item.name}
-                              </span>
-                              <span className="text-xs text-muted-foreground tabular-nums">
-                                {currencySymbol}
-                                {(item.unitPrice * item.quantity).toFixed(2)}
-                              </span>
+                    <CardContent className="pt-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {order.items.map((item, idx) => (
+                          <Badge
+                            key={item.id || idx}
+                            variant="secondary"
+                            className="gap-1.5 py-1 px-2.5 text-xs font-normal"
+                          >
+                            <span className="font-semibold text-foreground">{item.quantity}x</span>
+                            <span className="max-w-[180px] truncate">{item.name}</span>
+                            <span className="text-muted-foreground tabular-nums">
+                              {currencySymbol}
+                              {(item.unitPrice * item.quantity).toFixed(2)}
                             </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Card Actions Footer */}
-                      <div className="flex items-center justify-between gap-2 pt-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setOrderToDelete(order)}
-                            className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Discard</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setOrderToPrint(order)}
-                            className="text-xs text-muted-foreground hover:text-foreground gap-1"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Token</span>
-                          </Button>
-                        </div>
-
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleResumeClick(order)}
-                          className="gap-1.5 text-xs font-semibold shadow-xs"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                          <span>Resume Ticket</span>
-                        </Button>
+                          </Badge>
+                        ))}
                       </div>
                     </CardContent>
+
+                    <CardFooter className="border-t border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setOrderToDelete(order)}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
+                        >
+                          <Trash2 className="size-3.5" />
+                          <span>Discard</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setOrderToPrint(order)}
+                          className="gap-1.5"
+                        >
+                          <Printer className="size-3.5" />
+                          <span>Token</span>
+                        </Button>
+                      </div>
+
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleResumeClick(order)}
+                        className="gap-1.5 font-medium"
+                      >
+                        <Play className="size-3.5 fill-current" />
+                        <span>Resume Ticket</span>
+                      </Button>
+                    </CardFooter>
                   </Card>
                 );
               })
             )}
           </div>
 
-          {/* Footer */}
-          <DialogFooter className="p-4 bg-muted/30 border-t border-border flex flex-row items-center justify-between shrink-0">
+          {/* Dialog Footer */}
+          <DialogFooter className="p-4 border-t border-border flex flex-row items-center justify-between sm:justify-between shrink-0">
             <p className="text-xs text-muted-foreground hidden sm:block">
               Held orders are preserved in your station storage even if refreshed.
             </p>
@@ -453,32 +423,24 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
       {/* Sub-Dialog: Cart Conflict (Swap / Merge / Discard) */}
       <Dialog open={Boolean(orderToResume)} onOpenChange={(open) => !open && setOrderToResume(null)}>
-        <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl p-6">
-          <DialogHeader className="gap-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-foreground">
-                  Active Cart is Not Empty
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  You have <strong className="text-foreground">{currentCartCount} items ({currencySymbol}{currentCartTotal.toFixed(2)})</strong> currently in the register.
-                </DialogDescription>
-              </div>
-            </div>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Active Cart is Not Empty</DialogTitle>
+            <DialogDescription>
+              You have{' '}
+              <strong className="text-foreground">
+                {currentCartCount} items ({currencySymbol}
+                {currentCartTotal.toFixed(2)})
+              </strong>{' '}
+              currently in the register. Choose how to handle your active cart before resuming Order
+              #{orderToResume?.orderNumber}:
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2.5 my-2">
-            <p className="text-xs text-muted-foreground">
-              Choose how to handle your active cart before resuming Order #{orderToResume?.orderNumber}:
-            </p>
-
-            {/* Option 1: Swap & Hold */}
-            <Button
-              variant="default"
-              className="w-full h-auto p-3 flex items-start gap-3 text-left justify-start whitespace-normal"
+          <div className="space-y-3 py-2">
+            <Card
+              className="cursor-pointer transition-colors hover:border-primary"
+              size="sm"
               onClick={() => {
                 if (orderToResume) {
                   onResumeOrder(orderToResume, 'swap');
@@ -486,28 +448,26 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 }
               }}
             >
-              <div className="w-7 h-7 rounded-lg bg-primary-foreground/20 flex items-center justify-center shrink-0 mt-0.5">
-                <ArrowRightLeft className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider">
-                    Park Current & Resume #{orderToResume?.orderNumber}
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <ArrowRightLeft className="size-4 text-primary" />
+                    <span>Park Current & Resume #{orderToResume?.orderNumber}</span>
                   </span>
-                  <Badge variant="secondary" className="text-[10px] ml-1">
+                  <Badge variant="default" className="text-[10px]">
                     Recommended
                   </Badge>
-                </div>
-                <p className="text-xs text-primary-foreground/80 mt-1 font-normal leading-relaxed">
-                  Your active cart of {currentCartCount} items will be safely held, and #{orderToResume?.orderNumber} loaded immediately.
-                </p>
-              </div>
-            </Button>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Your active cart will be safely parked, and #{orderToResume?.orderNumber} restored
+                  immediately.
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-            {/* Option 2: Merge Carts */}
-            <Button
-              variant="outline"
-              className="w-full h-auto p-3 flex items-start gap-3 text-left justify-start whitespace-normal border-border"
+            <Card
+              className="cursor-pointer transition-colors hover:border-foreground"
+              size="sm"
               onClick={() => {
                 if (orderToResume) {
                   onResumeOrder(orderToResume, 'merge');
@@ -515,23 +475,20 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 }
               }}
             >
-              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
-                <Layers className="w-4 h-4 text-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold text-foreground block">
-                  Merge Items Together
-                </span>
-                <p className="text-xs text-muted-foreground mt-1 font-normal leading-relaxed">
-                  Combine the items from #{orderToResume?.orderNumber} into your current cart into a single ticket.
-                </p>
-              </div>
-            </Button>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Layers className="size-4" />
+                  <span>Merge Items Together</span>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Combine the items from #{orderToResume?.orderNumber} into your current cart.
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-            {/* Option 3: Discard Active Cart */}
-            <Button
-              variant="outline"
-              className="w-full h-auto p-3 flex items-start gap-3 text-left justify-start whitespace-normal border-destructive/30 hover:border-destructive hover:bg-destructive/10"
+            <Card
+              className="cursor-pointer transition-colors hover:border-destructive hover:bg-destructive/5"
+              size="sm"
               onClick={() => {
                 if (orderToResume) {
                   onResumeOrder(orderToResume, 'replace');
@@ -539,22 +496,21 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
                 }
               }}
             >
-              <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0 mt-0.5">
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold text-destructive block">
-                  Discard Current Cart & Resume
-                </span>
-                <p className="text-xs text-destructive/80 mt-1 font-normal leading-relaxed">
-                  Clear the current {currentCartCount} items permanently and load #{orderToResume?.orderNumber}.
-                </p>
-              </div>
-            </Button>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold text-destructive flex items-center gap-2">
+                  <Trash2 className="size-4" />
+                  <span>Discard Current Cart & Resume</span>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Clear the active {currentCartCount} items permanently and load #
+                  {orderToResume?.orderNumber}.
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
 
-          <DialogFooter className="mt-2">
-            <Button variant="ghost" size="sm" onClick={() => setOrderToResume(null)}>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setOrderToResume(null)}>
               Cancel
             </Button>
           </DialogFooter>
@@ -563,22 +519,17 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
       {/* Sub-Dialog: Confirm Deletion */}
       <Dialog open={Boolean(orderToDelete)} onOpenChange={(open) => !open && setOrderToDelete(null)}>
-        <DialogContent className="sm:max-w-sm bg-card border-border shadow-2xl p-5">
-          <DialogHeader className="gap-2">
-            <div className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
-              <Trash2 className="w-5 h-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-base font-bold text-foreground">
-                Discard Order #{orderToDelete?.orderNumber}?
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-1">
-                This will permanently delete the parked ticket with {orderToDelete?.items.length} items ({currencySymbol}{orderToDelete?.total.toFixed(2)}).
-              </DialogDescription>
-            </div>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Discard Order #{orderToDelete?.orderNumber}?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the parked ticket with {orderToDelete?.items.length}{' '}
+              items ({currencySymbol}
+              {orderToDelete?.total.toFixed(2)}).
+            </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="flex-row justify-end gap-2 mt-3">
+          <DialogFooter className="flex-row justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setOrderToDelete(null)}>
               Cancel
             </Button>
@@ -595,67 +546,69 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
 
       {/* Sub-Dialog: Print Token Slip */}
       <Dialog open={Boolean(orderToPrint)} onOpenChange={(open) => !open && setOrderToPrint(null)}>
-        <DialogContent className="sm:max-w-sm bg-card border-border shadow-2xl p-5">
-          <DialogHeader className="gap-1">
-            <DialogTitle className="text-base font-bold text-foreground">
-              Print Parked Order Token
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Print Parked Order Token</DialogTitle>
+            <DialogDescription>
               Thermal receipt slip for Order #{orderToPrint?.orderNumber}
             </DialogDescription>
           </DialogHeader>
 
           {orderToPrint && (
-            <div className="bg-muted/40 border border-border rounded-xl p-3 text-xs space-y-2 text-foreground font-mono">
-              <div className="text-center border-b border-dashed border-border pb-2">
-                <span className="font-bold text-xs block text-foreground font-sans">
-                  {shopSettings.shopName}
-                </span>
-                <span className="text-[10px] text-muted-foreground block">PARKED ORDER TOKEN</span>
-                <span className="text-base font-bold text-foreground block mt-1 bg-card border border-border rounded py-0.5">
-                  #{orderToPrint.orderNumber}
-                </span>
-              </div>
-
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Date: {new Date(orderToPrint.createdAt).toLocaleDateString()}</span>
-                <span>Time: {formatTime(orderToPrint.createdAt)}</span>
-              </div>
-              {orderToPrint.staffName && (
-                <div className="text-xs text-muted-foreground">
-                  Cashier: {orderToPrint.staffName}
+            <Card size="sm" className="bg-muted/30 font-mono text-xs">
+              <CardContent className="space-y-2 pt-3">
+                <div className="text-center border-b border-dashed border-border pb-2">
+                  <span className="font-bold text-xs block text-foreground font-sans">
+                    {shopSettings.shopName}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block font-sans">
+                    PARKED ORDER TOKEN
+                  </span>
+                  <span className="text-base font-bold text-foreground block mt-1">
+                    #{orderToPrint.orderNumber}
+                  </span>
                 </div>
-              )}
 
-              <div className="border-t border-dashed border-border pt-1.5 space-y-1">
-                {orderToPrint.items.map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-xs">
-                    <span className="truncate max-w-[150px]">
-                      {i.quantity}x {i.name}
-                    </span>
-                    <span className="tabular-nums font-bold">
-                      {currencySymbol}
-                      {(i.unitPrice * i.quantity).toFixed(2)}
-                    </span>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Date: {new Date(orderToPrint.createdAt).toLocaleDateString()}</span>
+                  <span>Time: {formatTime(orderToPrint.createdAt)}</span>
+                </div>
+                {orderToPrint.staffName && (
+                  <div className="text-xs text-muted-foreground">
+                    Cashier: {orderToPrint.staffName}
                   </div>
-                ))}
-              </div>
+                )}
 
-              <div className="border-t border-dashed border-border pt-1.5 flex justify-between font-bold text-xs text-foreground">
-                <span>TOTAL DUE:</span>
-                <span className="tabular-nums">
-                  {currencySymbol}
-                  {orderToPrint.total.toFixed(2)}
-                </span>
-              </div>
+                <Separator className="my-1 border-dashed" />
 
-              <p className="text-[10px] text-center text-muted-foreground italic pt-1 font-sans">
-                Present this slip at register when ready to complete your purchase.
-              </p>
-            </div>
+                <div className="space-y-1">
+                  {orderToPrint.items.map((i, idx) => (
+                    <div key={idx} className="flex justify-between text-xs">
+                      <span className="truncate max-w-[150px]">
+                        {i.quantity}x {i.name}
+                      </span>
+                      <span className="tabular-nums font-bold">
+                        {currencySymbol}
+                        {(i.unitPrice * i.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Separator className="my-1 border-dashed" />
+
+                <div className="flex justify-between font-bold text-xs text-foreground">
+                  <span>TOTAL DUE:</span>
+                  <span className="tabular-nums">
+                    {currencySymbol}
+                    {orderToPrint.total.toFixed(2)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          <DialogFooter className="flex-row justify-end gap-2 mt-2">
+          <DialogFooter className="flex-row justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setOrderToPrint(null)}>
               Close
             </Button>
@@ -665,7 +618,7 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
               onClick={() => orderToPrint && handlePrintSlip(orderToPrint)}
               className="gap-1.5"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="size-3.5" />
               <span>Print Slip</span>
             </Button>
           </DialogFooter>
