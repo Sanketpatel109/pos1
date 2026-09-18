@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Trash2, PauseCircle, Printer, Tag, Percent, X, Check, ArrowLeftRight, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useCart } from '../context/CartContext';
 
 export interface CartSummaryProps {
@@ -76,6 +85,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
     setDiscount(presetPercent, 'percentage');
     setIsDiscountModalOpen(false);
   };
+  const handleQuickPreset = handleApplyPresetPercent;
 
   const handleApplyRoundOff = () => {
     // Round down to nearest whole currency unit
@@ -87,6 +97,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
     }
     setIsDiscountModalOpen(false);
   };
+  const handleRoundOff = handleApplyRoundOff;
 
   // Compute final net total including auto-promotions and manual discount
   const finalTotal = Math.max(0, subtotal - promotionsDiscount - discountAmount) + taxAmount;
@@ -306,80 +317,66 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
         </Button>
       </div>
 
-      {/* Interactive Bill Discount Modal - Portalled to document.body to prevent any stacking context clipping */}
-      {isDiscountModalOpen && typeof document !== 'undefined' && createPortal(
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Apply Bill Discount"
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-        >
-          <div
-            className="fixed inset-0 bg-transparent"
-            onClick={() => setIsDiscountModalOpen(false)}
-          />
-          <div
-            className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-4 z-10 space-y-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-border">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                  <Percent className="size-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-foreground">Apply Bill Discount</h3>
-                  <p className="text-[11px] text-muted-foreground">Discount on total subtotal ({currencySymbol}{subtotal.toFixed(2)})</p>
-                </div>
+      {/* Apply Discount Modal strictly using shadcn/ui Dialog */}
+      <Dialog open={isDiscountModalOpen} onOpenChange={setIsDiscountModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <Percent className="size-4" />
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDiscountModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground p-1 rounded-md cursor-pointer"
-              >
-                <X className="size-4" />
-              </button>
+              <div>
+                <DialogTitle>Apply Bill Discount</DialogTitle>
+                <DialogDescription>
+                  Apply discount on total subtotal ({currencySymbol}{subtotal.toFixed(2)})
+                </DialogDescription>
+              </div>
             </div>
+          </DialogHeader>
 
-            {/* Quick Preset Buttons */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+          <div className="space-y-4 py-2">
+            {/* Quick Presets */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                 Quick Presets
-              </label>
+              </Label>
               <div className="grid grid-cols-5 gap-1.5">
                 {[5, 10, 15, 20].map((pct) => (
-                  <button
+                  <Button
                     key={pct}
                     type="button"
-                    onClick={() => handleQuickPreset(pct)}
-                    className="py-2 text-xs font-bold rounded-lg border border-border bg-muted/40 hover:bg-primary/10 hover:border-primary hover:text-primary transition-all cursor-pointer text-center"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyPresetPercent(pct)}
+                    className="font-bold text-xs"
                   >
                     {pct}%
-                  </button>
+                  </Button>
                 ))}
-                <button
+                <Button
                   type="button"
-                  onClick={handleRoundOff}
-                  className="py-2 text-[11px] font-bold rounded-lg border border-border bg-muted/40 hover:bg-primary/10 hover:border-primary hover:text-primary transition-all cursor-pointer text-center"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleApplyRoundOff}
+                  className="font-bold text-xs"
                   title="Round total down to nearest rupee"
                 >
                   Round
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Mode Switcher: % Percentage vs Flat Amount */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                   Custom Discount
-                </label>
-                <div className="flex rounded-md bg-muted p-0.5 border border-border text-[11px]">
+                </Label>
+                <div className="flex rounded-md bg-muted p-0.5 border border-border text-xs">
                   <button
                     type="button"
                     onClick={() => setTempDiscountType('percentage')}
-                    className={`px-2 py-0.5 rounded font-semibold cursor-pointer transition-all ${
+                    className={`px-2.5 py-1 rounded-sm font-semibold cursor-pointer transition-all ${
                       tempDiscountType === 'percentage'
                         ? 'bg-background text-foreground shadow-xs'
                         : 'text-muted-foreground hover:text-foreground'
@@ -390,7 +387,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
                   <button
                     type="button"
                     onClick={() => setTempDiscountType('flat')}
-                    className={`px-2 py-0.5 rounded font-semibold cursor-pointer transition-all ${
+                    className={`px-2.5 py-1 rounded-sm font-semibold cursor-pointer transition-all ${
                       tempDiscountType === 'flat'
                         ? 'bg-background text-foreground shadow-xs'
                         : 'text-muted-foreground hover:text-foreground'
@@ -402,7 +399,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
               </div>
 
               <div className="relative flex items-center">
-                <input
+                <Input
                   type="number"
                   min="0"
                   max={tempDiscountType === 'percentage' ? 100 : subtotal}
@@ -417,48 +414,45 @@ export const CartSummary: React.FC<CartSummaryProps> = ({
                       handleApplyDiscount();
                     }
                   }}
-                  className="w-full h-10 px-3 pr-10 text-sm font-semibold rounded-lg bg-background border border-border focus:outline-hidden focus:ring-2 focus:ring-primary focus:border-transparent tabular-nums"
+                  className="pr-10 text-sm font-semibold tabular-nums"
                 />
                 <span className="absolute right-3 text-xs font-bold text-muted-foreground pointer-events-none">
                   {tempDiscountType === 'percentage' ? '%' : currencySymbol}
                 </span>
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-2 border-t border-border">
-              {discountAmount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDiscount(0);
-                    setIsDiscountModalOpen(false);
-                  }}
-                  className="px-3 py-2 text-xs font-bold text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer"
-                >
-                  Remove
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setIsDiscountModalOpen(false)}
-                className="flex-1 py-2 text-xs font-bold text-muted-foreground hover:bg-muted rounded-lg transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleApplyDiscount}
-                className="flex-1 py-2 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg shadow-xs transition-all cursor-pointer"
-              >
-                Apply Discount
-              </button>
-            </div>
           </div>
-        </div>,
-        document.body
-      )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {discountAmount > 0 && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  setDiscount(0);
+                  setIsDiscountModalOpen(false);
+                }}
+                className="font-bold mr-auto"
+              >
+                Remove
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDiscountModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleApplyDiscount}
+            >
+              Apply Discount
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
