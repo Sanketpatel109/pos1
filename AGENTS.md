@@ -8,7 +8,7 @@ The repository exclusively uses the official Shadcn UI **Preset `b1ZhhFbQB`**:
 - **Tailwind CSS**: v4 with `@theme inline` design tokens in `src/index.css`
 - **Component Registry**: `@/components/ui/` (`components/ui/`)
 
-All previous style guides (e.g. `base-vega`, `olive`) are deprecated and removed. Only preset `b1ZhhFbQB` is permitted.
+Only preset `b1ZhhFbQB` is permitted across the entire codebase and backend. No other design systems or style guides exist.
 
 ### 1. Only Use Pre-Defined Shadcn Components
 All visual UI elements (buttons, inputs, cards, dialogs, badges, selects, tables, labels, tabs, checkboxes) must **strictly and exclusively** use the Shadcn UI components installed in `@/components/ui/` (`components/ui/`):
