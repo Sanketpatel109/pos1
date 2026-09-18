@@ -39,6 +39,7 @@ import {
   EyeOff,
   Sparkles,
   Barcode,
+  CreditCard,
 } from 'lucide-react';
 import { soundbox } from '../utils/soundbox';
 import { Button } from '@/components/ui/button';
@@ -87,6 +88,9 @@ import {
   testFirestoreConnection,
 } from '../services/liveSync';
 import { normalizeRole } from '../utils/permissions';
+import { SubscriptionTab } from '../pages/Settings/SubscriptionTab';
+import { SubscriptionState } from '../types/subscription';
+import { SubscriptionStatusInfo } from '../store/useSubscriptionStore';
 
 export interface PrintSettingsModalProps {
   isOpen: boolean;
@@ -114,8 +118,12 @@ export interface PrintSettingsModalProps {
     requiredRole?: 'OWNER' | 'MANAGER';
     onAuthorize: () => void;
   }) => void;
-  initialTab?: 'hardware' | 'store' | 'cloud';
+  initialTab?: 'hardware' | 'store' | 'cloud' | 'subscription';
   initialSubView?: 'overview' | 'diagnostics';
+  subscriptionState?: SubscriptionState;
+  subscriptionStatusInfo?: SubscriptionStatusInfo;
+  onSubmitUtr?: (utr: string) => { success: boolean; message: string };
+  onActivateLicenseKey?: (key: string) => { success: boolean; message: string };
 }
 
 export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
@@ -139,8 +147,12 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
   onRequestManagerPin,
   initialTab = 'hardware',
   initialSubView = 'overview',
+  subscriptionState,
+  subscriptionStatusInfo,
+  onSubmitUtr,
+  onActivateLicenseKey,
 }) => {
-  const [activeTab, setActiveTab] = useState<'hardware' | 'store' | 'cloud'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'hardware' | 'store' | 'cloud' | 'subscription'>(initialTab);
   const [activeSubView, setActiveSubView] = useState<'overview' | 'diagnostics'>(initialSubView);
   const [diagTab, setDiagTab] = useState<'tables' | 'account'>('tables');
   const [diagnosticsUnlocked, setDiagnosticsUnlocked] = useState<boolean>(false);
@@ -572,6 +584,8 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     ? 'Hardware & Printer'
                     : activeTab === 'store'
                     ? 'Store Profile'
+                    : activeTab === 'subscription'
+                    ? 'Subscription & Billing'
                     : 'Cloud & Backup'}
                 </span>
                 {activeTab === 'cloud' && activeSubView === 'diagnostics' && (
@@ -645,6 +659,30 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
               <Cloud className="w-3.5 h-3.5" />
               <span>Cloud & Backup</span>
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            </Button>
+            <Button
+              type="button"
+              variant={activeTab === 'subscription' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                setActiveTab('subscription');
+                setActiveSubView('overview');
+              }}
+              className="h-8 text-xs font-semibold gap-1.5"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Subscription & Billing</span>
+              {subscriptionStatusInfo && (
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    subscriptionStatusInfo.dotColor === 'green'
+                      ? 'bg-emerald-500'
+                      : subscriptionStatusInfo.dotColor === 'amber'
+                      ? 'bg-amber-500'
+                      : 'bg-destructive'
+                  }`}
+                />
+              )}
             </Button>
           </div>
         )}
@@ -2031,6 +2069,16 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Subscription & Billing Tab */}
+          {activeTab === 'subscription' && subscriptionState && subscriptionStatusInfo && onSubmitUtr && onActivateLicenseKey && (
+            <SubscriptionTab
+              state={subscriptionState}
+              statusInfo={subscriptionStatusInfo}
+              onSubmitUtr={onSubmitUtr}
+              onActivateLicenseKey={onActivateLicenseKey}
+            />
           )}
         </div>
 

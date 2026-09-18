@@ -51,56 +51,7 @@ export interface CartContextType {
   setTaxRate: (rate: number) => void;
 }
 
-const INITIAL_BILL_ITEMS: BillItem[] = [
-  {
-    id: 'bi-1',
-    name: 'French Fries',
-    unitPrice: 50.0,
-    quantity: 1,
-    gstRate: 5,
-    taxableAmount: 50.0,
-    cgst: 1.25,
-    sgst: 1.25,
-    totalTax: 2.5,
-    itemTotal: 52.5,
-  },
-  {
-    id: 'bi-2',
-    name: 'Pav Bhaji',
-    unitPrice: 70.0,
-    quantity: 1,
-    gstRate: 5,
-    taxableAmount: 70.0,
-    cgst: 1.75,
-    sgst: 1.75,
-    totalTax: 3.5,
-    itemTotal: 73.5,
-  },
-  {
-    id: 'bi-3',
-    name: 'Samosa',
-    unitPrice: 15.0,
-    quantity: 1,
-    gstRate: 5,
-    taxableAmount: 15.0,
-    cgst: 0.38,
-    sgst: 0.37,
-    totalTax: 0.75,
-    itemTotal: 15.75,
-  },
-  {
-    id: 'bi-4',
-    name: 'Cold Coffee',
-    unitPrice: 45.0,
-    quantity: 1,
-    gstRate: 18,
-    taxableAmount: 45.0,
-    cgst: 4.05,
-    sgst: 4.05,
-    totalTax: 8.1,
-    itemTotal: 53.1,
-  },
-];
+const INITIAL_BILL_ITEMS: BillItem[] = [];
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 

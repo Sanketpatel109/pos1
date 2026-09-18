@@ -28,6 +28,7 @@ import {
   getRequiredRoleForScreen,
 } from '../utils/permissions';
 import { LicenseStatus } from '../services/subscriptionService';
+import { SubscriptionStatusInfo } from '../store/useSubscriptionStore';
 
 export interface NavigationDrawerProps {
   isOpen: boolean;
@@ -52,6 +53,8 @@ export interface NavigationDrawerProps {
   offersCount?: number;
   onSignOut?: () => void;
   licenseStatus?: LicenseStatus | null;
+  subscriptionStatusInfo?: SubscriptionStatusInfo;
+  onOpenSubscriptionSettings?: () => void;
 }
 
 interface MenuItem {
@@ -83,6 +86,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   offersCount,
   onSignOut,
   licenseStatus,
+  subscriptionStatusInfo,
+  onOpenSubscriptionSettings,
 }) => {
   if (!isOpen) return null;
 
@@ -390,6 +395,42 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               title="Sign Out of Store Account"
             >
               <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Minimal Subscription Status Pill Footer */}
+        {subscriptionStatusInfo && (
+          <div className="px-2.5 py-1.5 border-t border-border bg-card/60">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onOpenSubscriptionSettings) {
+                  onOpenSubscriptionSettings();
+                } else if (onOpenSubscription) {
+                  onOpenSubscription();
+                }
+              }}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-border bg-muted/40 hover:bg-muted text-xs transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`size-2 rounded-full shrink-0 ${
+                    subscriptionStatusInfo.dotColor === 'green'
+                      ? 'bg-emerald-500'
+                      : subscriptionStatusInfo.dotColor === 'amber'
+                      ? 'bg-amber-500'
+                      : 'bg-destructive'
+                  }`}
+                />
+                <span className="font-semibold text-xs text-foreground truncate">
+                  {subscriptionStatusInfo.label}
+                </span>
+              </div>
+              <span className="text-[10px] text-muted-foreground hover:text-foreground font-medium">
+                Manage →
+              </span>
             </button>
           </div>
         )}

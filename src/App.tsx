@@ -68,6 +68,9 @@ import { AuthGateScreen } from './components/AuthGateScreen';
 import { ProcessReturnModal, RefundResult } from './components/ProcessReturnModal';
 import { QuickRefundModal } from './components/QuickRefundModal';
 import { TenantLicense } from './types';
+import { useSubscriptionStore } from './store/useSubscriptionStore';
+import { useSubscriptionGuard } from './hooks/useSubscriptionGuard';
+import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
 
 import {
   getOrCreateLicense,
@@ -135,15 +138,8 @@ export default function App() {
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud'>('hardware');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud' | 'subscription'>('hardware');
   const [settingsInitialSubView, setSettingsInitialSubView] = useState<'overview' | 'diagnostics'>('overview');
-
-  // Subscription / License State & Modals
-  const [tenantLicense, setTenantLicense] = useState<TenantLicense | null>(() => getCachedLicense());
-  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
-  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState<boolean>(false);
-  const [isStoreOnboardingOpen, setIsStoreOnboardingOpen] = useState<boolean>(false);
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
 
   // Settings State - strictly partitioned per user
   const [shopSettings, setShopSettings] = useState<ShopSettings>(() => {
@@ -181,6 +177,35 @@ export default function App() {
       onboarded: false,
     };
   });
+
+  // Subscription Engine & Anti-Tamper Security Guard
+  const currentStoreId = shopSettings.shopName
+    ? shopSettings.shopName.toLowerCase().replace(/[^a-z0-9]/g, '_')
+    : (currentUser?.uid || 'monopos_store_default');
+
+  const {
+    state: subState,
+    statusInfo: subStatusInfo,
+    submitUtr,
+    activateLicenseKey,
+    recordActivityTimestamp,
+  } = useSubscriptionStore(currentStoreId);
+
+  const {
+    guardCheckoutAction,
+    isExpiredModalOpen,
+    setIsExpiredModalOpen,
+  } = useSubscriptionGuard({
+    statusInfo: subStatusInfo,
+    recordActivityTimestamp,
+  });
+
+  // Subscription / License State & Modals
+  const [tenantLicense, setTenantLicense] = useState<TenantLicense | null>(() => getCachedLicense());
+  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState<boolean>(false);
+  const [isStoreOnboardingOpen, setIsStoreOnboardingOpen] = useState<boolean>(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
 
   // Listen to Firebase Auth state with local persistence
   useEffect(() => {
@@ -1381,6 +1406,13 @@ export default function App() {
     tableOrToken?: string;
     redeemedPoints?: number;
   }) => {
+    if (!subStatusInfo.isAccessible) {
+      setIsPaymentModalOpen(false);
+      setIsExpiredModalOpen(true);
+      return;
+    }
+    recordActivityTimestamp();
+
     playSfx('success');
 
     const orderItems = (data.items && data.items.length > 0) ? [...data.items] : [...currentBillItems];
@@ -1732,32 +1764,36 @@ export default function App() {
 
   // QUICK BILL HANDLERS
   const handleSaveQuickBill = (items: BillItem[]) => {
-    setCurrentBillItems(items);
-    setIsPaymentModalOpen(true);
+    guardCheckoutAction(() => {
+      setCurrentBillItems(items);
+      setIsPaymentModalOpen(true);
+    });
   };
 
   const handlePrintQuickBill = (items: BillItem[]) => {
-    if (items.length === 0) return;
-    const qSubtotal = items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
-    const qTax = (qSubtotal * shopSettings.taxRate) / 100;
-    const draftOrder: Order = {
-      id: `quick-${Date.now()}`,
-      orderNumber,
-      terminalPrefix: shopSettings.terminalPrefix || 'A',
-      orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
-      createdAt: new Date().toISOString(),
-      items: [...items],
-      status: 'active',
-      subtotal: qSubtotal,
-      taxRate: shopSettings.taxRate,
-      taxAmount: qTax,
-      discount: 0,
-      total: qSubtotal + qTax,
-      paymentMethod: 'NONE',
-      staffName: activeStaff.name,
-    };
-    setDirectPrintOrder(draftOrder);
-    printDirectThermalReceipt(draftOrder, shopSettings);
+    guardCheckoutAction(() => {
+      if (items.length === 0) return;
+      const qSubtotal = items.reduce((sum, it) => sum + it.unitPrice * it.quantity, 0);
+      const qTax = (qSubtotal * shopSettings.taxRate) / 100;
+      const draftOrder: Order = {
+        id: `quick-${Date.now()}`,
+        orderNumber,
+        terminalPrefix: shopSettings.terminalPrefix || 'A',
+        orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
+        createdAt: new Date().toISOString(),
+        items: [...items],
+        status: 'active',
+        subtotal: qSubtotal,
+        taxRate: shopSettings.taxRate,
+        taxAmount: qTax,
+        discount: 0,
+        total: qSubtotal + qTax,
+        paymentMethod: 'NONE',
+        staffName: activeStaff.name,
+      };
+      setDirectPrintOrder(draftOrder);
+      printDirectThermalReceipt(draftOrder, shopSettings);
+    });
   };
 
   // CATEGORY & PRODUCT MANAGEMENT
@@ -2570,27 +2606,29 @@ export default function App() {
               onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
               onOpenQuickAdd={() => setIsQuickAddOpen(true)}
               onPrintBill={() => {
-                if (currentBillItems.length === 0) return;
-                const draftOrder: Order = {
-                  id: `draft-${Date.now()}`,
-                  orderNumber,
-                  terminalPrefix: shopSettings.terminalPrefix || 'A',
-                  orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
-                  createdAt: new Date().toISOString(),
-                  items: [...currentBillItems],
-                  status: 'active',
-                  subtotal,
-                  taxRate: shopSettings.taxRate,
-                  taxAmount,
-                  discount: discountAmount || 0,
-                  total: grandTotal,
-                  paymentMethod: 'NONE',
-                  staffName: activeStaff.name,
-                };
-                setDirectPrintOrder(draftOrder);
-                printDirectThermalReceipt(draftOrder, shopSettings);
+                guardCheckoutAction(() => {
+                  if (currentBillItems.length === 0) return;
+                  const draftOrder: Order = {
+                    id: `direct-${Date.now()}`,
+                    orderNumber,
+                    terminalPrefix: shopSettings.terminalPrefix || 'A',
+                    orderNumberFormatted: `${shopSettings.terminalPrefix || 'A'}-${orderNumber}`,
+                    createdAt: new Date().toISOString(),
+                    items: [...currentBillItems],
+                    status: 'active',
+                    subtotal,
+                    taxRate: shopSettings.taxRate,
+                    taxAmount,
+                    discount: discountAmount || 0,
+                    total: grandTotal,
+                    paymentMethod: 'NONE',
+                    staffName: activeStaff.name,
+                  };
+                  setDirectPrintOrder(draftOrder);
+                  printDirectThermalReceipt(draftOrder, shopSettings);
+                });
               }}
-              onSaveBill={() => setIsPaymentModalOpen(true)}
+              onSaveBill={() => guardCheckoutAction(() => setIsPaymentModalOpen(true))}
               onSwitchMode={() => {
                 playSfx('tap');
                 setActiveScreen('quick-bill');
@@ -2609,8 +2647,8 @@ export default function App() {
               onClearBill={handleClearBill}
               onOpenHeldOrders={() => setIsHeldOrdersModalOpen(true)}
               onOpenRefund={() => setIsQuickRefundModalOpen(true)}
-              onSaveQuickBill={handleSaveQuickBill}
-              onPrintQuickBill={handlePrintQuickBill}
+              onSaveQuickBill={(items) => guardCheckoutAction(() => handleSaveQuickBill(items))}
+              onPrintQuickBill={(items) => guardCheckoutAction(() => handlePrintQuickBill(items))}
               onSwitchMode={() => {
                 playSfx('tap');
                 setActiveScreen('item-wise');
@@ -2742,6 +2780,12 @@ export default function App() {
         }}
         onSignOut={handleSignOut}
         licenseStatus={licenseStatus}
+        subscriptionStatusInfo={subStatusInfo}
+        onOpenSubscriptionSettings={() => {
+          setIsSidebarOpen(false);
+          setSettingsInitialTab('subscription');
+          setIsPrintSettingsOpen(true);
+        }}
       />
 
       {/* SaaS Subscription & Upgrade Modal */}
@@ -2922,6 +2966,27 @@ export default function App() {
         }}
         initialTab={isCloudModalOpen ? 'cloud' : settingsInitialTab}
         initialSubView={isCloudModalOpen ? 'diagnostics' : settingsInitialSubView}
+        subscriptionState={subState}
+        subscriptionStatusInfo={subStatusInfo}
+        onSubmitUtr={submitUtr}
+        onActivateLicenseKey={activateLicenseKey}
+      />
+
+      {/* Subscription Expired / Tamper Lockout Modal */}
+      <SubscriptionExpiredModal
+        isOpen={isExpiredModalOpen}
+        state={subState}
+        statusInfo={subStatusInfo}
+        onClose={() => setIsExpiredModalOpen(false)}
+        onSubmitUtr={submitUtr}
+        onActivateLicenseKey={activateLicenseKey}
+        onOpenSettings={() => {
+          setSettingsInitialTab('subscription');
+          setIsPrintSettingsOpen(true);
+        }}
+        onOpenReports={() => {
+          setActiveScreen('reports');
+        }}
       />
 
       {/* Training Videos Modal */}
