@@ -275,35 +275,77 @@ export const HeldOrdersModal: React.FC<HeldOrdersModalProps> = ({
           {/* Orders List Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {heldOrders.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center max-w-sm mx-auto">
-                <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3 text-muted-foreground">
-                  <PauseCircle className="size-6" />
+              <div className="py-12 px-4 flex flex-col items-center justify-center text-center max-w-sm mx-auto space-y-4">
+                <div className="size-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                  <PauseCircle className="size-7" />
                 </div>
-                <h3 className="text-base font-semibold text-foreground">
-                  No Orders Currently on Hold
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  When a customer needs time to retrieve cash or an extra item, tap the{' '}
-                  <strong className="text-foreground font-semibold">Hold button</strong> in the bill
-                  terminal to park their ticket and immediately serve the next person in line.
-                </p>
-                <Card size="sm" className="mt-5 text-left w-full">
-                  <CardHeader>
-                    <CardTitle className="text-xs font-semibold">How Cashiers Use Hold:</CardTitle>
-                    <CardDescription className="text-xs">
-                      Cart is saved safely and restores with one click back to the register.
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-semibold text-foreground">
+                    No Orders Currently on Hold
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Park customer tickets temporarily when they need time to fetch cash or additional items, and serve the next customer without losing progress.
+                  </p>
+                </div>
+
+                {currentCartCount > 0 && onHoldCurrentCart ? (
+                  <Card size="sm" className="w-full text-left bg-muted/30">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+                        <ShoppingCart className="size-3.5 text-primary" />
+                        <span>Active Cart in Register</span>
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {currentCartCount} item{currentCartCount === 1 ? '' : 's'} ({currencySymbol}{currentCartTotal.toFixed(2)}) ready to park
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="pt-0">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => {
+                          onHoldCurrentCart();
+                          onClose();
+                        }}
+                        className="w-full text-xs font-semibold gap-1.5"
+                      >
+                        <PauseCircle className="size-3.5" />
+                        <span>Park Current Cart ({currencySymbol}{currentCartTotal.toFixed(2)})</span>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onClose}
+                    className="text-xs"
+                  >
+                    Return to Register
+                  </Button>
+                )}
               </div>
             ) : filteredOrders.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                <p className="text-sm font-semibold text-foreground">
-                  No parked orders match "{searchQuery}"
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Try searching by order number, customer, or cashier
-                </p>
+              <div className="py-12 px-4 flex flex-col items-center justify-center text-center max-w-sm mx-auto space-y-3">
+                <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                  <Search className="size-5 opacity-60" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    No parked orders match "{searchQuery}"
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Try searching by a different order number, cashier, or item name.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs"
+                >
+                  Clear Search
+                </Button>
               </div>
             ) : (
               filteredOrders.map((order) => {

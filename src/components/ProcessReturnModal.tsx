@@ -345,6 +345,46 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
               </Button>
             </DialogFooter>
           </div>
+        ) : totalAvailableUnits === 0 ? (
+          /* Empty State: All Items Already Refunded */
+          <div className="p-8 flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4 overflow-y-auto">
+            <div className="size-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+              <CheckCircle2 className="size-7 text-primary" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-base font-semibold text-foreground">
+                All Items Fully Refunded
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Bill #{order.orderNumber} has no remaining refundable items. All {order.items.reduce((sum, it) => sum + it.quantity, 0)} units purchased on this invoice have already been returned.
+              </p>
+            </div>
+
+            {order.refundHistory && order.refundHistory.length > 0 && (
+              <Card size="sm" className="w-full text-left bg-muted/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-semibold">Previous Refund Records</CardTitle>
+                  <CardDescription className="text-xs">
+                    {order.refundHistory.length} credit note{order.refundHistory.length === 1 ? '' : 's'} recorded
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-1.5 pt-0 text-xs">
+                  {order.refundHistory.map((rec) => (
+                    <div key={rec.creditNoteNumber} className="flex justify-between items-center text-muted-foreground">
+                      <span className="font-mono text-foreground font-semibold">{rec.creditNoteNumber}</span>
+                      <span className="font-bold text-foreground tabular-nums">{currencySymbol}{rec.refundAmount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            <DialogFooter className="w-full flex justify-center pt-2">
+              <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
+                Close Window
+              </Button>
+            </DialogFooter>
+          </div>
         ) : (
           /* Active Return Selection Form */
           <>
@@ -557,41 +597,49 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
               {/* Refund Totals Summary */}
               <Card size="sm">
                 <CardContent className="space-y-1.5 text-xs">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Items Selected for Return:</span>
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {totalReturnUnits} units ({selectedItems.length} items)
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Refund Subtotal:</span>
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {currencySymbol}{refundSubtotal.toFixed(2)}
-                    </span>
-                  </div>
-                  {proratedDiscount > 0 && (
-                    <div className="flex justify-between text-destructive">
-                      <span>Prorated Discount:</span>
-                      <span className="font-semibold tabular-nums">
-                        -{currencySymbol}{proratedDiscount.toFixed(2)}
-                      </span>
+                  {totalReturnUnits === 0 ? (
+                    <div className="py-2 text-center text-muted-foreground">
+                      Use the <strong className="text-foreground font-semibold">+</strong> button on items above to choose quantities to return.
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Items Selected for Return:</span>
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {totalReturnUnits} units ({selectedItems.length} items)
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Refund Subtotal:</span>
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {currencySymbol}{refundSubtotal.toFixed(2)}
+                        </span>
+                      </div>
+                      {proratedDiscount > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <span>Prorated Discount:</span>
+                          <span className="font-semibold tabular-nums">
+                            -{currencySymbol}{proratedDiscount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      {refundTax > 0 && (
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Prorated GST Adjustment:</span>
+                          <span className="font-semibold text-foreground tabular-nums">
+                            +{currencySymbol}{refundTax.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      <Separator className="my-1" />
+                      <div className="flex justify-between items-baseline pt-0.5 text-sm font-semibold text-foreground">
+                        <span>Total Refund Amount:</span>
+                        <span className="text-base sm:text-lg font-bold text-primary tabular-nums">
+                          {currencySymbol}{totalRefundAmount.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
                   )}
-                  {refundTax > 0 && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Prorated GST Adjustment:</span>
-                      <span className="font-semibold text-foreground tabular-nums">
-                        +{currencySymbol}{refundTax.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  <Separator className="my-1" />
-                  <div className="flex justify-between items-baseline pt-0.5 text-sm font-semibold text-foreground">
-                    <span>Total Refund Amount:</span>
-                    <span className="text-base sm:text-lg font-bold text-primary tabular-nums">
-                      {currencySymbol}{totalRefundAmount.toFixed(2)}
-                    </span>
-                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -614,8 +662,14 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
                 disabled={totalRefundAmount <= 0}
                 className="gap-1.5"
               >
-                <span>Issue Refund ({currencySymbol}{totalRefundAmount.toFixed(2)})</span>
-                <ArrowRight className="size-3.5" />
+                {totalRefundAmount <= 0 ? (
+                  <span>Select Items to Refund</span>
+                ) : (
+                  <>
+                    <span>Issue Refund ({currencySymbol}{totalRefundAmount.toFixed(2)})</span>
+                    <ArrowRight className="size-3.5" />
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </>

@@ -182,13 +182,37 @@ export const QuickRefundModal: React.FC<QuickRefundModalProps> = ({
 
         {/* Orders List */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 max-h-[55vh]">
-          {filteredOrders.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center space-y-2">
-              <Search className="w-8 h-8 opacity-40 mb-1" />
-              <p className="text-sm font-semibold text-foreground">No matching invoices found</p>
-              <p className="text-xs max-w-xs">
-                Check the bill number or scan the barcode directly on the customer's thermal slip.
-              </p>
+          {orders.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center space-y-2.5 max-w-sm mx-auto">
+              <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                <RotateCcw className="size-6 opacity-60" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">No Completed Sales Yet</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  When sales are finalized at the register, invoices will appear here for fast barcode lookup and returns.
+                </p>
+              </div>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto">
+              <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                <Search className="size-5 opacity-60" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-foreground">No matching invoices found</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  No bills matched &ldquo;{searchQuery}&rdquo;. Check the bill number or scan the barcode from the receipt.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearchQuery('')}
+                className="text-xs"
+              >
+                Clear Search
+              </Button>
             </div>
           ) : (
             filteredOrders.map((order) => {
