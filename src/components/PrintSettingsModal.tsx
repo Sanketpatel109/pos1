@@ -547,9 +547,11 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         className={`p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl max-h-[92vh] flex flex-col transition-all duration-200 ${
-          activeTab === 'cloud' && activeSubView === 'diagnostics'
-            ? 'sm:max-w-2xl'
-            : 'sm:max-w-xl'
+          activeTab === 'subscription'
+            ? 'sm:max-w-4xl'
+            : activeTab === 'cloud' && activeSubView === 'diagnostics'
+            ? 'sm:max-w-3xl'
+            : 'sm:max-w-2xl md:max-w-3xl'
         }`}
         showCloseButton={false}
       >
@@ -619,7 +621,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
 
         {/* Tab Navigation Bar (Visible in overview) */}
         {!(activeTab === 'cloud' && activeSubView === 'diagnostics') && (
-          <div className="flex border-b border-border bg-muted/30 px-4 py-2 gap-1.5 shrink-0 overflow-x-auto">
+          <div className="flex border-b border-border bg-muted/30 px-4 py-2 gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
             <Button
               type="button"
               variant={activeTab === 'hardware' ? 'secondary' : 'ghost'}

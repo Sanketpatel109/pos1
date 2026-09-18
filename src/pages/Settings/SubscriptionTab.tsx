@@ -50,7 +50,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
 
   useEffect(() => {
     QRCode.toDataURL(upiPayload, {
-      width: 200,
+      width: 220,
       margin: 2,
       color: {
         dark: '#09090b',
@@ -92,13 +92,13 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-10">
-      {/* Top Banner: Current Subscription Plan Overview */}
+    <div className="space-y-5 w-full pb-8">
+      {/* Top Card: Current Subscription Plan Overview */}
       <Card className="border-border shadow-xs">
         <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <CardTitle className="text-base sm:text-lg font-bold">
                   {state.plan === 'ANNUAL_PRO' ? 'MonoPOS Annual Pro' : 'MonoPOS Free Trial'}
                 </CardTitle>
@@ -130,13 +130,13 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
                     : 'Expired'}
                 </Badge>
               </div>
-              <CardDescription className="text-xs text-muted-foreground mt-1">
+              <CardDescription className="text-xs text-muted-foreground">
                 Store ID: <span className="font-mono text-foreground font-semibold">{state.storeId}</span>
               </CardDescription>
             </div>
 
             <div className="text-left sm:text-right">
-              <span className="text-xs text-muted-foreground block">
+              <span className="text-[11px] text-muted-foreground block">
                 {statusInfo.isExpired ? 'Expired on' : 'Expires on'}
               </span>
               <span className="text-sm font-bold text-foreground">
@@ -147,19 +147,19 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
         </CardHeader>
 
         <CardContent className="pt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
             <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <span className="text-[11px] text-muted-foreground block">Billing Status</span>
+              <span className="text-[11px] text-muted-foreground block">Billing Terminal</span>
               <span className="text-xs font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
                 {statusInfo.isAccessible ? (
                   <>
-                    <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                    Terminal Unlocked
+                    <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    Counter Unlocked
                   </>
                 ) : (
                   <>
-                    <Lock className="size-3.5 text-destructive" />
-                    Counter Billing Locked
+                    <Lock className="size-3.5 text-destructive shrink-0" />
+                    Counter Locked
                   </>
                 )}
               </span>
@@ -168,7 +168,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
             <div className="p-3 rounded-lg border border-border bg-muted/30">
               <span className="text-[11px] text-muted-foreground block">Time Remaining</span>
               <span className="text-xs font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
-                <Clock className="size-3.5 text-muted-foreground" />
+                <Clock className="size-3.5 text-muted-foreground shrink-0" />
                 {statusInfo.isGracePeriod
                   ? `${statusInfo.hoursRemainingInGrace} Hours Grace`
                   : statusInfo.isExpired
@@ -178,10 +178,10 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
             </div>
 
             <div className="p-3 rounded-lg border border-border bg-muted/30">
-              <span className="text-[11px] text-muted-foreground block">Annual Price</span>
+              <span className="text-[11px] text-muted-foreground block">All Features Plan</span>
               <span className="text-xs font-semibold text-foreground flex items-center gap-1.5 mt-0.5">
-                <Sparkles className="size-3.5 text-primary" />
-                ₹1,999 / year (All Features)
+                <Sparkles className="size-3.5 text-primary shrink-0" />
+                ₹1,999 / year
               </span>
             </div>
           </div>
@@ -189,10 +189,10 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
       </Card>
 
       {/* Two Columns: Renewal UPI QR & UTR Grace + Offline License Key */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
         {/* Left Column: Direct UPI QR Code & 12-Digit UTR Submission */}
-        <Card className="border-border shadow-xs flex flex-col justify-between">
-          <CardHeader>
+        <Card className="border-border shadow-xs flex flex-col justify-between h-full">
+          <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <QrCode className="size-5 text-primary" />
               <CardTitle className="text-base font-bold">Renew via UPI QR</CardTitle>
@@ -203,78 +203,91 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* QR Code Container */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 p-3 bg-muted/20 border border-border rounded-lg">
-              <div className="p-2 bg-white rounded-md shadow-xs border border-border/50 shrink-0">
+            {/* QR Code and Payment Details */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-3.5 bg-muted/20 border border-border rounded-lg">
+              <div className="p-2 bg-white rounded-md shadow-xs border border-border/50 shrink-0 flex flex-col items-center">
                 {qrDataUrl ? (
-                  <img src={qrDataUrl} alt="MonoPOS UPI QR Code" className="size-36 object-contain" />
+                  <img src={qrDataUrl} alt="MonoPOS UPI QR Code" className="size-32 object-contain" />
                 ) : (
-                  <div className="size-36 flex items-center justify-center bg-muted text-xs text-muted-foreground">
+                  <div className="size-32 flex items-center justify-center bg-muted text-xs text-muted-foreground">
                     Generating QR...
                   </div>
                 )}
+                <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-1">Scan to Pay</span>
               </div>
 
-              <div className="space-y-2 text-center sm:text-left flex-1 min-w-0">
+              <div className="space-y-2.5 text-center sm:text-left flex-1 min-w-0 w-full">
                 <div>
-                  <span className="text-xs text-muted-foreground">Amount:</span>
-                  <p className="text-lg font-bold text-foreground">₹1,999 <span className="text-xs font-normal text-muted-foreground">/ year</span></p>
+                  <span className="text-[11px] text-muted-foreground block">Renewal Amount:</span>
+                  <p className="text-xl font-bold text-foreground">
+                    ₹1,999 <span className="text-xs font-normal text-muted-foreground">/ year</span>
+                  </p>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-muted-foreground">UPI ID:</span>
+                  <span className="text-[11px] text-muted-foreground block">UPI ID:</span>
                   <div className="flex items-center gap-1.5 mt-0.5 justify-center sm:justify-start">
                     <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded text-foreground font-semibold">
                       monopos@upi
                     </code>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="icon-xs"
                       onClick={handleCopyUpi}
                       title="Copy UPI ID"
+                      className="h-6 w-6 shrink-0 cursor-pointer"
                     >
                       {copiedUpi ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
                     </Button>
                   </div>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground">
-                  Include note: <span className="font-mono text-foreground font-semibold">{`MonoPOS Pro ${state.storeId}`}</span>
-                </p>
+                <div>
+                  <span className="text-[11px] text-muted-foreground block">Reference Note:</span>
+                  <p className="text-xs font-mono text-foreground font-semibold truncate" title={`MonoPOS Pro ${state.storeId}`}>
+                    MonoPOS Pro {state.storeId}
+                  </p>
+                </div>
               </div>
             </div>
 
             <Separator />
 
             {/* 12-Digit UTR Reference Submission Form */}
-            <form onSubmit={handleUtrSubmit} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="sub-utr-input" className="text-xs font-medium">
-                  Submit 12-Digit UPI Ref / UTR Number
-                </Label>
-                <p className="text-[11px] text-muted-foreground">
-                  After paying, enter the 12-digit UTR from your UPI app receipt to activate an <strong className="text-foreground">instant 24-hour grace period</strong>.
-                </p>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    id="sub-utr-input"
-                    type="text"
-                    maxLength={12}
-                    placeholder="e.g. 524189012345"
-                    value={utrInput}
-                    onChange={(e) => setUtrInput(e.target.value.replace(/\D/g, ''))}
-                    className="font-mono text-xs"
-                  />
-                  <Button
-                    type="submit"
-                    disabled={utrInput.trim().length !== 12}
-                    size="sm"
-                    className="shrink-0 cursor-pointer"
-                  >
-                    Activate Grace
-                  </Button>
+            <form onSubmit={handleUtrSubmit} className="space-y-2.5">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sub-utr-input" className="text-xs font-medium">
+                    Submit 12-Digit UPI Ref / UTR
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {utrInput.length}/12
+                  </span>
                 </div>
+                <p className="text-[11px] text-muted-foreground leading-normal">
+                  After paying, enter the 12-digit UTR from your UPI receipt to activate an <strong className="text-foreground">instant 24-hour grace period</strong>.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  id="sub-utr-input"
+                  type="text"
+                  maxLength={12}
+                  placeholder="e.g. 524189012345"
+                  value={utrInput}
+                  onChange={(e) => setUtrInput(e.target.value.replace(/\D/g, ''))}
+                  className="font-mono text-xs flex-1"
+                />
+                <Button
+                  type="submit"
+                  disabled={utrInput.trim().length !== 12}
+                  size="sm"
+                  className="shrink-0 cursor-pointer"
+                >
+                  Activate Grace
+                </Button>
               </div>
 
               {utrMessage && (
@@ -298,8 +311,8 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
         </Card>
 
         {/* Right Column: Offline License Key Activation */}
-        <Card className="border-border shadow-xs flex flex-col justify-between">
-          <CardHeader>
+        <Card className="border-border shadow-xs flex flex-col justify-between h-full">
+          <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <KeyRound className="size-5 text-primary" />
               <CardTitle className="text-base font-bold">Offline License Activation</CardTitle>
@@ -310,7 +323,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <div className="p-3 bg-muted/20 border border-border rounded-lg space-y-2 text-xs">
+            <div className="p-3.5 bg-muted/20 border border-border rounded-lg space-y-2 text-xs">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="font-semibold text-foreground">Offline Cryptographic Guarantee</span>
@@ -320,7 +333,9 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
               </p>
               <div className="pt-1 text-[11px]">
                 <span className="text-muted-foreground">Key Format: </span>
-                <code className="font-mono text-foreground font-semibold">MPOS-YYYYMMDD-XXXXXXXXXXXX</code>
+                <code className="font-mono text-foreground font-semibold text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                  MPOS-YYYYMMDD-XXXXXXXXXXXX
+                </code>
               </div>
             </div>
 
