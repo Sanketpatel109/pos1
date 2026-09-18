@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  RotateCcw,
-  AlertTriangle,
   CheckCircle2,
   Printer,
   ArrowRight,
@@ -22,8 +20,18 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -254,39 +262,28 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-card text-card-foreground border-border shadow-2xl">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* Header */}
-        <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
-              <RotateCcw className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <DialogTitle className="text-base font-bold text-foreground leading-tight">
-                  Process Return / Refund
-                </DialogTitle>
-                <Badge variant="secondary" className="text-xs">
-                  Bill #{order.orderNumber}
-                </Badge>
-              </div>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                {order.customerName || 'Walk-in Customer'} • Original Total: {currencySymbol}{order.total.toFixed(2)}
-              </DialogDescription>
-            </div>
+        <DialogHeader className="p-6 pb-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-2">
+            <DialogTitle className="text-base font-semibold">Process Return / Refund</DialogTitle>
+            <Badge variant="secondary">Bill #{order.orderNumber}</Badge>
           </div>
+          <DialogDescription>
+            {order.customerName || 'Walk-in Customer'} • Original Total: {currencySymbol}{order.total.toFixed(2)}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Modal Body */}
         {isSuccess && lastRefund ? (
           /* Success & Credit Note Screen */
           <div className="p-6 flex flex-col items-center text-center space-y-4 overflow-y-auto">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8" />
+            <div className="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+              <CheckCircle2 className="size-6" />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-foreground">
+              <h3 className="text-base font-semibold text-foreground">
                 Refund Processed Successfully
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
@@ -296,297 +293,332 @@ export const ProcessReturnModal: React.FC<ProcessReturnModalProps> = ({
             </div>
 
             {/* Credit Note Summary Card */}
-            <Card className="w-full bg-muted/40 border-border">
-              <CardContent className="p-4 text-left text-xs space-y-2">
-                <div className="flex justify-between items-center pb-2 border-b border-border">
-                  <span className="font-bold uppercase tracking-wider text-muted-foreground">
-                    Credit Note Voucher
-                  </span>
-                  <span className="font-mono text-foreground font-bold">
-                    {lastRefund.creditNoteNumber}
-                  </span>
-                </div>
+            <Card size="sm" className="w-full text-left">
+              <CardHeader className="border-b border-border">
+                <CardTitle className="text-xs font-semibold flex items-center justify-between">
+                  <span className="text-muted-foreground uppercase tracking-wider">Credit Note Voucher</span>
+                  <Badge variant="outline" className="font-mono">{lastRefund.creditNoteNumber}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5 text-xs pt-3">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Refund Method:</span>
-                  <span className="font-bold text-foreground">{lastRefund.refundMethod}</span>
+                  <span className="font-semibold text-foreground">{lastRefund.refundMethod}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Items Returned:</span>
-                  <span className="font-bold text-foreground">{lastRefund.refundedItems.length} items</span>
+                  <span className="font-semibold text-foreground">{lastRefund.refundedItems.length} items</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Reason:</span>
                   <span className="font-medium text-foreground">{lastRefund.refundReason}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-border font-bold text-sm text-foreground">
+                <Separator className="my-1" />
+                <div className="flex justify-between items-baseline pt-0.5 text-sm font-semibold text-foreground">
                   <span>Total Refunded:</span>
-                  <span className="text-primary font-extrabold tabular-nums">
+                  <span className="text-base font-bold text-primary tabular-nums">
                     {currencySymbol}{lastRefund.refundAmount.toFixed(2)}
                   </span>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="w-full flex items-center gap-3 pt-2">
+            <DialogFooter className="w-full flex flex-row items-center justify-end gap-2 pt-2">
               <Button
                 type="button"
                 onClick={handlePrintCreditNote}
                 variant="outline"
-                className="flex-1 h-10 text-xs font-bold gap-1.5"
+                size="sm"
+                className="gap-1.5 flex-1"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="size-3.5" />
                 <span>Print Credit Note</span>
               </Button>
               <Button
                 type="button"
                 onClick={onClose}
-                className="flex-1 h-10 text-xs font-bold"
+                variant="default"
+                size="sm"
+                className="flex-1"
               >
                 Done
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         ) : (
           /* Active Return Selection Form */
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-            {/* Action Bar: Select All / None */}
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  Select Items to Return
-                </span>
-                <p className="text-[10px] text-muted-foreground">
-                  {totalAvailableUnits > 0
-                    ? `${totalAvailableUnits} unreturned units available across this bill`
-                    : 'All items in this bill have already been refunded'}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="link"
-                size="xs"
-                onClick={handleSelectAll}
-                disabled={totalAvailableUnits === 0}
-                className="text-xs font-bold text-primary p-0 h-auto"
-              >
-                {order.items.every((item) => {
-                  const avail = getAvailableReturnQty(item);
-                  return avail === 0 || (returnQtys[item.id] || 0) === avail;
-                })
-                  ? 'Deselect All'
-                  : 'Return All Available'}
-              </Button>
-            </div>
-
-            {/* Line Items List with Stepper */}
-            <div className="space-y-2 border border-border rounded-xl p-2 bg-muted/20 max-h-56 overflow-y-auto">
-              {order.items.map((item) => {
-                const alreadyRefunded = getAlreadyRefundedQty(item.id, item.name);
-                const availableQty = getAvailableReturnQty(item);
-                const currentReturnQty = returnQtys[item.id] || 0;
-                const isSelected = currentReturnQty > 0;
-                const isFullyReturned = availableQty === 0;
-
-                return (
-                  <Card
-                    key={item.id}
-                    className={`transition-all ${
-                      isSelected
-                        ? 'border-primary/40 bg-primary/5 shadow-2xs'
-                        : isFullyReturned
-                        ? 'border-border/60 bg-muted/30 opacity-70'
-                        : 'border-border bg-card shadow-none'
-                    }`}
-                  >
-                    <CardContent className="p-2.5 flex items-center justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className={`text-xs font-bold truncate ${isFullyReturned ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                            {item.name}
-                          </p>
-                          {isFullyReturned && (
-                            <Badge variant="outline" className="text-[9px] py-0 px-1 text-destructive border-destructive/30">
-                              Already Returned ({alreadyRefunded})
-                            </Badge>
-                          )}
-                          {!isFullyReturned && alreadyRefunded > 0 && (
-                            <Badge variant="secondary" className="text-[9px] py-0 px-1 text-amber-700 dark:text-amber-400">
-                              {alreadyRefunded} prev. returned
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {currencySymbol}{item.unitPrice.toFixed(2)} each • Available: <span className="font-semibold text-foreground">{availableQty}</span> of {item.quantity}
-                        </p>
-                      </div>
-
-                      {/* Stepper */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon-xs"
-                          onClick={() => handleSetQty(item.id, currentReturnQty - 1, availableQty)}
-                          disabled={currentReturnQty <= 0 || isFullyReturned}
-                          className="h-7 w-7 text-xs font-bold"
-                        >
-                          -
-                        </Button>
-                        <span className="w-7 text-center font-bold text-xs tabular-nums text-foreground">
-                          {currentReturnQty}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon-xs"
-                          onClick={() => handleSetQty(item.id, currentReturnQty + 1, availableQty)}
-                          disabled={currentReturnQty >= availableQty || isFullyReturned}
-                          className="h-7 w-7 text-xs font-bold"
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Return Settings Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              {/* Refund Method */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  Refund Method
-                </Label>
-                <div className="grid grid-cols-3 gap-1 p-0.5 bg-muted/50 rounded-lg border border-border text-xs">
+          <>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Action Bar: Select All / None */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Select Items to Return
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    {totalAvailableUnits > 0
+                      ? `${totalAvailableUnits} unreturned units available across this bill`
+                      : 'All items in this bill have already been refunded'}
+                  </p>
+                </div>
+                {totalAvailableUnits > 0 && (
                   <Button
                     type="button"
-                    variant={refundMethod === 'CASH' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setRefundMethod('CASH')}
-                    className="h-8 gap-1 text-xs"
+                    variant="outline"
+                    size="xs"
+                    onClick={handleSelectAll}
+                    className="text-xs font-medium"
                   >
-                    <Wallet className="size-3" />
-                    <span>Cash</span>
+                    {order.items.every((item) => {
+                      const avail = getAvailableReturnQty(item);
+                      return avail === 0 || (returnQtys[item.id] || 0) === avail;
+                    })
+                      ? 'Deselect All'
+                      : 'Return All Available'}
                   </Button>
-                  <Button
-                    type="button"
-                    variant={refundMethod === 'KHATA' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setRefundMethod('KHATA')}
-                    className="h-8 gap-1 text-xs"
-                  >
-                    <CreditCard className="size-3" />
-                    <span>Khata</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={refundMethod === 'ONLINE' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setRefundMethod('ONLINE')}
-                    className="h-8 gap-1 text-xs"
-                  >
-                    <Building className="size-3" />
-                    <span>UPI</span>
-                  </Button>
-                </div>
-              </div>
-
-              {/* Reason for Return */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  Reason for Return
-                </Label>
-                <Select value={refundReason} onValueChange={(val) => val && setRefundReason(val)}>
-                  <SelectTrigger className="w-full h-8 text-xs">
-                    <SelectValue placeholder="Select reason" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Customer Return (Defective/Damaged)">Defective / Damaged</SelectItem>
-                    <SelectItem value="Customer Return (Wrong Product)">Wrong Product Given</SelectItem>
-                    <SelectItem value="Customer Changed Mind">Customer Changed Mind</SelectItem>
-                    <SelectItem value="Expired / Quality Issue">Expired / Quality Issue</SelectItem>
-                    <SelectItem value="Billing Error / Duplicate">Billing Error / Duplicate</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Restock Toggle */}
-            <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors">
-              <input
-                type="checkbox"
-                checked={restockInventory}
-                onChange={(e) => setRestockInventory(e.target.checked)}
-                className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary"
-              />
-              <span className="text-xs font-medium text-foreground">
-                Restock returned items back to product inventory
-              </span>
-            </label>
-
-            {/* Refund Totals Summary */}
-            <Card className="bg-muted/30 border-border shadow-none">
-              <CardContent className="p-3.5 space-y-1.5 text-xs">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Items Selected for Return:</span>
-                  <span className="font-bold text-foreground tabular-nums">
-                    {totalReturnUnits} units ({selectedItems.length} items)
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Refund Subtotal:</span>
-                  <span className="font-bold text-foreground tabular-nums">
-                    {currencySymbol}{refundSubtotal.toFixed(2)}
-                  </span>
-                </div>
-                {proratedDiscount > 0 && (
-                  <div className="flex justify-between text-destructive">
-                    <span>Prorated Discount:</span>
-                    <span className="font-bold tabular-nums">
-                      -{currencySymbol}{proratedDiscount.toFixed(2)}
-                    </span>
-                  </div>
                 )}
-                {refundTax > 0 && (
+              </div>
+
+              {/* Line Items Table */}
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="w-[45%] text-xs font-semibold">Item</TableHead>
+                      <TableHead className="text-center text-xs font-semibold">Unit Price</TableHead>
+                      <TableHead className="text-center text-xs font-semibold">Return Qty</TableHead>
+                      <TableHead className="text-right text-xs font-semibold">Refund Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {order.items.map((item) => {
+                      const alreadyRefunded = getAlreadyRefundedQty(item.id, item.name);
+                      const availableQty = getAvailableReturnQty(item);
+                      const currentReturnQty = returnQtys[item.id] || 0;
+                      const isSelected = currentReturnQty > 0;
+                      const isFullyReturned = availableQty === 0;
+
+                      return (
+                        <TableRow
+                          key={item.id}
+                          className={isSelected ? 'bg-muted/30' : undefined}
+                        >
+                          <TableCell className="py-2.5">
+                            <div className="flex flex-col gap-0.5">
+                              <span
+                                className={`font-medium text-xs ${
+                                  isFullyReturned ? 'line-through text-muted-foreground' : 'text-foreground'
+                                }`}
+                              >
+                                {item.name}
+                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+                                <span>
+                                  Available: <strong className="text-foreground">{availableQty}</strong> of {item.quantity}
+                                </span>
+                                {alreadyRefunded > 0 && (
+                                  <Badge
+                                    variant={isFullyReturned ? 'destructive' : 'secondary'}
+                                    className="text-[10px] px-1.5 py-0 h-4"
+                                  >
+                                    {alreadyRefunded} refunded
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center text-xs tabular-nums py-2.5 text-muted-foreground">
+                            {currencySymbol}{item.unitPrice.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-center py-2.5">
+                            <div className="inline-flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon-xs"
+                                onClick={() =>
+                                  handleSetQty(item.id, currentReturnQty - 1, availableQty)
+                                }
+                                disabled={currentReturnQty <= 0 || isFullyReturned}
+                                className="size-7"
+                              >
+                                -
+                              </Button>
+                              <span className="w-6 text-center text-xs font-semibold tabular-nums text-foreground">
+                                {currentReturnQty}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon-xs"
+                                onClick={() =>
+                                  handleSetQty(item.id, currentReturnQty + 1, availableQty)
+                                }
+                                disabled={currentReturnQty >= availableQty || isFullyReturned}
+                                className="size-7"
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-xs font-semibold tabular-nums py-2.5">
+                            {currencySymbol}{(item.unitPrice * currentReturnQty).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Return Settings Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Refund Method */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    Refund Method
+                  </Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <Button
+                      type="button"
+                      variant={refundMethod === 'CASH' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRefundMethod('CASH')}
+                      className="text-xs gap-1.5"
+                    >
+                      <Wallet className="size-3.5" />
+                      <span>Cash</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={refundMethod === 'KHATA' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRefundMethod('KHATA')}
+                      className="text-xs gap-1.5"
+                    >
+                      <CreditCard className="size-3.5" />
+                      <span>Khata</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={refundMethod === 'ONLINE' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setRefundMethod('ONLINE')}
+                      className="text-xs gap-1.5"
+                    >
+                      <Building className="size-3.5" />
+                      <span>UPI</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Reason for Return */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground">
+                    Reason for Return
+                  </Label>
+                  <Select value={refundReason} onValueChange={(val) => val && setRefundReason(val)}>
+                    <SelectTrigger className="w-full text-xs">
+                      <SelectValue placeholder="Select reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Customer Return (Defective/Damaged)">
+                        Defective / Damaged
+                      </SelectItem>
+                      <SelectItem value="Customer Return (Wrong Product)">
+                        Wrong Product Given
+                      </SelectItem>
+                      <SelectItem value="Customer Changed Mind">
+                        Customer Changed Mind
+                      </SelectItem>
+                      <SelectItem value="Expired / Quality Issue">
+                        Expired / Quality Issue
+                      </SelectItem>
+                      <SelectItem value="Billing Error / Duplicate">
+                        Billing Error / Duplicate
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Restock Checkbox */}
+              <div className="flex items-center gap-2.5 p-3 rounded-lg border border-border bg-muted/20">
+                <Checkbox
+                  id="restock-inventory"
+                  checked={restockInventory}
+                  onCheckedChange={(checked) => setRestockInventory(Boolean(checked))}
+                />
+                <Label htmlFor="restock-inventory" className="text-xs font-medium cursor-pointer">
+                  Restock returned items back to product inventory
+                </Label>
+              </div>
+
+              {/* Refund Totals Summary */}
+              <Card size="sm">
+                <CardContent className="space-y-1.5 text-xs">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Prorated GST Adjustment:</span>
-                    <span className="font-bold text-foreground tabular-nums">
-                      +{currencySymbol}{refundTax.toFixed(2)}
+                    <span>Items Selected for Return:</span>
+                    <span className="font-semibold text-foreground tabular-nums">
+                      {totalReturnUnits} units ({selectedItems.length} items)
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between items-baseline pt-2 border-t border-border text-sm font-bold text-foreground">
-                  <span>Total Refund Amount:</span>
-                  <span className="text-base sm:text-lg font-extrabold text-primary tabular-nums">
-                    {currencySymbol}{totalRefundAmount.toFixed(2)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Refund Subtotal:</span>
+                    <span className="font-semibold text-foreground tabular-nums">
+                      {currencySymbol}{refundSubtotal.toFixed(2)}
+                    </span>
+                  </div>
+                  {proratedDiscount > 0 && (
+                    <div className="flex justify-between text-destructive">
+                      <span>Prorated Discount:</span>
+                      <span className="font-semibold tabular-nums">
+                        -{currencySymbol}{proratedDiscount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {refundTax > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Prorated GST Adjustment:</span>
+                      <span className="font-semibold text-foreground tabular-nums">
+                        +{currencySymbol}{refundTax.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <Separator className="my-1" />
+                  <div className="flex justify-between items-baseline pt-0.5 text-sm font-semibold text-foreground">
+                    <span>Total Refund Amount:</span>
+                    <span className="text-base sm:text-lg font-bold text-primary tabular-nums">
+                      {currencySymbol}{totalRefundAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Actions */}
-            <DialogFooter className="flex-row items-center justify-end gap-2.5 pt-2">
+            <DialogFooter className="p-4 border-t border-border flex flex-row items-center justify-between sm:justify-end gap-2 shrink-0">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={onClose}
-                className="flex-1 h-10 text-xs font-semibold"
               >
                 Cancel
               </Button>
               <Button
                 type="button"
+                variant="default"
+                size="sm"
                 onClick={handleProcessRefund}
                 disabled={totalRefundAmount <= 0}
-                className="flex-[1.5] h-10 text-xs font-semibold gap-1.5 shadow-xs"
+                className="gap-1.5"
               >
                 <span>Issue Refund ({currencySymbol}{totalRefundAmount.toFixed(2)})</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="size-3.5" />
               </Button>
             </DialogFooter>
-          </div>
+          </>
         )}
       </DialogContent>
     </Dialog>
