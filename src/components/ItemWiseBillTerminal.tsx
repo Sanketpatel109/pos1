@@ -35,7 +35,6 @@ interface ItemWiseBillTerminalProps {
   onOpenPriceCheck?: () => void;
   onSwitchMode?: () => void;
   onOpenQuickAdd?: () => void;
-  onLoadDemoProducts?: () => void;
 }
 
 export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
@@ -62,7 +61,6 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
   onOpenPriceCheck,
   onSwitchMode,
   onOpenQuickAdd,
-  onLoadDemoProducts,
 }) => {
   const {
     currentBillItems: cartItems,
@@ -221,7 +219,6 @@ export const ItemWiseBillTerminal: React.FC<ItemWiseBillTerminalProps> = ({
           itemQuantities={itemQuantitiesMap}
           onSelectItem={handleItemClick}
           onOpenQuickAdd={onOpenQuickAdd}
-          onLoadDemoProducts={onLoadDemoProducts}
         />
       </div>
 

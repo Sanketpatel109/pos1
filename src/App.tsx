@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  INITIAL_CATALOG,
   INITIAL_CATEGORIES,
   SAMPLE_CUSTOMERS,
   SAMPLE_STAFF,
@@ -994,12 +993,10 @@ export default function App() {
   // Handle First-Time Store Onboarding Setup
   const handleOnboardingComplete = ({
     shopSettings: updatedSettings,
-    useSampleData,
     businessType,
     ownerPin,
   }: {
     shopSettings: Partial<ShopSettings>;
-    useSampleData: boolean;
     businessType: string;
     ownerPin?: string;
   }) => {
@@ -1059,41 +1056,14 @@ export default function App() {
       liveSaveStaff(updatedStaff[1]).catch(() => {});
     }
 
-    if (useSampleData) {
-      const sampleItems = INITIAL_CATALOG;
-      setCatalog(sampleItems);
-      if (currentUser) {
-        localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify(sampleItems));
-      }
-      sampleItems.forEach((it) => {
-        liveSaveProduct(it).catch(() => {});
-      });
-    } else {
-      setCatalog([]);
-      if (currentUser) {
-        localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify([]));
-      }
-    }
-
+    // Completely clean store: 0 demo products
+    setCatalog([]);
     if (currentUser) {
+      localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify([]));
       localStorage.setItem(`monopos_orders_${currentUser.uid}`, JSON.stringify([]));
       setOrders([]);
     }
     setIsStoreOnboardingOpen(false);
-  };
-
-  const handleLoadDemoProducts = () => {
-    const demoItems = INITIAL_CATALOG;
-    setCatalog(demoItems);
-    if (currentUser?.uid) {
-      try {
-        localStorage.setItem(`monopos_live_catalog_${currentUser.uid}`, JSON.stringify(demoItems));
-      } catch {}
-    }
-    demoItems.forEach((it) => {
-      liveSaveProduct(it).catch(() => {});
-    });
-    playSfx('success');
   };
 
   // Audio helper
@@ -2579,7 +2549,6 @@ export default function App() {
               onOpenScanner={(mode) => handleOpenScanner(mode || 'add-to-bill')}
               onOpenPriceCheck={() => setIsPriceCheckOpen(true)}
               onOpenQuickAdd={() => setIsQuickAddOpen(true)}
-              onLoadDemoProducts={handleLoadDemoProducts}
               onPrintBill={() => {
                 if (currentBillItems.length === 0) return;
                 const draftOrder: Order = {

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { CatalogItem, Category, PackagingOption } from '../types';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
-import { PackageOpen, Plus, Sparkles } from 'lucide-react';
+import { PackageOpen, Plus } from 'lucide-react';
 
 export interface ProductCatalogProps {
   catalog: CatalogItem[];
@@ -15,7 +15,6 @@ export interface ProductCatalogProps {
   itemQuantities?: Record<string, number>;
   onSelectItem: (item: CatalogItem, pack?: PackagingOption | null) => void;
   onOpenQuickAdd?: () => void;
-  onLoadDemoProducts?: () => void;
   className?: string;
 }
 
@@ -30,7 +29,6 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   itemQuantities = {},
   onSelectItem,
   onOpenQuickAdd,
-  onLoadDemoProducts,
   className = '',
 }) => {
   // Filter catalog by category and search query
@@ -115,7 +113,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               {searchQuery
                 ? `No items found matching "${searchQuery}". Try a different search term or check categories.`
                 : catalog.length === 0
-                ? 'Your store catalog is currently empty. Add your first product or load starter demo products to test scanning.'
+                ? 'Your store catalog is empty. Tap "+ Add First Product" below or "+ Add" in the top bar to add your products.'
                 : `No items available in the "${selectedCategory}" category.`}
             </p>
 
@@ -125,22 +123,10 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   type="button"
                   id="btn-empty-quick-add"
                   onClick={onOpenQuickAdd}
-                  className="px-3 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:opacity-95 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:opacity-95 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add First Product
-                </button>
-              )}
-
-              {catalog.length === 0 && onLoadDemoProducts && (
-                <button
-                  type="button"
-                  id="btn-empty-load-demo"
-                  onClick={onLoadDemoProducts}
-                  className="px-3 py-1.5 bg-secondary hover:bg-muted text-secondary-foreground text-xs font-semibold rounded-md active:scale-95 transition-all border border-border cursor-pointer flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  Load Demo Products
                 </button>
               )}
 
