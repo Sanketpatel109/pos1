@@ -84,12 +84,6 @@ export function clearCachedLicense(): void {
  * - Always caches the result locally for offline access.
  */
 export async function getOrCreateLicense(user: User): Promise<TenantLicense> {
-  if (user.uid === 'demo_retail_owner') {
-    const localTrial = createTrialLicense(user);
-    cacheLicense(localTrial);
-    return localTrial;
-  }
-
   const docRef = doc(db, TENANT_COLLECTION, user.uid);
 
   try {
@@ -259,32 +253,6 @@ export async function simulatePlanUpgrade(
     ? addDays(now, 365)
     : addDays(now, 30);
   const maxRegs = getMaxRegistersForPlan(plan);
-
-  if (ownerUid === 'demo_retail_owner') {
-    const cached = getCachedLicense();
-    const updated: TenantLicense = {
-      ...(cached || {
-        tenantId: 'tenant_demo_retail_owner',
-        ownerUid: 'demo_retail_owner',
-        ownerEmail: 'demo@monopos.retail',
-        ownerName: 'Demo Retail Owner',
-        trialStartedAt: now.toISOString(),
-        trialEndsAt: now.toISOString(),
-        createdAt: now.toISOString(),
-      }),
-      plan,
-      status: 'ACTIVE',
-      currentPeriodEnd: periodEnd.toISOString(),
-      billingCycle: isAnnual ? 'ANNUAL' : 'MONTHLY',
-      maxRegisters: maxRegs,
-      lastPaymentId: paymentDetails?.paymentId,
-      lastPaymentGateway: gateway,
-      lastPaymentAmount: paymentDetails?.amount,
-      updatedAt: now.toISOString(),
-    };
-    cacheLicense(updated);
-    return updated;
-  }
 
   const docRef = doc(db, TENANT_COLLECTION, ownerUid);
   try {

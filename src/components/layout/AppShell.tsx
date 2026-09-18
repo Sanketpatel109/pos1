@@ -63,9 +63,9 @@ export const NAV_ITEMS: NavItemConfig[] = [
 export const AppShell: React.FC<AppShellProps> = ({
   activeScreen,
   onNavigate,
-  storeName = 'Anand Supermarket',
-  storeTagline = 'Kirana & Retail POS Engine',
-  cashierName = 'Anand',
+  storeName = 'Store',
+  storeTagline = 'Retail POS Terminal',
+  cashierName = 'Owner',
   cashierRole = 'OWNER',
   shiftId = '1',
   connectivity = 'online',

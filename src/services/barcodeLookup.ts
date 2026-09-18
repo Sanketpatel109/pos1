@@ -12,7 +12,6 @@
  * - Price extraction for both USD ($) and INR (₹, Rs)
  */
 
-import { INITIAL_CATALOG } from '../data/catalog';
 import { LIQUOR_AND_FMCG_REGISTRY } from '../data/liquorAndFMCGRegistry';
 import { getBarcodeVariants } from '../utils/barcodeResolver';
 
@@ -226,26 +225,7 @@ export async function lookupBarcodeDetails(
   const cleanCode = barcode.replace(/[\s-]/g, '').trim();
   if (!cleanCode || cleanCode.length < 3) return null;
 
-  // 1. Check local catalog hit
-  const localHit = INITIAL_CATALOG.find((item) => {
-    if (item.barcode === cleanCode) return true;
-    if (item.packagingOptions?.some((p) => p.barcode === cleanCode)) return true;
-    return false;
-  });
-
-  if (localHit) {
-    return {
-      barcode: cleanCode,
-      name: localHit.name,
-      category: localHit.category,
-      imageUrl: localHit.image,
-      unit: localHit.unit || 'pcs',
-      suggestedPrice: localHit.price,
-      sourceRegistry: 'Store Catalog',
-    };
-  }
-
-  // 2. Generate normalized barcode variations
+  // 1. Generate normalized barcode variations
   const variants = getBarcodeVariants(cleanCode);
 
   // 3. Instant 0ms Offline Liquor & FMCG Verified Registry Hit

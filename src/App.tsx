@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  INITIAL_CATEGORIES,
-  SAMPLE_CUSTOMERS,
-  SAMPLE_STAFF,
-  SAMPLE_CASH_ENTRIES,
-  SAMPLE_ORDERS,
-  DEFAULT_SHOP_SETTINGS,
-} from './data/catalog';
+import { DEFAULT_SHOP_SETTINGS } from './data/catalog';
 import { BUSINESS_TYPE_CATEGORIES } from './constants/businessCategories';
 import {
   CatalogItem,
@@ -2789,8 +2782,8 @@ export default function App() {
         taxRate={shopSettings.taxRate}
         currencySymbol={shopSettings.currencySymbol}
         customers={customers}
-        storeVpa={shopSettings.upiId || 'anandsupermarket@okaxis'}
-        storeName={shopSettings.shopName || 'Anand Supermarket'}
+        storeVpa={shopSettings.upiId || ''}
+        storeName={shopSettings.shopName || 'Store'}
         upiVerificationMode={shopSettings.upiVerificationMode || 'manual'}
         razorpayKeyId={shopSettings.razorpayKeyId}
         discount={discount}

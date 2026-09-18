@@ -111,7 +111,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
         // In iOS Standalone PWA (Home Screen mode), signInWithRedirect causes WebKit
         // to freeze on a blank white /__/auth/handler screen. Do NOT redirect in standalone mode!
         if (isStandaloneMode()) {
-          setError('Google popup was blocked in Home Screen mode. Enter your email above or use Quick Demo Mode below.');
+          setError('Google popup was blocked in Home Screen mode. Please sign in with Email & Password or use Sign In with Redirect.');
         } else {
           // Regular browser tab: safe to fallback to redirect
           await handleGoogleRedirectSignIn();
@@ -169,7 +169,7 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Email/Password authentication is disabled in Firebase Console. Please continue with Google or use Demo Mode.');
+        setError('Email/Password authentication is disabled in Firebase Console. Please continue with Google.');
       } else {
         setError(err.message || 'Authentication failed. Please try again.');
       }
@@ -397,22 +397,6 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
             )}
           </div>
 
-          <div className="flex items-center justify-center pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                onAuthenticated({
-                  uid: 'local_admin',
-                  email: 'admin@monopos.local',
-                  displayName: 'Store Manager (Demo)',
-                });
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 cursor-pointer font-medium transition-colors"
-            >
-              Continue in Demo Mode (No Sign-In Required) →
-            </button>
-          </div>
-
           {/* Feedback Alerts using standard shadcn tokens */}
           {successMessage && (
             <div className="flex items-center gap-2 p-3 rounded-md bg-muted border border-border text-foreground text-xs font-medium">
@@ -432,9 +416,9 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
               {isUnauthorizedDomain && (
                 <div className="mt-1 pt-2 border-t border-destructive/20 flex flex-col gap-2">
                   <p className="text-[11px] text-muted-foreground">
-                    Google sign-in works immediately on the authorized live hosting domain, or you can bypass it locally:
+                    Google sign-in works immediately on your authorized live hosting domain:
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div>
                     <a
                       href="https://gen-lang-client-0282731279.web.app"
                       target="_blank"
@@ -443,21 +427,6 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
                     >
                       Open Live Site (web.app) →
                     </a>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        onAuthenticated({
-                          uid: 'local_admin',
-                          email: 'admin@monopos.local',
-                          displayName: 'Admin (Local Demo)',
-                        });
-                      }}
-                      className="h-8 text-xs cursor-pointer"
-                    >
-                      Continue in Local Demo Mode
-                    </Button>
                   </div>
                 </div>
               )}
