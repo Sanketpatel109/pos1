@@ -49,6 +49,7 @@ export default defineConfig(() => {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           skipWaiting: true,
           clientsClaim: true,
+          navigateFallbackDenylist: [/^\/__/],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {

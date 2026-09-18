@@ -29,25 +29,10 @@ import {
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
-// Resolve authDomain: when hosted on .web.app or custom domain, use same origin
-// to prevent Apple Safari Intelligent Tracking Prevention (ITP) from blocking auth
-const getResolvedAuthDomain = () => {
-  if (typeof window !== 'undefined' && window.location.hostname) {
-    const host = window.location.hostname;
-    if (host.endsWith('.web.app') || host.endsWith('.firebaseapp.com')) {
-      return host;
-    }
-  }
-  return firebaseConfig.authDomain;
-};
-
-// Initialize Firebase App with same-origin authDomain
+// Initialize Firebase App with official authDomain (firebaseapp.com)
 const app =
   getApps().length === 0
-    ? initializeApp({
-        ...firebaseConfig,
-        authDomain: getResolvedAuthDomain(),
-      })
+    ? initializeApp(firebaseConfig)
     : getApps()[0];
 
 export const auth = getAuth(app);
