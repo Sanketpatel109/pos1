@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Lock,
   Settings,
-  Crown,
   LogOut,
   Sparkles,
   Barcode,
@@ -211,26 +210,6 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Subscription / Plan Quick Pill */}
-        {onOpenSubscription && (
-          <div className="px-3 pt-2 pb-1 bg-muted/20 border-b border-border/50">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenSubscription();
-              }}
-              className="w-full py-1.5 px-2.5 rounded-lg bg-primary/10 hover:bg-primary/15 border border-primary/20 text-xs font-semibold text-primary flex items-center justify-between transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Crown className="w-3.5 h-3.5 shrink-0" />
-                <span>Plan: {licenseStatus?.displayLabel || 'Free Trial'}</span>
-              </div>
-              <span className="text-[11px] font-bold opacity-80">Manage →</span>
-            </button>
-          </div>
-        )}
 
         {/* Quick Shift / Operator Switcher Bar */}
         {onOpenStaffSwitch && (
