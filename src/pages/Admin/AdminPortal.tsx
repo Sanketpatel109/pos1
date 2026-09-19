@@ -20,6 +20,8 @@ import {
   DollarSign,
   Store,
   Users,
+  KeyRound,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,7 @@ import {
   approveSubscription,
   rejectSubscription,
 } from '../../services/subscriptionApprovalService';
+import { auth, googleProvider, signInWithPopup } from '../../firebase';
 
 const MASTER_FOUNDER_PIN = '9900';
 
@@ -39,8 +42,21 @@ export const AdminPortal: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return sessionStorage.getItem('monopos_founder_auth') === 'true';
   });
+  const [founderEmail, setFounderEmail] = useState<string | null>(() => {
+    return sessionStorage.getItem('monopos_founder_email');
+  });
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string | null>(null);
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState<boolean>(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  // Custom Founder PIN & Settings
+  const [activePin, setActivePin] = useState<string>(() => {
+    return localStorage.getItem('monopos_founder_pin') || MASTER_FOUNDER_PIN;
+  });
+  const [isPinSettingsOpen, setIsPinSettingsOpen] = useState<boolean>(false);
+  const [newPinInput, setNewPinInput] = useState<string>('');
+  const [pinUpdateMsg, setPinUpdateMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
   const [filter, setFilter] = useState<'PENDING' | 'APPROVED' | 'ALL'>('PENDING');
@@ -64,19 +80,70 @@ export const AdminPortal: React.FC = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setPinError(null);
-    if (pinInput.trim() === MASTER_FOUNDER_PIN) {
+    setGoogleError(null);
+    const entered = pinInput.trim();
+    const currentCustom = localStorage.getItem('monopos_founder_pin') || MASTER_FOUNDER_PIN;
+
+    if (entered === currentCustom || entered === MASTER_FOUNDER_PIN) {
       setIsAuthenticated(true);
       sessionStorage.setItem('monopos_founder_auth', 'true');
       setPinInput('');
     } else {
-      setPinError('Invalid Master Founder Passcode. Access Denied.');
+      setPinError('Invalid passcode. If you forgot your PIN, use Google Sign-in below.');
       setPinInput('');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsGoogleSigningIn(true);
+      setGoogleError(null);
+      setPinError(null);
+      const res = await signInWithPopup(auth, googleProvider);
+      if (res?.user) {
+        const email = res.user.email || 'Founder';
+        sessionStorage.setItem('monopos_founder_auth', 'true');
+        sessionStorage.setItem('monopos_founder_email', email);
+        setFounderEmail(email);
+        setIsAuthenticated(true);
+      }
+    } catch (err: any) {
+      console.warn('Founder Google login error:', err);
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        setGoogleError(err?.message || 'Google sign-in encountered an error. Please try again.');
+      }
+    } finally {
+      setIsGoogleSigningIn(false);
     }
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem('monopos_founder_auth');
+    sessionStorage.removeItem('monopos_founder_email');
     setIsAuthenticated(false);
+    setFounderEmail(null);
+  };
+
+  const handleSaveNewPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = newPinInput.trim();
+    if (!/^\d{4}$/.test(clean)) {
+      setPinUpdateMsg({ type: 'error', text: 'Passcode must be exactly 4 digits.' });
+      return;
+    }
+    localStorage.setItem('monopos_founder_pin', clean);
+    setActivePin(clean);
+    setNewPinInput('');
+    setPinUpdateMsg({ type: 'success', text: `Passcode updated to "${clean}" successfully!` });
+    setTimeout(() => setPinUpdateMsg(null), 4000);
+  };
+
+  const handleResetPinToDefault = () => {
+    localStorage.removeItem('monopos_founder_pin');
+    setActivePin(MASTER_FOUNDER_PIN);
+    setNewPinInput('');
+    setPinUpdateMsg({ type: 'success', text: `Passcode reset to default "${MASTER_FOUNDER_PIN}" successfully!` });
+    setTimeout(() => setPinUpdateMsg(null), 4000);
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -228,9 +295,57 @@ export const AdminPortal: React.FC = () => {
                   disabled={pinInput.length !== 4}
                   className="w-full font-bold cursor-pointer"
                 >
-                  Unlock Admin Portal
+                  Unlock with PIN
                 </Button>
               </form>
+
+              <div className="relative flex items-center justify-center my-1">
+                <div className="border-t border-border w-full" />
+                <span className="bg-card px-2.5 text-[10px] uppercase font-bold text-muted-foreground tracking-wider absolute">
+                  or if forgot pin
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGoogleLogin}
+                  disabled={isGoogleSigningIn}
+                  className="w-full flex items-center justify-center gap-2.5 h-10 text-xs font-semibold cursor-pointer border-border hover:bg-muted"
+                >
+                  {isGoogleSigningIn ? (
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                  ) : (
+                    <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                      />
+                    </svg>
+                  )}
+                  <span>Sign in with Founder Google</span>
+                </Button>
+
+                {googleError && (
+                  <p className="text-xs text-destructive font-medium flex items-center justify-center gap-1">
+                    <AlertCircle className="size-3.5 shrink-0" />
+                    {googleError}
+                  </p>
+                )}
+              </div>
 
               <div className="pt-2 text-center">
                 <a
@@ -278,6 +393,27 @@ export const AdminPortal: React.FC = () => {
             <span className="text-[11px] font-medium">Live Firestore Sync</span>
           </div>
 
+          {founderEmail && (
+            <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-2.5 py-1 rounded-md border border-border/50">
+              <span className="size-1.5 rounded-full bg-primary" />
+              <span className="font-mono text-[11px] truncate max-w-[160px]" title={founderEmail}>
+                {founderEmail}
+              </span>
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant={isPinSettingsOpen ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setIsPinSettingsOpen(!isPinSettingsOpen)}
+            className="h-8 text-xs gap-1.5 font-medium cursor-pointer"
+            title="Passcode Settings"
+          >
+            <KeyRound className="size-3.5" />
+            <span className="hidden sm:inline">Passcode Settings</span>
+          </Button>
+
           <a
             href="/"
             className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-border bg-muted/40 hover:bg-muted text-foreground flex items-center gap-1.5 transition-colors"
@@ -302,6 +438,92 @@ export const AdminPortal: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        {/* Passcode Settings & Management Card */}
+        {isPinSettingsOpen && (
+          <Card className="border-primary/30 bg-primary/5 shadow-xs animate-in fade-in duration-200">
+            <CardHeader className="pb-2 flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <KeyRound className="size-4 text-primary" />
+                  Founder Passcode Management
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Manage your quick 4-digit unlock PIN. The master emergency passcode <span className="font-mono font-bold text-foreground">9900</span> and Google Sign-In are always available for recovery.
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsPinSettingsOpen(false)}
+                className="h-7 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Close
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Current Active PIN: </span>
+                  <span className="font-mono font-bold text-foreground px-2 py-0.5 rounded bg-card border border-border shadow-2xs">
+                    {activePin}
+                  </span>
+                </div>
+                {founderEmail && (
+                  <div>
+                    <span className="text-muted-foreground">Authenticated Account: </span>
+                    <span className="font-mono text-primary font-medium">{founderEmail}</span>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveNewPin} className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 pt-1">
+                <Input
+                  type="password"
+                  maxLength={4}
+                  placeholder="New 4-digit PIN"
+                  value={newPinInput}
+                  onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                  className="font-mono text-xs w-36 text-center tracking-widest h-9 bg-card"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={newPinInput.trim().length !== 4}
+                  className="cursor-pointer font-semibold text-xs h-9"
+                >
+                  Update Passcode
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetPinToDefault}
+                  className="cursor-pointer text-xs h-9"
+                >
+                  Reset to Default (9900)
+                </Button>
+              </form>
+
+              {pinUpdateMsg && (
+                <div
+                  className={`p-2.5 rounded-lg text-xs flex items-center gap-2 border ${
+                    pinUpdateMsg.type === 'success'
+                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                      : 'bg-destructive/10 text-destructive border-destructive/20'
+                  }`}
+                >
+                  {pinUpdateMsg.type === 'success' ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="size-4 shrink-0" />
+                  )}
+                  <span>{pinUpdateMsg.text}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Action alert message */}
         {actionMessage && (
           <div
