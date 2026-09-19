@@ -171,72 +171,74 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
 
       {/* Main Scrollable Dashboard Content */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-        {/* Unified Hero Metric Card: 3 columns with dividers */}
-        <Card className="shadow-xs border-border bg-card">
-          <CardContent className="p-0">
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
-              {/* 1. Current Galla Balance */}
-              <div className="p-4 sm:p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="size-3.5 text-primary" />
-                    Current Galla Cash
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">
-                    {currencySymbol}
-                    {drawerBalance.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    In physical register till
-                  </p>
-                </div>
-                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Wallet className="size-5" />
-                </div>
+        {/* 3 Hero Metric Cards with balanced shadcn spacing */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 1. Current Galla Balance */}
+          <Card className="shadow-xs border-border bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Wallet className="size-4 text-primary" />
+                <span>Current Galla Cash</span>
+              </CardTitle>
+              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Wallet className="size-4.5" />
               </div>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">
+                {currencySymbol}
+                {drawerBalance.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                In physical register till
+              </p>
+            </CardContent>
+          </Card>
 
-              {/* 2. Total Cash IN (Jama) */}
-              <div className="p-4 sm:p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                    <ArrowDownLeft className="size-3.5" />
-                    Total Cash In (Jama)
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
-                    +{currencySymbol}
-                    {totalIn.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {inEntries.length} receipts & float additions
-                  </p>
-                </div>
-                <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <ArrowDownLeft className="size-5" />
-                </div>
+          {/* 2. Total Cash IN (Jama) */}
+          <Card className="shadow-xs border-border bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <ArrowDownLeft className="size-4" />
+                <span>Total Cash In (Jama)</span>
+              </CardTitle>
+              <div className="size-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <ArrowDownLeft className="size-4.5" />
               </div>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
+                +{currencySymbol}
+                {totalIn.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {inEntries.length} receipts & float additions
+              </p>
+            </CardContent>
+          </Card>
 
-              {/* 3. Total Cash OUT (Kharcha) */}
-              <div className="p-4 sm:p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-destructive flex items-center gap-1.5">
-                    <ArrowUpRight className="size-3.5" />
-                    Total Cash Out (Kharcha)
-                  </span>
-                  <div className="text-2xl sm:text-3xl font-bold text-destructive tabular-nums tracking-tight">
-                    -{currencySymbol}
-                    {totalOut.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {outEntries.length} petty cash expenses
-                  </p>
-                </div>
-                <div className="size-11 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
-                  <ArrowUpRight className="size-5" />
-                </div>
+          {/* 3. Total Cash OUT (Kharcha) */}
+          <Card className="shadow-xs border-border bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-destructive flex items-center gap-1.5">
+                <ArrowUpRight className="size-4" />
+                <span>Total Cash Out (Kharcha)</span>
+              </CardTitle>
+              <div className="size-9 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                <ArrowUpRight className="size-4.5" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="text-2xl sm:text-3xl font-bold text-destructive tabular-nums tracking-tight">
+                -{currencySymbol}
+                {totalOut.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {outEntries.length} petty cash expenses
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Morning Shift Opening Float Notice */}
         {!hasOpeningFloatToday && (
