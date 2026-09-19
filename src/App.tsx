@@ -2584,6 +2584,7 @@ export default function App() {
             ![
               'quick-bill',
               'reports',
+              'analytics',
               'categories-products',
               'customers',
               'credit-ledger',
