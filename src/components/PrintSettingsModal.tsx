@@ -123,7 +123,6 @@ export interface PrintSettingsModalProps {
   subscriptionState?: SubscriptionState;
   subscriptionStatusInfo?: SubscriptionStatusInfo;
   onSubmitUtr?: (utr: string) => { success: boolean; message: string };
-  onActivateLicenseKey?: (key: string) => { success: boolean; message: string };
 }
 
 export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
@@ -150,7 +149,6 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
   subscriptionState,
   subscriptionStatusInfo,
   onSubmitUtr,
-  onActivateLicenseKey,
 }) => {
   const [activeTab, setActiveTab] = useState<'hardware' | 'store' | 'cloud' | 'subscription'>(initialTab);
   const [activeSubView, setActiveSubView] = useState<'overview' | 'diagnostics'>(initialSubView);
@@ -2074,12 +2072,11 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
           )}
 
           {/* Subscription & Billing Tab */}
-          {activeTab === 'subscription' && subscriptionState && subscriptionStatusInfo && onSubmitUtr && onActivateLicenseKey && (
+          {activeTab === 'subscription' && subscriptionState && subscriptionStatusInfo && onSubmitUtr && (
             <SubscriptionTab
               state={subscriptionState}
               statusInfo={subscriptionStatusInfo}
               onSubmitUtr={onSubmitUtr}
-              onActivateLicenseKey={onActivateLicenseKey}
             />
           )}
         </div>

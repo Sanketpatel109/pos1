@@ -187,7 +187,6 @@ export default function App() {
     state: subState,
     statusInfo: subStatusInfo,
     submitUtr,
-    activateLicenseKey,
     recordActivityTimestamp,
   } = useSubscriptionStore(currentStoreId);
 
@@ -2969,7 +2968,6 @@ export default function App() {
         subscriptionState={subState}
         subscriptionStatusInfo={subStatusInfo}
         onSubmitUtr={submitUtr}
-        onActivateLicenseKey={activateLicenseKey}
       />
 
       {/* Subscription Expired / Tamper Lockout Modal */}
@@ -2979,7 +2977,6 @@ export default function App() {
         statusInfo={subStatusInfo}
         onClose={() => setIsExpiredModalOpen(false)}
         onSubmitUtr={submitUtr}
-        onActivateLicenseKey={activateLicenseKey}
         onOpenSettings={() => {
           setSettingsInitialTab('subscription');
           setIsPrintSettingsOpen(true);
