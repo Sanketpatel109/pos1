@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { SubscriptionState } from '../../types/subscription';
 import { SubscriptionStatusInfo } from '../../store/useSubscriptionStore';
-import { AdminSubscriptionApprovalModal } from '../../components/AdminSubscriptionApprovalModal';
 
 export interface SubscriptionTabProps {
   state: SubscriptionState;
@@ -42,7 +41,6 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
   const [utrInput, setUtrInput] = useState<string>('');
   const [utrMessage, setUtrMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // Generate NPCI UPI QR string:
   // upi://pay?pa=monopos@upi&pn=MonoPOS&am=1999&cu=INR&tn=MonoPOS%20Pro%20{storeId}
@@ -82,20 +80,6 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
     } else {
       setUtrMessage({ type: 'error', text: res.message });
     }
-  };
-
-  const [storeIdClickCount, setStoreIdClickCount] = useState(0);
-
-  const handleStoreIdClick = () => {
-    setStoreIdClickCount((prev) => {
-      const next = prev + 1;
-      if (next >= 3) {
-        setIsAdminModalOpen(true);
-        return 0;
-      }
-      return next;
-    });
-    setTimeout(() => setStoreIdClickCount(0), 2000);
   };
 
   return (
@@ -139,11 +123,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
               </div>
               <CardDescription className="text-xs text-muted-foreground">
                 Store ID:{' '}
-                <span
-                  onClick={handleStoreIdClick}
-                  className="font-mono text-foreground font-semibold cursor-default select-none"
-                  title="Store ID"
-                >
+                <span className="font-mono text-foreground font-semibold">
                   {state.storeId}
                 </span>
               </CardDescription>
@@ -345,13 +325,6 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
           </form>
         </CardContent>
       </Card>
-
-      {/* Super-Admin Subscription Approval Modal */}
-      <AdminSubscriptionApprovalModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        reviewerName={ownerName || 'Store Owner'}
-      />
     </div>
   );
 };

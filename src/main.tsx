@@ -1,6 +1,7 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
+import { StrictMode, useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { AdminPortal } from './pages/Admin/AdminPortal.tsx';
 import { CartProvider } from './context/CartContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
@@ -15,14 +16,41 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+function RootApp() {
+  const [isAdminRoute, setIsAdminRoute] = useState(() => {
+    return window.location.pathname.startsWith('/admin');
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsAdminRoute(window.location.pathname.startsWith('/admin'));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  if (isAdminRoute) {
+    return (
+      <ErrorBoundary>
+        <AdminPortal />
+      </ErrorBoundary>
+    );
+  }
+
+  return (
     <ErrorBoundary>
       <CartProvider>
         <App />
       </CartProvider>
     </ErrorBoundary>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <RootApp />
   </StrictMode>,
 );
+
 
 
