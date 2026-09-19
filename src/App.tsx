@@ -1137,11 +1137,27 @@ export default function App() {
   };
 
   // Hardware Laser Barcode Scanner Gun Driver (USB / Bluetooth HID Keyboard Wedge)
+  const lastLaserScanTimeRef = useRef<number>(0);
+  const lastLaserScanCodeRef = useRef<string>('');
+
   useEffect(() => {
     const unsubscribe = hardware.onLaserScan((scannedCode) => {
       if (isPriceCheckOpen) return;
 
-      const match = resolveBarcodeMatch(scannedCode, catalog);
+      const clean = scannedCode.trim();
+      if (!clean) return;
+
+      const now = Date.now();
+      const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').replace(/^0+/, '');
+      const isSame = normalize(clean) === normalize(lastLaserScanCodeRef.current);
+      // Cooldown: 1000ms minimum between any scans (1 item at a time), 2200ms if exact same barcode
+      if (now - lastLaserScanTimeRef.current < (isSame ? 2200 : 1000)) {
+        return;
+      }
+      lastLaserScanTimeRef.current = now;
+      lastLaserScanCodeRef.current = clean;
+
+      const match = resolveBarcodeMatch(clean, catalog);
 
       if (match) {
         posSound.playBeep();

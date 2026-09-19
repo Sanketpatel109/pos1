@@ -6,6 +6,7 @@ import {
   Tag,
   Plus,
   Check,
+  CheckCircle2,
   X,
   RefreshCw,
   AlertCircle,
@@ -28,6 +29,7 @@ import {
   Globe,
   ExternalLink,
 } from 'lucide-react';
+import { cn } from 'cn';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { CatalogItem, BillItem, PackagingOption } from '../types';
 import { resolveBarcodeMatch } from '../utils/barcodeResolver';
@@ -171,6 +173,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const scannerContainerId = 'interactive-barcode-qr-reader';
   const lastScannedCodeRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
+  const lastAnyScanTimeRef = useRef<number>(0);
+  const lastMatchedItemIdRef = useRef<string>('');
+  const [scanCooldownActive, setScanCooldownActive] = useState<boolean>(false);
+  const [scannedFeedbackTitle, setScannedFeedbackTitle] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isSwitchingCameraRef = useRef<boolean>(false);
   const isScanningRef = useRef<boolean>(false);
@@ -203,6 +209,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       setOnlinePriceInput('');
       setShowFallbackPanel(false);
       setRetryCount(0);
+      setScanCooldownActive(false);
     }
   }, [isOpen, propMode, initialMode]);
 
@@ -212,18 +219,40 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (!cleanText) return;
 
     const now = Date.now();
-    // Debounce duplicate scans within 1.2 seconds if identical
-    if (
-      cleanText === lastScannedCodeRef.current &&
-      now - lastScannedTimeRef.current < 1200
-    ) {
+    const SCAN_COOLDOWN_MS = 1200; // Strict 1.2-second global rate limit: exactly 1 item at a time
+    const SAME_ITEM_COOLDOWN_MS = 2500; // 2.5-second duplicate protection if same item is held in front of camera
+
+    // Rule 1: Global rate limiter - ignore ANY scans during active 1.2s cooldown
+    if (now - lastAnyScanTimeRef.current < SCAN_COOLDOWN_MS) {
       return;
     }
 
-    lastScannedCodeRef.current = cleanText;
-    lastScannedTimeRef.current = now;
+    // Rule 2: Normalize barcode string (strips non-alphanumeric and leading zeroes for UPC/EAN equivalence)
+    const normalizeCode = (code: string) => code.replace(/[^a-zA-Z0-9]/g, '').replace(/^0+/, '');
+    const normNew = normalizeCode(cleanText);
+    const normOld = normalizeCode(lastScannedCodeRef.current);
 
     const match = resolveBarcodeMatch(cleanText, catalog);
+    const matchedItemId = match ? match.item.id : '';
+
+    // Rule 3: Same-item duplicate guard (either matching raw/normalized barcode or same matched catalog item)
+    const isSameItem = (normNew && normNew === normOld) || (matchedItemId && matchedItemId === lastMatchedItemIdRef.current);
+    if (isSameItem && now - lastScannedTimeRef.current < SAME_ITEM_COOLDOWN_MS) {
+      return;
+    }
+
+    // All guards passed: lock scanner & record timestamps
+    lastAnyScanTimeRef.current = now;
+    lastScannedTimeRef.current = now;
+    lastScannedCodeRef.current = cleanText;
+    lastMatchedItemIdRef.current = matchedItemId;
+
+    // Trigger visual cooldown feedback
+    setScanCooldownActive(true);
+    setScannedFeedbackTitle(match ? match.displayName : cleanText);
+    setTimeout(() => {
+      setScanCooldownActive(false);
+    }, SCAN_COOLDOWN_MS);
 
     if (match) {
       posSound.playBeep();
@@ -974,20 +1003,43 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             )}
 
             {/* Overlaid Animated Targeting Reticle - Wide format for 1D retail barcodes */}
-            {cameraActive && isScanning && !lastScannedResult && (
+            {cameraActive && isScanning && (currentMode === 'add-to-bill' || !lastScannedResult) && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                <div className="w-52 sm:w-64 h-28 sm:h-36 border-2 border-primary rounded-xl relative shadow-[0_0_20px_rgba(52,211,153,0.25)] animate-pulse">
+                <div
+                  className={cn(
+                    "w-52 sm:w-64 h-28 sm:h-36 border-2 rounded-xl relative transition-all duration-300",
+                    scanCooldownActive
+                      ? "border-emerald-500 bg-emerald-500/10 shadow-[0_0_25px_rgba(16,185,129,0.4)]"
+                      : "border-primary shadow-[0_0_20px_rgba(52,211,153,0.25)] animate-pulse"
+                  )}
+                >
                   {/* Corner accents */}
-                  <div className="absolute -top-1 -left-1 w-3.5 h-3.5 border-t-3 border-l-3 border-primary rounded-tl"></div>
-                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 border-t-3 border-r-3 border-primary rounded-tr"></div>
-                  <div className="absolute -bottom-1 -left-1 w-3.5 h-3.5 border-b-3 border-l-3 border-primary rounded-bl"></div>
-                  <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 border-b-3 border-r-3 border-primary rounded-br"></div>
-                  {/* Red Laser Scan Line */}
-                  <div className="absolute left-2 right-2 top-1/2 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-bounce"></div>
+                  <div className={cn("absolute -top-1 -left-1 w-3.5 h-3.5 border-t-3 border-l-3 rounded-tl transition-colors", scanCooldownActive ? "border-emerald-500" : "border-primary")}></div>
+                  <div className={cn("absolute -top-1 -right-1 w-3.5 h-3.5 border-t-3 border-r-3 rounded-tr transition-colors", scanCooldownActive ? "border-emerald-500" : "border-primary")}></div>
+                  <div className={cn("absolute -bottom-1 -left-1 w-3.5 h-3.5 border-b-3 border-l-3 rounded-bl transition-colors", scanCooldownActive ? "border-emerald-500" : "border-primary")}></div>
+                  <div className={cn("absolute -bottom-1 -right-1 w-3.5 h-3.5 border-b-3 border-r-3 rounded-br transition-colors", scanCooldownActive ? "border-emerald-500" : "border-primary")}></div>
+                  {/* Laser Scan Line: Green when confirmed cooling down, Red when searching */}
+                  <div
+                    className={cn(
+                      "absolute left-2 right-2 top-1/2 h-0.5 transition-colors",
+                      scanCooldownActive
+                        ? "bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,1)]"
+                        : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-bounce"
+                    )}
+                  ></div>
                 </div>
-                <span className="mt-2 bg-black/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-white/20">
-                  Align Barcode or QR Code
-                </span>
+
+                {/* Status indicator under reticle */}
+                {scanCooldownActive ? (
+                  <div className="mt-2.5 bg-emerald-950/95 backdrop-blur-md text-emerald-200 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/60 flex items-center gap-1.5 shadow-lg animate-in zoom-in-95">
+                    <CheckCircle2 className="size-3.5 text-emerald-400 animate-pulse" />
+                    <span>✓ Added {scannedFeedbackTitle ? `"${scannedFeedbackTitle.slice(0, 20)}"` : 'Item'} • Ready in 1s</span>
+                  </div>
+                ) : (
+                  <span className="mt-2 bg-black/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-white/20">
+                    Align Barcode or QR Code (1 at a time)
+                  </span>
+                )}
               </div>
             )}
 
