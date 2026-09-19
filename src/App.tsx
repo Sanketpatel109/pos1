@@ -1149,9 +1149,8 @@ export default function App() {
 
       const now = Date.now();
       const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').replace(/^0+/, '');
-      const isSame = normalize(clean) === normalize(lastLaserScanCodeRef.current);
-      // Cooldown: 1000ms minimum between any scans (1 item at a time), 2200ms if exact same barcode
-      if (now - lastLaserScanTimeRef.current < (isSame ? 2200 : 1000)) {
+      // Industrial timing: 350ms between different items (fluid cashier swipe), 1500ms for exact same barcode (duplicate prevention)
+      if (now - lastLaserScanTimeRef.current < (isSame ? 1500 : 350)) {
         return;
       }
       lastLaserScanTimeRef.current = now;

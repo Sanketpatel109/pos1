@@ -219,11 +219,14 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (!cleanText) return;
 
     const now = Date.now();
-    const SCAN_COOLDOWN_MS = 1200; // Strict 1.2-second global rate limit: exactly 1 item at a time
-    const SAME_ITEM_COOLDOWN_MS = 2500; // 2.5-second duplicate protection if same item is held in front of camera
+    // Industrial Retail Barcode Timing (Zebra / Honeywell / NCR standard):
+    // - Inter-symbol delay (different items): 400ms (rapid cashier swipe without lag)
+    // - Same-symbol re-read delay (identical items): 1500ms (strict duplicate lockout)
+    const INTER_ITEM_COOLDOWN_MS = 400;
+    const SAME_ITEM_COOLDOWN_MS = 1500;
 
-    // Rule 1: Global rate limiter - ignore ANY scans during active 1.2s cooldown
-    if (now - lastAnyScanTimeRef.current < SCAN_COOLDOWN_MS) {
+    // Rule 1: Inter-item frame debouncer (prevents dual camera/vision-engine frame collisions)
+    if (now - lastAnyScanTimeRef.current < INTER_ITEM_COOLDOWN_MS) {
       return;
     }
 
@@ -235,7 +238,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     const match = resolveBarcodeMatch(cleanText, catalog);
     const matchedItemId = match ? match.item.id : '';
 
-    // Rule 3: Same-item duplicate guard (either matching raw/normalized barcode or same matched catalog item)
+    // Rule 3: Industrial same-symbol re-read guard
     const isSameItem = (normNew && normNew === normOld) || (matchedItemId && matchedItemId === lastMatchedItemIdRef.current);
     if (isSameItem && now - lastScannedTimeRef.current < SAME_ITEM_COOLDOWN_MS) {
       return;
@@ -252,7 +255,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     setScannedFeedbackTitle(match ? match.displayName : cleanText);
     setTimeout(() => {
       setScanCooldownActive(false);
-    }, SCAN_COOLDOWN_MS);
+    }, 700);
 
     if (match) {
       posSound.playBeep();
