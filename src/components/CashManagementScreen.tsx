@@ -534,7 +534,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
 
       {/* Denomination Counter Modal strictly using shadcn Dialog */}
       <Dialog open={isDenomDialogOpen} onOpenChange={setIsDenomDialogOpen}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-border">
           <CashDenominationCounter
             currencySymbol={currencySymbol}
             expectedTotal={drawerBalance}
