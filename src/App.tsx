@@ -1888,6 +1888,7 @@ export default function App() {
     gstRate: number;
     stock: number;
     unit: string;
+    image?: string;
     weightOrVolume?: string;
     containerType?: string;
     packCount?: number;
@@ -1916,6 +1917,7 @@ export default function App() {
       gstRate: productData.gstRate,
       stock: productData.stock,
       unit: productData.unit,
+      image: productData.image,
       weightOrVolume: productData.weightOrVolume,
       containerType: productData.containerType,
       packCount: productData.packCount,

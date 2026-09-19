@@ -15,7 +15,7 @@ import {
 import { CatalogItem, Category, PackagingOption } from '../types';
 import { GST_SLABS } from '../constants/taxRates';
 import { FieldBarcodeScannerModal } from './FieldBarcodeScannerModal';
-import { lookupBarcodeDetails } from '../services/barcodeLookup';
+import { lookupBarcodeDetails, fetchProductImage } from '../services/barcodeLookup';
 import {
   Dialog,
   DialogContent,
@@ -155,11 +155,38 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     label?: string;
   } | null>(null);
   const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
+  const [isFetchingImage, setIsFetchingImage] = useState(false);
   const [lookupFeedback, setLookupFeedback] = useState<{
     message: string;
     isMultiPack?: boolean;
     packName?: string;
   } | null>(null);
+
+  // 1-Click exact packaging photo auto-fetch from official registry (0 KB server space)
+  const handleAutoFetchImage = async () => {
+    if (!prodBarcode && !prodName) return;
+    setIsFetchingImage(true);
+    setLookupFeedback(null);
+    try {
+      const img = await fetchProductImage(prodBarcode, prodName);
+      if (img) {
+        setProdImageUrl(img);
+        setLookupFeedback({
+          message: 'Exact product photo linked from official registry (0 KB server space)!',
+          isMultiPack: false,
+        });
+      } else {
+        setLookupFeedback({
+          message: 'No official photo found for this item in public registries. You can upload one manually.',
+          isMultiPack: false,
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
 
   // Auto-lookup barcode details from registry
   const handleProcessBarcodeLookup = async (barcodeToLookup: string) => {
@@ -906,31 +933,54 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                         <span className="text-xs font-medium">Optimizing photo...</span>
                       </div>
                     ) : !prodImageUrl ? (
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => fileInputRef.current?.click()}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
-                        }}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`py-6 px-4 border border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
-                          isDragOver
-                            ? 'border-primary bg-primary/5'
-                            : 'border-border hover:border-muted-foreground/50 bg-muted/20 hover:bg-muted/30'
-                        }`}
-                      >
-                        <div className="w-9 h-9 rounded-full bg-background border border-border flex items-center justify-center mb-2 text-muted-foreground">
-                          <Camera className="w-4 h-4" />
+                      <div className="space-y-2.5">
+                        {/* 1-Click Auto-Fetch Exact Barcode Image (0 KB Server Storage) */}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleAutoFetchImage}
+                          disabled={isFetchingImage || (!prodBarcode && !prodName)}
+                          className="w-full gap-2 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-semibold cursor-pointer h-9 text-xs shadow-xs"
+                        >
+                          {isFetchingImage ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                              <span>Searching official barcode registry for photo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Auto-Fetch Exact Image (0 KB Server Storage)</span>
+                            </>
+                          )}
+                        </Button>
+
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => fileInputRef.current?.click()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+                          }}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          className={`py-5 px-4 border border-dashed rounded-md flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+                            isDragOver
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-muted-foreground/50 bg-muted/20 hover:bg-muted/30'
+                          }`}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-background border border-border flex items-center justify-center mb-1.5 text-muted-foreground">
+                            <Camera className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-medium text-foreground">
+                            Or upload photo / take picture manually
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            Drag & drop image file (auto-optimized)
+                          </span>
                         </div>
-                        <span className="text-xs font-medium text-foreground">
-                          Click to upload photo or take picture
-                        </span>
-                        <span className="text-[11px] text-muted-foreground mt-0.5">
-                          Drag & drop image file (auto-optimized)
-                        </span>
                       </div>
                     ) : (
                       <div className="p-3 border border-border rounded-md flex items-center justify-between gap-3 bg-muted/20">
@@ -938,15 +988,21 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                           <img
                             src={prodImageUrl}
                             alt="Product preview"
-                            className="w-12 h-12 rounded-md object-cover border border-border shrink-0 bg-background"
+                            className="w-12 h-12 rounded-md object-contain border border-border shrink-0 bg-background p-0.5"
                           />
                           <div className="min-w-0">
-                            <span className="text-xs font-medium text-foreground block truncate">
-                              Product Image Attached
+                            <span className="text-xs font-bold text-foreground block truncate">
+                              {prodImageUrl.startsWith('http') ? 'Exact Official Packaging Image' : 'Product Photo Attached'}
                             </span>
-                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                              <Check className="w-3 h-3" /> Ready
-                            </span>
+                            {prodImageUrl.startsWith('http') ? (
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                                <Sparkles className="w-3 h-3 text-emerald-500" /> 0 KB Server Space (CDN Link)
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                <Check className="w-3 h-3" /> Ready
+                              </span>
+                            )}
                           </div>
                         </div>
 

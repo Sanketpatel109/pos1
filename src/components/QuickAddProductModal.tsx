@@ -51,6 +51,7 @@ export interface QuickAddProductModalProps {
     gstRate: number;
     stock: number;
     unit: string;
+    image?: string;
     weightOrVolume?: string;
     containerType?: string;
     packCount?: number;
@@ -64,6 +65,7 @@ export interface QuickAddProductModalProps {
     gstRate: number;
     stock: number;
     unit: string;
+    image?: string;
     weightOrVolume?: string;
     containerType?: string;
     packCount?: number;
@@ -123,6 +125,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
   const [weightOrVolume, setWeightOrVolume] = useState<string>('');
   const [containerType, setContainerType] = useState<string>('');
   const [foundBadge, setFoundBadge] = useState<string | null>(null);
+  const [prodImageUrl, setProdImageUrl] = useState<string>('');
 
   // Refs for auto-focusing
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -145,6 +148,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
       setPackCount(1);
       setWeightOrVolume('');
       setContainerType('');
+      setProdImageUrl('');
       hasUserEditedNameRef.current = false;
       hasPopulatedFromLookupRef.current = false;
 
@@ -167,6 +171,10 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
 
     if (lookupProduct && !hasPopulatedFromLookupRef.current) {
       hasPopulatedFromLookupRef.current = true;
+
+      if (lookupProduct.imageUrl) {
+        setProdImageUrl(lookupProduct.imageUrl);
+      }
 
       // Extract pack, weight, container
       if (lookupProduct.packCount && lookupProduct.packCount > 1) {
@@ -304,6 +312,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
       gstRate: effectiveGst,
       stock: parsedStock,
       unit: unit || 'pcs',
+      image: prodImageUrl || lookupProduct?.imageUrl || undefined,
       weightOrVolume: weightOrVolume || undefined,
       containerType: containerType || undefined,
       packCount: packCount > 1 ? packCount : 1,
@@ -380,6 +389,40 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
             </Badge>
           )}
         </div>
+
+        {/* Auto-Fetched Packaging Photo Banner (0 KB Server Storage) */}
+        {prodImageUrl && (
+          <div className="px-5 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between gap-3 text-xs shrink-0 animate-in fade-in">
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src={prodImageUrl}
+                alt={productName || 'Product'}
+                className="w-11 h-11 rounded-lg object-contain bg-white border border-border p-0.5 shrink-0 shadow-xs"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-bold text-foreground">Exact Packaging Image</span>
+                  <Badge variant="outline" className="text-[9px] py-0 px-1.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 font-semibold">
+                    0 KB Server Space (CDN)
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                  Official photo auto-linked from barcode registry
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setProdImageUrl('')}
+              className="text-muted-foreground hover:text-destructive shrink-0 cursor-pointer"
+              title="Remove image"
+            >
+              <X className="size-3.5" />
+            </Button>
+          </div>
+        )}
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">

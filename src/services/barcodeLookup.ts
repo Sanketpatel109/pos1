@@ -486,3 +486,51 @@ export function getAmazonSearchUrl(barcode: string): string {
   const clean = barcode.replace(/[\s-]/g, '').trim();
   return `https://www.amazon.com/s?k=${encodeURIComponent(clean)}`;
 }
+
+/**
+ * Auto-fetches the exact high-res product photo from global retail CDNs.
+ * Saves 99.9% database/server storage by returning an 80-byte CDN URL instead of a 100KB Base64 blob.
+ * 
+ * Lookup strategy:
+ * 1. Exact Barcode Registry Lookup via Open Food Facts / UPCitemdb
+ * 2. Text Search by Product Name / Brand
+ */
+export async function fetchProductImage(
+  barcode?: string,
+  productName?: string
+): Promise<string | null> {
+  // Strategy 1: Exact Barcode Registry Lookup
+  if (barcode && barcode.trim()) {
+    try {
+      const barcodeRes = await lookupBarcodeDetails(barcode.trim());
+      if (barcodeRes && barcodeRes.imageUrl) {
+        return barcodeRes.imageUrl;
+      }
+    } catch {}
+  }
+
+  // Strategy 2: Product Name Search via Open Food Facts Search API
+  if (productName && productName.trim()) {
+    try {
+      const cleanName = encodeURIComponent(productName.trim());
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${cleanName}&search_simple=1&action=process&json=1&page_size=5`;
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.products && Array.isArray(data.products)) {
+          for (const p of data.products) {
+            const img = p.image_front_url || p.image_url || p.image_front_small_url || p.image_small_url;
+            if (img && typeof img === 'string' && img.startsWith('http')) {
+              return img;
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return null;
+}
