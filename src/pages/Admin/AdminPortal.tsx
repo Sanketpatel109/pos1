@@ -22,6 +22,10 @@ import {
   Users,
   KeyRound,
   Loader2,
+  Trash2,
+  Mail,
+  Plus,
+  ShieldAlert,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +38,13 @@ import {
   approveSubscription,
   rejectSubscription,
 } from '../../services/subscriptionApprovalService';
-import { auth, googleProvider, signInWithPopup } from '../../firebase';
+import { auth, googleProvider, signInWithPopup, signOut } from '../../firebase';
+import {
+  subscribeToAdminWhitelist,
+  addAdminEmail,
+  removeAdminEmail,
+  isEmailWhitelisted,
+} from '../../services/adminWhitelistService';
 
 const MASTER_FOUNDER_PIN = '9900';
 
@@ -58,6 +68,12 @@ export const AdminPortal: React.FC = () => {
   const [newPinInput, setNewPinInput] = useState<string>('');
   const [pinUpdateMsg, setPinUpdateMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Multi-Admin Email Whitelist
+  const [adminWhitelist, setAdminWhitelist] = useState<string[]>([]);
+  const [newEmailInput, setNewEmailInput] = useState<string>('');
+  const [emailActionMsg, setEmailActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isEmailAdding, setIsEmailAdding] = useState<boolean>(false);
+
   const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
   const [filter, setFilter] = useState<'PENDING' | 'APPROVED' | 'ALL'>('PENDING');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -68,6 +84,14 @@ export const AdminPortal: React.FC = () => {
   // Manual Direct Store Grant
   const [manualStoreId, setManualStoreId] = useState<string>('');
   const [isManualActivating, setIsManualActivating] = useState(false);
+
+  // Subscribe to live admin whitelist from Firestore
+  useEffect(() => {
+    const unsub = subscribeToAdminWhitelist((emails) => {
+      setAdminWhitelist(emails);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -101,7 +125,18 @@ export const AdminPortal: React.FC = () => {
       setPinError(null);
       const res = await signInWithPopup(auth, googleProvider);
       if (res?.user) {
-        const email = res.user.email || 'Founder';
+        const email = res.user.email || '';
+
+        // Strict Whitelist Enforcement
+        const isAllowed = isEmailWhitelisted(email, adminWhitelist);
+        if (!isAllowed) {
+          await signOut(auth);
+          setGoogleError(
+            `Access Denied: "${email}" is not an authorized Founder administrator.`
+          );
+          return;
+        }
+
         sessionStorage.setItem('monopos_founder_auth', 'true');
         sessionStorage.setItem('monopos_founder_email', email);
         setFounderEmail(email);
@@ -144,6 +179,52 @@ export const AdminPortal: React.FC = () => {
     setNewPinInput('');
     setPinUpdateMsg({ type: 'success', text: `Passcode reset to default "${MASTER_FOUNDER_PIN}" successfully!` });
     setTimeout(() => setPinUpdateMsg(null), 4000);
+  };
+
+  const handleAddEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmailInput.trim()) return;
+    try {
+      setIsEmailAdding(true);
+      setEmailActionMsg(null);
+      const updated = await addAdminEmail(newEmailInput, founderEmail || 'Founder');
+      setAdminWhitelist(updated);
+      setNewEmailInput('');
+      setEmailActionMsg({
+        type: 'success',
+        text: `Authorized "${newEmailInput.trim().toLowerCase()}" as admin!`,
+      });
+      setTimeout(() => setEmailActionMsg(null), 4000);
+    } catch (err: any) {
+      setEmailActionMsg({ type: 'error', text: err?.message || 'Failed to add admin email.' });
+    } finally {
+      setIsEmailAdding(false);
+    }
+  };
+
+  const handleRemoveEmail = async (emailToRemove: string) => {
+    if (adminWhitelist.length <= 1) {
+      setEmailActionMsg({
+        type: 'error',
+        text: 'You must maintain at least one authorized admin email.',
+      });
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to remove "${emailToRemove}" from authorized admins?`)) {
+      return;
+    }
+    try {
+      setEmailActionMsg(null);
+      const updated = await removeAdminEmail(emailToRemove, founderEmail || 'Founder');
+      setAdminWhitelist(updated);
+      setEmailActionMsg({
+        type: 'success',
+        text: `Removed "${emailToRemove}" from authorized admins.`,
+      });
+      setTimeout(() => setEmailActionMsg(null), 4000);
+    } catch (err: any) {
+      setEmailActionMsg({ type: 'error', text: err?.message || 'Failed to remove admin email.' });
+    }
   };
 
   const handleCopy = (text: string, id: string) => {
@@ -520,6 +601,89 @@ export const AdminPortal: React.FC = () => {
                   <span>{pinUpdateMsg.text}</span>
                 </div>
               )}
+
+              <Separator className="my-2" />
+
+              {/* Multi-Admin Google Email Whitelist */}
+              <div className="space-y-3 pt-1">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Mail className="size-3.5 text-primary" />
+                    Authorized Admin Google Accounts ({adminWhitelist.length})
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Only users authenticated with these exact Google accounts can unlock this Admin Console.
+                  </p>
+                </div>
+
+                <form onSubmit={handleAddEmail} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <Input
+                    type="email"
+                    placeholder="e.g. founder@gmail.com"
+                    value={newEmailInput}
+                    onChange={(e) => setNewEmailInput(e.target.value)}
+                    className="font-mono text-xs max-w-sm h-9 bg-card"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isEmailAdding || !newEmailInput.trim()}
+                    className="cursor-pointer font-semibold text-xs h-9 gap-1.5 shrink-0"
+                  >
+                    {isEmailAdding ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="size-3.5" />
+                    )}
+                    <span>Add Admin Email</span>
+                  </Button>
+                </form>
+
+                {emailActionMsg && (
+                  <div
+                    className={`p-2.5 rounded-lg text-xs flex items-center gap-2 border ${
+                      emailActionMsg.type === 'success'
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                        : 'bg-destructive/10 text-destructive border-destructive/20'
+                    }`}
+                  >
+                    {emailActionMsg.type === 'success' ? (
+                      <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    ) : (
+                      <AlertCircle className="size-4 shrink-0" />
+                    )}
+                    <span>{emailActionMsg.text}</span>
+                  </div>
+                )}
+
+                {/* List of current authorized emails */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
+                  {adminWhitelist.map((email) => (
+                    <div
+                      key={email}
+                      className="flex items-center justify-between p-2 rounded-lg border border-border bg-card shadow-2xs text-xs gap-2"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="font-mono font-medium text-foreground truncate" title={email}>
+                          {email}
+                        </span>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveEmail(email)}
+                        className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 cursor-pointer"
+                        title={`Remove ${email}`}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}

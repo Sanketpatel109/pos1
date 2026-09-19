@@ -66,6 +66,11 @@ service cloud.firestore {
     match /subscription_requests/{requestId} {
       allow read, write: if true;
     }
+
+    // Platform Admin & Founder whitelist configuration
+    match /admin_config/{configId} {
+      allow read, write: if true;
+    }
   }
 }
 
