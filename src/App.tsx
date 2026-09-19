@@ -28,6 +28,7 @@ import { ItemWiseBillTerminal } from './components/ItemWiseBillTerminal';
 import { QuickBillTerminal } from './components/QuickBillTerminal';
 import { getNextDailyToken } from './utils/token';
 import { ReportsScreen } from './components/ReportsScreen';
+import { AnalyticsScreen } from './components/AnalyticsScreen';
 import { CategoryProductManager } from './components/CategoryProductManager';
 import { CustomerManagementScreen } from './components/CustomerManagementScreen';
 import { CashManagementScreen } from './components/CashManagementScreen';
@@ -1149,6 +1150,7 @@ export default function App() {
 
       const now = Date.now();
       const normalize = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '').replace(/^0+/, '');
+      const isSame = normalize(clean) === normalize(lastLaserScanCodeRef.current || '');
       // Industrial timing: 350ms between different items (fluid cashier swipe), 1500ms for exact same barcode (duplicate prevention)
       if (now - lastLaserScanTimeRef.current < (isSame ? 1500 : 350)) {
         return;
@@ -2684,7 +2686,19 @@ export default function App() {
               onOpenZReport={() => setIsZReportOpen(true)}
               onProcessRefund={handleProcessRefund}
             />
+          )}
 
+          {activeScreen === 'analytics' && (
+            <AnalyticsScreen
+              orders={orders}
+              catalog={catalog}
+              categories={categories}
+              customers={customers}
+              cashEntries={cashEntries}
+              staffList={staffList}
+              currencySymbol={shopSettings.currencySymbol}
+              shopSettings={shopSettings}
+            />
           )}
 
           {activeScreen === 'categories-products' && (

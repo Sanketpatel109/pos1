@@ -16,6 +16,7 @@ import {
   Sparkles,
   Barcode,
   Tag,
+  TrendingUp,
 } from 'lucide-react';
 import { ActiveScreen, ShopSettings, StaffRole } from '../types';
 import { User } from '../firebase';
@@ -149,6 +150,12 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     {
       groupTitle: 'ADMIN & SETTINGS (Owner PIN)',
       items: [
+        {
+          id: 'analytics',
+          label: 'Analytics & Insights',
+          description: 'Sales velocity, hourly rush, margins & trends',
+          icon: TrendingUp,
+        },
         {
           id: 'reports',
           label: 'Sales & Tax Reports (GSTR-1)',

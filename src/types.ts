@@ -271,6 +271,7 @@ export type ActiveScreen =
   | 'item-wise'
   | 'quick-bill'
   | 'reports'
+  | 'analytics'
   | 'categories-products'
   | 'customers'
   | 'credit-ledger'
