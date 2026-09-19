@@ -84,6 +84,20 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
     }
   };
 
+  const [storeIdClickCount, setStoreIdClickCount] = useState(0);
+
+  const handleStoreIdClick = () => {
+    setStoreIdClickCount((prev) => {
+      const next = prev + 1;
+      if (next >= 3) {
+        setIsAdminModalOpen(true);
+        return 0;
+      }
+      return next;
+    });
+    setTimeout(() => setStoreIdClickCount(0), 2000);
+  };
+
   return (
     <div className="space-y-5 w-full pb-8">
       {/* Top Card: Current Subscription Plan Overview */}
@@ -124,31 +138,24 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
                 </Badge>
               </div>
               <CardDescription className="text-xs text-muted-foreground">
-                Store ID: <span className="font-mono text-foreground font-semibold">{state.storeId}</span>
+                Store ID:{' '}
+                <span
+                  onClick={handleStoreIdClick}
+                  className="font-mono text-foreground font-semibold cursor-default select-none"
+                  title="Store ID"
+                >
+                  {state.storeId}
+                </span>
               </CardDescription>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-left sm:text-right">
-                <span className="text-[11px] text-muted-foreground block">
-                  {statusInfo.isExpired ? 'Expired on' : 'Expires on'}
-                </span>
-                <span className="text-sm font-bold text-foreground">
-                  {statusInfo.expiresAtFormatted}
-                </span>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsAdminModalOpen(true)}
-                className="h-8 text-xs font-semibold gap-1.5 cursor-pointer border-primary/30 text-primary hover:bg-primary/10 ml-2"
-                title="Super-Admin payment verification and license approval queue"
-              >
-                <ShieldCheck className="size-3.5" />
-                <span>Admin Approvals</span>
-              </Button>
+            <div className="text-left sm:text-right">
+              <span className="text-[11px] text-muted-foreground block">
+                {statusInfo.isExpired ? 'Expired on' : 'Expires on'}
+              </span>
+              <span className="text-sm font-bold text-foreground">
+                {statusInfo.expiresAtFormatted}
+              </span>
             </div>
           </div>
         </CardHeader>

@@ -15,6 +15,8 @@ import {
   ArrowRight,
   Hash,
   Filter,
+  Lock,
+  AlertCircle,
 } from 'lucide-react';
 import {
   Dialog,
@@ -40,10 +42,12 @@ export interface AdminSubscriptionApprovalModalProps {
   reviewerName?: string;
 }
 
+const MASTER_CREATOR_PIN = '9900';
+
 export const AdminSubscriptionApprovalModal: React.FC<AdminSubscriptionApprovalModalProps> = ({
   isOpen,
   onClose,
-  reviewerName = 'Administrator',
+  reviewerName = 'Platform Creator',
 }) => {
   const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
   const [filter, setFilter] = useState<'PENDING' | 'APPROVED' | 'ALL'>('PENDING');
@@ -52,17 +56,37 @@ export const AdminSubscriptionApprovalModal: React.FC<AdminSubscriptionApprovalM
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedUtr, setCopiedUtr] = useState<string | null>(null);
 
+  // Platform Creator Master PIN Gate
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(() => {
+    return sessionStorage.getItem('monopos_creator_authorized') === 'true';
+  });
+  const [pinInput, setPinInput] = useState<string>('');
+  const [pinError, setPinError] = useState<string | null>(null);
+
   // Manual activation input
   const [manualStoreId, setManualStoreId] = useState<string>('');
   const [isManualActivating, setIsManualActivating] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isAuthorized) return;
     const unsub = subscribeToAllRequests((list) => {
       setRequests(list);
     });
     return () => unsub();
-  }, [isOpen]);
+  }, [isOpen, isAuthorized]);
+
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinError(null);
+    if (pinInput.trim() === MASTER_CREATOR_PIN) {
+      setIsAuthorized(true);
+      sessionStorage.setItem('monopos_creator_authorized', 'true');
+      setPinInput('');
+    } else {
+      setPinError('Invalid Master Creator PIN. Access Denied.');
+      setPinInput('');
+    }
+  };
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -167,39 +191,102 @@ export const AdminSubscriptionApprovalModal: React.FC<AdminSubscriptionApprovalM
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-3xl p-0 gap-0 overflow-hidden rounded-3xl border-border bg-card max-h-[92vh] flex flex-col">
-        {/* Header */}
-        <div className="p-5 sm:p-6 bg-muted/40 border-b border-border flex items-start justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="size-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 shadow-xs">
-              <ShieldCheck className="size-6" />
+      <DialogContent
+        className={`${
+          isAuthorized ? 'sm:max-w-3xl' : 'sm:max-w-md'
+        } p-0 gap-0 overflow-hidden rounded-3xl border-border bg-card max-h-[92vh] flex flex-col`}
+      >
+        {!isAuthorized ? (
+          /* Platform Creator Master PIN Screen */
+          <div className="p-6 sm:p-8 space-y-5 text-center">
+            <div className="size-14 mx-auto rounded-3xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shadow-xs">
+              <Lock className="size-7" />
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
-                  Super-Admin Subscription Approvals
-                </DialogTitle>
-                <Badge
-                  variant="outline"
-                  className="text-[11px] font-semibold bg-primary/10 border-primary/20 text-primary"
-                >
-                  {pendingCount} Pending
-                </Badge>
-              </div>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Verify customer UPI UTR references from your bank/UPI statement and approve 1-Year Annual Pro licenses.
+            <div className="space-y-1.5">
+              <DialogTitle className="text-lg font-bold text-foreground">
+                Platform Creator Security Gate
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                This verification terminal is strictly restricted to the SaaS Platform Creator. Enter your Master Creator PIN to proceed.
               </DialogDescription>
             </div>
+
+            <form onSubmit={handleVerifyPin} className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  maxLength={4}
+                  placeholder="••••"
+                  autoFocus
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+                  className="text-center text-2xl tracking-[0.5em] font-mono h-12 w-48 mx-auto"
+                />
+                {pinError && (
+                  <p className="text-xs text-destructive font-medium flex items-center justify-center gap-1">
+                    <AlertCircle className="size-3.5" />
+                    {pinError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onClose}
+                  className="flex-1 text-xs cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={pinInput.length !== 4}
+                  className="flex-1 text-xs font-semibold cursor-pointer"
+                >
+                  Unlock Queue
+                </Button>
+              </div>
+            </form>
           </div>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
+        ) : (
+          /* Full Super-Admin Approvals Interface */
+          <>
+            {/* Header */}
+            <div className="p-5 sm:p-6 bg-muted/40 border-b border-border flex items-start justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="size-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20 shadow-xs">
+                  <ShieldCheck className="size-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
+                      Platform Creator Approvals
+                    </DialogTitle>
+                    <Badge
+                      variant="outline"
+                      className="text-[11px] font-semibold bg-primary/10 border-primary/20 text-primary"
+                    >
+                      {pendingCount} Pending
+                    </Badge>
+                  </div>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    Verify customer UPI UTR references from your bank/UPI statement and approve 1-Year Annual Pro licenses.
+                  </DialogDescription>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={onClose}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+
 
         {/* Action alert message */}
         {actionMessage && (
@@ -472,7 +559,10 @@ export const AdminSubscriptionApprovalModal: React.FC<AdminSubscriptionApprovalM
             Close
           </Button>
         </div>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
+

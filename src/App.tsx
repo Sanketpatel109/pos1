@@ -71,6 +71,7 @@ import { TenantLicense } from './types';
 import { useSubscriptionStore } from './store/useSubscriptionStore';
 import { useSubscriptionGuard } from './hooks/useSubscriptionGuard';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
+import { AdminSubscriptionApprovalModal } from './components/AdminSubscriptionApprovalModal';
 
 import {
   getOrCreateLicense,
@@ -205,6 +206,7 @@ export default function App() {
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState<boolean>(false);
   const [isStoreOnboardingOpen, setIsStoreOnboardingOpen] = useState<boolean>(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
+  const [isCreatorApprovalOpen, setIsCreatorApprovalOpen] = useState<boolean>(false);
 
   // Listen to Firebase Auth state with local persistence
   useEffect(() => {
@@ -1099,6 +1101,11 @@ export default function App() {
       if (e.key === 'F2') {
         e.preventDefault();
         setIsPriceCheckOpen((prev) => !prev);
+      }
+      // Platform Creator Secret Hotkey: Ctrl+Shift+A or Cmd+Shift+A
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        setIsCreatorApprovalOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -2992,6 +2999,13 @@ export default function App() {
       <TrainingVideosModal
         isOpen={isTrainingVideosOpen}
         onClose={() => setIsTrainingVideosOpen(false)}
+      />
+
+      {/* Platform Creator Secret Subscription Approval Modal (Ctrl+Shift+A) */}
+      <AdminSubscriptionApprovalModal
+        isOpen={isCreatorApprovalOpen}
+        onClose={() => setIsCreatorApprovalOpen(false)}
+        reviewerName="Platform Creator"
       />
 
       {/* 1-Second 4-Digit Staff Shift Switch Modal */}
