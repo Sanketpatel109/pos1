@@ -2977,6 +2977,8 @@ export default function App() {
         statusInfo={subStatusInfo}
         onClose={() => setIsExpiredModalOpen(false)}
         onSubmitUtr={submitUtr}
+        storeName={shopSettings.shopName || ''}
+        ownerEmail={currentUser?.email || ''}
         onOpenSettings={() => {
           setSettingsInitialTab('subscription');
           setIsPrintSettingsOpen(true);

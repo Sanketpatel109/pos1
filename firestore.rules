@@ -61,5 +61,11 @@ service cloud.firestore {
     match /bills/{billId} {
       allow read, write: if isAuthenticated();
     }
+
+    // Subscription requests & UPI payment approvals
+    match /subscription_requests/{requestId} {
+      allow read, write: if true;
+    }
   }
 }
+

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SubscriptionState, SubscriptionStatus } from '../types/subscription';
 import { checkClockTampering, verifyLicenseKey } from '../utils/licenseSecurity';
+import { submitSubscriptionUtr, subscribeToStoreApproval } from '../services/subscriptionApprovalService';
 
 export const SUBSCRIPTION_STORAGE_KEY = 'monopos_sub_v1';
 export const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 export const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
 
 export interface SubscriptionStatusInfo {
   status: SubscriptionStatus;
@@ -96,6 +98,36 @@ export function useSubscriptionStore(storeId: string = 'monopos_store_default') 
   useEffect(() => {
     saveSubscriptionState(state);
   }, [state]);
+
+  // Real-time listener: automatically activates Annual Pro when Administrator approves in cloud
+  useEffect(() => {
+    if (!state.storeId) return;
+    const unsub = subscribeToStoreApproval(state.storeId, (req) => {
+      if (!req) return;
+
+      if (req.status === 'APPROVED' && req.expiresAt) {
+        const approvedExpiry = new Date(req.expiresAt).getTime();
+        setState((prev) => {
+          const currentExpiry = new Date(prev.expiresAt).getTime();
+          // If approved expiry is in future and activates or extends
+          if (approvedExpiry > Date.now() && (prev.status !== 'ACTIVE' || prev.expiresAt !== req.expiresAt)) {
+            return {
+              ...prev,
+              status: 'ACTIVE',
+              plan: 'ANNUAL_PRO',
+              expiresAt: req.expiresAt!,
+              gracePeriodEndsAt: undefined,
+              lastVerifiedUtr: undefined,
+              tamperDetected: false,
+            };
+          }
+          return prev;
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [state.storeId]);
 
   /**
    * Anti-clock-tampering heartbeat & status resolution
@@ -203,8 +235,12 @@ export function useSubscriptionStore(storeId: string = 'monopos_store_default') 
 
   /**
    * Submits a 12-digit UPI UTR number to instantly unlock 24 hours of grace period
+   * and dispatches a cloud request to the Super-Admin approval queue.
    */
-  const submitUtr = useCallback((utr: string): { success: boolean; message: string } => {
+  const submitUtr = useCallback((
+    utr: string,
+    meta?: { storeName?: string; ownerEmail?: string; ownerName?: string }
+  ): { success: boolean; message: string } => {
     const cleanUtr = (utr || '').trim();
     if (!/^\d{12}$/.test(cleanUtr)) {
       return {
@@ -225,11 +261,22 @@ export function useSubscriptionStore(storeId: string = 'monopos_store_default') 
       tamperDetected: false,
     }));
 
+    // Dispatch cloud request for Admin approval in background
+    submitSubscriptionUtr(
+      state.storeId,
+      cleanUtr,
+      meta?.storeName || state.storeId,
+      meta?.ownerEmail || '',
+      meta?.ownerName || ''
+    ).catch((err) => {
+      console.warn('[useSubscriptionStore] Error uploading UTR to cloud:', err);
+    });
+
     return {
       success: true,
       message: 'Payment reference submitted! Instant 24-hour grace period activated. Billing unlocked.',
     };
-  }, []);
+  }, [state.storeId]);
 
   /**
    * Activates an offline license key (MPOS-YYYYMMDD-HASH12)

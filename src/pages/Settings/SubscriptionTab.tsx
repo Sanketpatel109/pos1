@@ -9,6 +9,7 @@ import {
   Copy,
   Check,
   Lock,
+  ShieldCheck,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,22 +19,30 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { SubscriptionState } from '../../types/subscription';
 import { SubscriptionStatusInfo } from '../../store/useSubscriptionStore';
+import { AdminSubscriptionApprovalModal } from '../../components/AdminSubscriptionApprovalModal';
 
 export interface SubscriptionTabProps {
   state: SubscriptionState;
   statusInfo: SubscriptionStatusInfo;
-  onSubmitUtr: (utr: string) => { success: boolean; message: string };
+  onSubmitUtr: (utr: string, meta?: { storeName?: string; ownerEmail?: string; ownerName?: string }) => { success: boolean; message: string };
+  storeName?: string;
+  ownerEmail?: string;
+  ownerName?: string;
 }
 
 export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
   state,
   statusInfo,
   onSubmitUtr,
+  storeName = '',
+  ownerEmail = '',
+  ownerName = '',
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [utrInput, setUtrInput] = useState<string>('');
   const [utrMessage, setUtrMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // Generate NPCI UPI QR string:
   // upi://pay?pa=monopos@upi&pn=MonoPOS&am=1999&cu=INR&tn=MonoPOS%20Pro%20{storeId}
@@ -62,7 +71,11 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
   const handleUtrSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setUtrMessage(null);
-    const res = onSubmitUtr(utrInput);
+    const res = onSubmitUtr(utrInput, {
+      storeName,
+      ownerEmail,
+      ownerName,
+    });
     if (res.success) {
       setUtrMessage({ type: 'success', text: res.message });
       setUtrInput('');
@@ -115,16 +128,31 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
               </CardDescription>
             </div>
 
-            <div className="text-left sm:text-right">
-              <span className="text-[11px] text-muted-foreground block">
-                {statusInfo.isExpired ? 'Expired on' : 'Expires on'}
-              </span>
-              <span className="text-sm font-bold text-foreground">
-                {statusInfo.expiresAtFormatted}
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="text-left sm:text-right">
+                <span className="text-[11px] text-muted-foreground block">
+                  {statusInfo.isExpired ? 'Expired on' : 'Expires on'}
+                </span>
+                <span className="text-sm font-bold text-foreground">
+                  {statusInfo.expiresAtFormatted}
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAdminModalOpen(true)}
+                className="h-8 text-xs font-semibold gap-1.5 cursor-pointer border-primary/30 text-primary hover:bg-primary/10 ml-2"
+                title="Super-Admin payment verification and license approval queue"
+              >
+                <ShieldCheck className="size-3.5" />
+                <span>Admin Approvals</span>
+              </Button>
             </div>
           </div>
         </CardHeader>
+
 
         <CardContent className="pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
@@ -167,6 +195,29 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Active Verification Notice when UTR is pending review */}
+      {state.status === 'GRACE_PERIOD' && state.lastVerifiedUtr && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-3 shadow-2xs">
+          <Clock className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                Payment Verification in Progress
+              </span>
+              <code className="text-[11px] font-mono font-bold bg-background/80 px-2 py-0.5 rounded border border-amber-500/30 text-foreground">
+                UTR: {state.lastVerifiedUtr}
+              </code>
+              <Badge variant="outline" className="text-[10px] bg-amber-500/20 border-amber-500/40 text-amber-800 dark:text-amber-300 font-semibold">
+                Grace Active
+              </Badge>
+            </div>
+            <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+              Your 24-hour billing grace period is active. The administrator has received your UPI payment reference and will verify it shortly. Your Annual Pro subscription will confirm automatically in the background without needing any action.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Renewal via UPI QR Code & 12-Digit UTR Submission */}
       <Card className="border-border shadow-xs w-full">
@@ -287,6 +338,13 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
           </form>
         </CardContent>
       </Card>
+
+      {/* Super-Admin Subscription Approval Modal */}
+      <AdminSubscriptionApprovalModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        reviewerName={ownerName || 'Store Owner'}
+      />
     </div>
   );
 };

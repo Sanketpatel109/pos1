@@ -2077,6 +2077,9 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
               state={subscriptionState}
               statusInfo={subscriptionStatusInfo}
               onSubmitUtr={onSubmitUtr}
+              storeName={formData.shopName || ''}
+              ownerEmail={user?.email || ''}
+              ownerName={user?.displayName || (user?.email ? user.email.split('@')[0] : 'Store Owner')}
             />
           )}
         </div>

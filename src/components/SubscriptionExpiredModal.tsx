@@ -31,7 +31,9 @@ export interface SubscriptionExpiredModalProps {
   state: SubscriptionState;
   statusInfo: SubscriptionStatusInfo;
   onClose: () => void;
-  onSubmitUtr: (utr: string) => { success: boolean; message: string };
+  onSubmitUtr: (utr: string, meta?: { storeName?: string; ownerEmail?: string; ownerName?: string }) => { success: boolean; message: string };
+  storeName?: string;
+  ownerEmail?: string;
   onOpenSettings?: () => void;
   onOpenReports?: () => void;
 }
@@ -42,6 +44,8 @@ export const SubscriptionExpiredModal: React.FC<SubscriptionExpiredModalProps> =
   statusInfo,
   onClose,
   onSubmitUtr,
+  storeName = '',
+  ownerEmail = '',
   onOpenSettings,
   onOpenReports,
 }) => {
@@ -78,7 +82,10 @@ export const SubscriptionExpiredModal: React.FC<SubscriptionExpiredModalProps> =
   const handleUtrSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setUtrMessage(null);
-    const res = onSubmitUtr(utrInput);
+    const res = onSubmitUtr(utrInput, {
+      storeName,
+      ownerEmail,
+    });
     if (res.success) {
       setUtrMessage({ type: 'success', text: res.message });
       setUtrInput('');
@@ -89,6 +96,7 @@ export const SubscriptionExpiredModal: React.FC<SubscriptionExpiredModalProps> =
       setUtrMessage({ type: 'error', text: res.message });
     }
   };
+
 
   if (!isOpen) return null;
 
