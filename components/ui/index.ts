@@ -9,3 +9,5 @@ export * from "./select";
 export * from "./separator";
 export * from "./table";
 export * from "./tabs";
+export * from "./switch";
+export * from "./avatar";

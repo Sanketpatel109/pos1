@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X, Plus } from 'lucide-react';
 import { CatalogItem, Category } from '../types';
 import { ensureAllItemsFirst } from '../utils/categories';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { cn } from 'cn';
 
 export interface CategoryBarProps {
   categories: (Category | string)[];
@@ -74,82 +78,89 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
     >
       {isSearchOpen ? (
         /* ====================================================================
-           INLINE SEARCH INPUT OVERLAY
-           Smoothly replaces the row to reclaim vertical screen space
+           INLINE SEARCH INPUT OVERLAY USING SHADCN COMPONENTS
            ==================================================================== */
-        <div className="flex-1 flex items-center gap-2 bg-background border border-border focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary rounded-lg px-2.5 h-9 sm:h-10 transition-all shadow-xs">
-          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            id="input-inline-product-search"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                handleCloseSearch();
-              }
-            }}
-            placeholder={placeholder}
-            aria-label="Search catalog products"
-            className="w-full text-xs sm:text-sm font-medium text-foreground placeholder-muted-foreground bg-transparent focus:outline-none"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => onSearchChange('')}
-              aria-label="Clear search query"
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <button
+        <div className="flex-1 flex items-center gap-2">
+          <div className="relative flex-1 flex items-center">
+            <Search className="absolute left-2.5 size-4 text-muted-foreground pointer-events-none" />
+            <Input
+              ref={searchInputRef}
+              type="text"
+              id="input-inline-product-search"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  handleCloseSearch();
+                }
+              }}
+              placeholder={placeholder}
+              aria-label="Search catalog products"
+              className="pl-8 pr-8 h-8 sm:h-9 text-xs sm:text-sm"
+            />
+            {searchQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => onSearchChange('')}
+                aria-label="Clear search query"
+                className="absolute right-1.5 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="size-3.5" />
+              </Button>
+            )}
+          </div>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={handleCloseSearch}
-            className="text-[11px] sm:text-xs font-medium text-foreground hover:bg-muted px-3 py-1.5 bg-secondary rounded-lg shrink-0 cursor-pointer active:scale-95 transition-all"
+            className="text-xs h-8 sm:h-9 px-3 cursor-pointer"
           >
             Done
-          </button>
+          </Button>
         </div>
       ) : (
         /* ====================================================================
-           SINGLE ROW: [] + Scrollable Category Chips
-           Mobile: compact h-7.5 (30px) search button & chips
-           Desktop/Tablet: h-9 / h-10
+           SINGLE ROW: SHADCN BUTTONS + BADGES
            ==================================================================== */
         <>
           {/* Compact Search Icon Button */}
-          <button
+          <Button
             type="button"
             id="btn-toggle-catalog-search"
+            variant="outline"
+            size="icon-sm"
             onClick={handleOpenSearch}
             aria-label="Search Products"
             title="Search Products (Tap to open)"
-            className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg bg-muted/70 border border-border hover:bg-muted text-foreground flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-xs relative"
+            className="size-8 sm:size-9 shrink-0 relative cursor-pointer"
           >
-            <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-foreground" />
+            <Search className="size-4" />
             {searchQuery && (
-              <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary ring-2 ring-background" />
+              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary ring-2 ring-background" />
             )}
-          </button>
+          </Button>
 
-          {/* Quick Add Product Button (Direct from screen) */}
+          {/* Quick Add Product Button */}
           {onOpenQuickAdd && (
-            <button
+            <Button
               type="button"
               id="btn-category-quick-add"
+              variant="outline"
+              size="sm"
               onClick={onOpenQuickAdd}
               aria-label="Quick Add Product"
               title="Add product directly from this screen"
-              className="h-8 sm:h-9 px-2.5 shrink-0 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs text-xs font-semibold"
+              className="h-8 sm:h-9 px-2.5 shrink-0 gap-1 bg-primary/10 border-primary/25 text-primary hover:bg-primary/20 hover:text-primary cursor-pointer text-xs font-semibold"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span className="text-[11px] sm:text-xs">Add</span>
-            </button>
+              <Plus className="size-3.5 stroke-[2.5]" />
+              <span>Add</span>
+            </Button>
           )}
 
-          {/* Scrollable Category Chips */}
+          {/* Scrollable Category Chips using shadcn Button & Badge */}
           <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap scrollbar-none py-0.5 flex-1 min-w-0">
             {orderedCategories.map((category) => {
               const catName =
@@ -161,28 +172,31 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
               const count = getItemCount(catName);
 
               return (
-                <button
+                <Button
                   key={catId}
                   type="button"
                   id={`chip-category-${catName.toLowerCase().replace(/\s+/g, '-')}`}
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
                   onClick={() => onSelectCategory(catName)}
-                  className={`h-8 sm:h-9 px-3 rounded-lg text-[11px] sm:text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-xs'
-                      : 'bg-muted/50 border border-border text-foreground hover:bg-muted shadow-xs'
-                  }`}
+                  className={cn(
+                    "h-8 sm:h-9 px-3 gap-1.5 shrink-0 text-xs font-medium whitespace-nowrap cursor-pointer transition-all",
+                    !isActive && "text-foreground bg-card hover:bg-muted"
+                  )}
                 >
                   <span className="leading-none">{catName}</span>
-                  <span
-                    className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-sm tabular-nums tracking-tight font-medium leading-none ${
+                  <Badge
+                    variant={isActive ? 'secondary' : 'outline'}
+                    className={cn(
+                      "text-[9px] px-1.5 py-0 h-4 min-w-4 rounded-sm font-semibold tabular-nums leading-none",
                       isActive
-                        ? 'bg-primary-foreground/20 text-primary-foreground'
-                        : 'bg-background text-muted-foreground border border-border/50'
-                    }`}
+                        ? "bg-primary-foreground/20 text-primary-foreground border-transparent"
+                        : "text-muted-foreground border-border/70"
+                    )}
                   >
                     {count}
-                  </span>
-                </button>
+                  </Badge>
+                </Button>
               );
             })}
           </div>

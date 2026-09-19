@@ -3,6 +3,8 @@ import { CatalogItem, Category, PackagingOption } from '../types';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { PackageOpen, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export interface ProductCatalogProps {
   catalog: CatalogItem[];
@@ -104,12 +106,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           </div>
         ) : (
           /* Empty Search / Category Results State */
-          <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 bg-card rounded-lg border border-border m-1 shadow-xs">
-            <PackageOpen className="w-8 h-8 text-muted-foreground mb-2 stroke-[1.5]" />
+          <Card className="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 m-1 shadow-xs border-dashed">
+            <PackageOpen className="size-8 text-muted-foreground mb-2 stroke-[1.5]" />
             <p className="text-xs font-semibold text-foreground mb-1">
               No matching products
             </p>
-            <p className="text-[10px] text-muted-foreground max-w-xs mb-3">
+            <p className="text-[11px] text-muted-foreground max-w-xs mb-3">
               {searchQuery
                 ? `No items found matching "${searchQuery}". Try a different search term or check categories.`
                 : catalog.length === 0
@@ -119,31 +121,34 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
             <div className="flex flex-wrap items-center justify-center gap-2">
               {onOpenQuickAdd && (
-                <button
+                <Button
                   type="button"
                   id="btn-empty-quick-add"
+                  size="sm"
                   onClick={onOpenQuickAdd}
-                  className="px-3.5 py-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:opacity-95 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add First Product
-                </button>
+                  <Plus className="size-3.5" />
+                  <span>Add First Product</span>
+                </Button>
               )}
 
               {(searchQuery || (selectedCategory !== 'All Items' && selectedCategory !== 'All')) && (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     onSearchChange('');
                     onSelectCategory('All Items');
                   }}
-                  className="px-3 py-1.5 bg-muted text-foreground text-xs font-semibold rounded-md transition-all active:scale-95 shadow-xs cursor-pointer"
+                  className="cursor-pointer shadow-xs"
                 >
                   Show All Items
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </div>

@@ -7,19 +7,45 @@ import {
   Plus,
   Minus,
   CheckCircle,
-  X,
   Calculator,
   ShieldCheck,
   Coffee,
   Truck,
   Milk,
   UserCheck,
+  Receipt,
+  FileText,
 } from 'lucide-react';
 import { CashEntry } from '../types';
 import { CashDenominationCounter } from './CashDenominationCounter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
+import { cn } from 'cn';
 
 interface CashManagementScreenProps {
   cashEntries: CashEntry[];
@@ -43,8 +69,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
   onAddCashEntry,
   onOpenZReport,
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showDenominationCalculator, setShowDenominationCalculator] = useState(false);
+  const [isDenomDialogOpen, setIsDenomDialogOpen] = useState(false);
   const [entryType, setEntryType] = useState<'IN' | 'OUT'>('OUT');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
@@ -95,317 +120,305 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
       staffName: activeStaffName,
     });
 
-    setIsModalOpen(false);
     setAmount('');
     setReason('');
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-muted/30 text-foreground overflow-hidden">
-      {/* Top Drawer Balance Strip with Metric Cards & Quick Actions */}
-      <div className="bg-card border-b border-border p-3 sm:p-4 space-y-3 shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-foreground">
-              Cash Drawer (Galla Management)
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Track physical till balance, record petty cash expenses, and reconcile shifts
-            </p>
-          </div>
-
+    <div className="flex-1 flex flex-col min-h-0 bg-background text-foreground overflow-hidden">
+      {/* Top Header Bar */}
+      <div className="bg-muted/30 border-b border-border px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div>
           <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Register Operations
+            </span>
+            <Badge variant="outline" className="text-[10px] py-0 px-1.5 gap-1 font-medium">
+              <span className="size-1.5 rounded-full bg-emerald-500 inline-block" />
+              Live Till
+            </Badge>
+          </div>
+          <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight mt-0.5">
+            Cash Drawer & Galla Management
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDenomDialogOpen(true)}
+            className="gap-2 cursor-pointer shadow-xs text-xs h-8"
+          >
+            <Calculator className="size-3.5 text-primary" />
+            <span>Count Cash Notes</span>
+          </Button>
+
+          {onOpenZReport && (
             <Button
-              variant={showDenominationCalculator ? 'default' : 'outline'}
-              onClick={() => setShowDenominationCalculator(!showDenominationCalculator)}
-              className="h-9 px-3.5 text-xs font-medium gap-1.5 cursor-pointer"
-              title="Physical Note Counter (10, 20, 50, 100, 200, 500)"
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={onOpenZReport}
+              className="gap-2 cursor-pointer shadow-xs text-xs h-8"
             >
-              <Calculator className="w-4 h-4 text-primary" />
-              <span>Count Galla Notes</span>
+              <ShieldCheck className="size-3.5" />
+              <span>Day-End Close (Z-Report)</span>
             </Button>
-
-            {onOpenZReport && (
-              <Button
-                type="button"
-                variant="default"
-                onClick={onOpenZReport}
-                className="h-9 px-4 text-xs font-medium gap-1.5 cursor-pointer"
-                title="Official End-of-Day Shift Close & Cash Audit (Dukaan Hisaab)"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Day-End Close (Hisaab / Z-Report)</span>
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-
-        {/* 3 Balanced Summary Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-          {/* 1. Current Galla Cash */}
-          <div className="bg-background rounded-lg border border-border p-3.5 shadow-xs flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                Current Galla Cash
-              </span>
-              <div className="text-xl sm:text-2xl font-bold text-foreground tabular-nums tracking-tight font-medium">
-                {currencySymbol}
-                {drawerBalance.toFixed(2)}
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                In drawer (physical till)
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Wallet className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* 2. Total Cash In (Jama) */}
-          <div className="bg-background rounded-lg border border-border p-3.5 shadow-xs flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                Total Cash In (Jama)
-              </span>
-              <div className="text-xl sm:text-2xl font-bold text-primary tabular-nums tracking-tight font-medium">
-                +{currencySymbol}
-                {totalIn.toFixed(2)}
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                {inEntries.length} receipts & float additions
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <ArrowDownLeft className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* 3. Total Cash Out (Kharcha) */}
-          <div className="bg-background rounded-lg border border-border p-3.5 shadow-xs flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                Total Cash Out (Kharcha)
-              </span>
-              <div className="text-xl sm:text-2xl font-bold text-destructive tabular-nums tracking-tight font-medium">
-                -{currencySymbol}
-                {totalOut.toFixed(2)}
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                {outEntries.length} petty cash expenses
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
-              <ArrowUpRight className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Non-Blocking Morning Rush Opening Float Banner */}
-        {!hasOpeningFloatToday && (
-          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-start sm:items-center gap-2.5">
-              <div className="p-1.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 shrink-0">
-                <Clock className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 flex-wrap">
-                  <span>Morning Shift Opening Float</span>
-                  <Badge variant="outline" className="text-[10px] bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200 py-0 uppercase">
-                    Non-Blocking
-                  </Badge>
-                </div>
-                <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
-                  Serve morning rush customers without delay. Auto-carry over previous drawer balance ({currencySymbol}{defaultCarryoverAmount.toFixed(2)}) or reconcile float later.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-              <Button
-                type="button"
-                size="xs"
-                onClick={handleQuickOpenCarryover}
-                className="h-7 px-3 bg-amber-900 hover:bg-black text-white text-xs font-medium cursor-pointer gap-1"
-              >
-                <CheckCircle className="w-3.5 h-3.5 text-amber-300" />
-                <span>Quick Carryover ({currencySymbol}{defaultCarryoverAmount.toFixed(2)})</span>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Physical Cash Denomination Counter Drawer */}
-        {showDenominationCalculator && (
-          <div className="pt-2 animate-in fade-in duration-150">
-            <CashDenominationCounter
-              currencySymbol={currencySymbol}
-              expectedTotal={drawerBalance}
-              onApplyTotal={(total) => {
-                setAmount(total.toString());
-                setReason('Physical cash drawer count');
-                setEntryType('IN');
-                setShowDenominationCalculator(false);
-              }}
-            />
-          </div>
-        )}
       </div>
 
-      {/* Main Dual-Column Content */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-0 p-3 sm:p-4 gap-3 sm:gap-4 overflow-hidden">
-        {/* Left Column: Direct Entry Form Pane */}
-        <div className="w-full md:w-80 lg:w-96 bg-card rounded-lg border border-border shadow-xs flex flex-col shrink-0 overflow-hidden">
-          <div className="p-3.5 border-b border-border">
-            <h3 className="font-bold text-xs text-foreground uppercase tracking-wider">
-              Petty Cash Entry (Kharcha / Jama)
-            </h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Record drawer transactions instantly
-            </p>
-          </div>
-
-          <form onSubmit={handleSaveEntry} className="p-4 space-y-4 overflow-y-auto no-scrollbar">
-            {/* 2 Tabs: Kharcha & Jama */}
-            <div className="grid grid-cols-2 gap-1 bg-muted p-1 rounded-lg border border-border">
-              <Button
-                type="button"
-                size="xs"
-                variant={entryType === 'OUT' ? 'default' : 'ghost'}
-                onClick={() => setEntryType('OUT')}
-                className={`h-8 text-xs font-medium cursor-pointer gap-1.5 ${
-                  entryType === 'OUT'
-                    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Minus className="w-3.5 h-3.5" />
-                <span>Cash OUT (Kharcha)</span>
-              </Button>
-
-              <Button
-                type="button"
-                size="xs"
-                variant={entryType === 'IN' ? 'default' : 'ghost'}
-                onClick={() => setEntryType('IN')}
-                className={`h-8 text-xs font-medium cursor-pointer gap-1.5 ${
-                  entryType === 'IN'
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Cash IN (Jama)</span>
-              </Button>
-            </div>
-
-            {/* Quick Expense Shortcut Chips under Cash OUT */}
-            {entryType === 'OUT' && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Quick Expense Shortcuts
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {EXPENSE_SHORTCUTS.map((sc) => {
-                    const Icon = sc.icon;
-                    const isSelected = reason === sc.label;
-                    return (
-                      <Button
-                        key={sc.label}
-                        type="button"
-                        variant={isSelected ? 'default' : 'outline'}
-                        onClick={() => setReason(sc.label)}
-                        className={`h-8 px-2.5 text-[11px] font-medium justify-start gap-1.5 truncate cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background hover:bg-muted'
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                        <span className="truncate">{sc.label}</span>
-                      </Button>
-                    );
-                  })}
+      {/* Main Scrollable Dashboard Content */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        {/* Unified Hero Metric Card: 3 columns with dividers */}
+        <Card className="shadow-xs border-border bg-card">
+          <CardContent className="p-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+              {/* 1. Current Galla Balance */}
+              <div className="p-4 sm:p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Wallet className="size-3.5 text-primary" />
+                    Current Galla Cash
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">
+                    {currencySymbol}
+                    {drawerBalance.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    In physical register till
+                  </p>
+                </div>
+                <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Wallet className="size-5" />
                 </div>
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                Amount ({currencySymbol}) *
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-bold">
-                  {currencySymbol}
-                </span>
-                <Input
-                  type="number"
-                  step="any"
-                  required
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full pl-8 h-9 text-sm font-bold bg-background tabular-nums"
-                />
+              {/* 2. Total Cash IN (Jama) */}
+              <div className="p-4 sm:p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <ArrowDownLeft className="size-3.5" />
+                    Total Cash In (Jama)
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
+                    +{currencySymbol}
+                    {totalIn.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {inEntries.length} receipts & float additions
+                  </p>
+                </div>
+                <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <ArrowDownLeft className="size-5" />
+                </div>
+              </div>
+
+              {/* 3. Total Cash OUT (Kharcha) */}
+              <div className="p-4 sm:p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-destructive flex items-center gap-1.5">
+                    <ArrowUpRight className="size-3.5" />
+                    Total Cash Out (Kharcha)
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-bold text-destructive tabular-nums tracking-tight">
+                    -{currencySymbol}
+                    {totalOut.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {outEntries.length} petty cash expenses
+                  </p>
+                </div>
+                <div className="size-11 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center shrink-0">
+                  <ArrowUpRight className="size-5" />
+                </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                Expense Reason / Remarks *
-              </label>
-              <Input
-                type="text"
-                required
-                placeholder={
-                  entryType === 'OUT'
-                    ? 'e.g. Chai / Nashta or Daily Milk'
-                    : 'e.g. Extra Drawer Cash Deposit'
-                }
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="w-full h-9 text-xs bg-background"
-              />
-            </div>
+        {/* Morning Shift Opening Float Notice */}
+        {!hasOpeningFloatToday && (
+          <Card className="border-amber-500/30 bg-amber-500/5 shadow-xs">
+            <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 shrink-0">
+                  <Clock className="size-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-foreground flex items-center gap-2">
+                    <span>Morning Shift Opening Float Pending</span>
+                    <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[9px] py-0 uppercase">
+                      Non-Blocking
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Serve morning customers without delay. Auto-carry over yesterday's balance ({currencySymbol}{defaultCarryoverAmount.toFixed(2)}) or count notes later.
+                  </p>
+                </div>
+              </div>
 
-            <Button
-              type="submit"
-              variant="default"
-              className={`w-full h-9 text-xs font-semibold cursor-pointer gap-1.5 ${
-                entryType === 'OUT'
-                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
-              }`}
-            >
-              {entryType === 'OUT' ? (
-                <>
-                  <Minus className="w-3.5 h-3.5" />
-                  <span>Record Cash OUT (Kharcha)</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Record Cash IN (Jama)</span>
-                </>
-              )}
-            </Button>
-          </form>
-        </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleQuickOpenCarryover}
+                className="gap-1.5 bg-amber-700 hover:bg-amber-800 text-white dark:bg-amber-600 dark:hover:bg-amber-700 cursor-pointer self-start sm:self-auto shrink-0 shadow-xs h-8 text-xs"
+              >
+                <CheckCircle className="size-3.5" />
+                <span>Quick Carryover ({currencySymbol}{defaultCarryoverAmount.toFixed(2)})</span>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Right Column: Activity Timeline */}
-        <div className="flex-1 flex flex-col min-h-0 bg-card rounded-lg border border-border shadow-xs overflow-hidden">
-          {/* Filter Bar & Mobile Action Button */}
-          <div className="p-3.5 border-b border-border flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Cash Activity Log
-              </h3>
-              <Badge variant="secondary" className="text-[10px] py-0 ">
-                {filteredEntries.length}
-              </Badge>
-            </div>
+        {/* 2-Column Split: Direct Transaction Entry Form + Activity Ledger */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+          {/* Left Column: Direct Entry Card (4 cols on lg) */}
+          <Card className="lg:col-span-4 shadow-xs">
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Record Cash Transaction
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Log petty expenses (Kharcha) or cash additions (Jama)
+              </CardDescription>
+            </CardHeader>
 
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1">
+            <CardContent className="p-4">
+              <form onSubmit={handleSaveEntry} className="space-y-4">
+                {/* 2 Big Buttons: Cash OUT vs Cash IN */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={entryType === 'OUT' ? 'destructive' : 'outline'}
+                    size="sm"
+                    onClick={() => setEntryType('OUT')}
+                    className="gap-1.5 cursor-pointer text-xs font-semibold h-9"
+                  >
+                    <Minus className="size-3.5" />
+                    <span>Cash OUT (Kharcha)</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant={entryType === 'IN' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setEntryType('IN')}
+                    className="gap-1.5 cursor-pointer text-xs font-semibold h-9"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Cash IN (Jama)</span>
+                  </Button>
+                </div>
+
+                {/* Quick Expense Shortcut Chips when Cash OUT is active */}
+                {entryType === 'OUT' && (
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Quick Expense Presets
+                    </Label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {EXPENSE_SHORTCUTS.map((sc) => {
+                        const Icon = sc.icon;
+                        const isSelected = reason === sc.label;
+                        return (
+                          <Button
+                            key={sc.label}
+                            type="button"
+                            variant={isSelected ? 'secondary' : 'outline'}
+                            size="sm"
+                            onClick={() => setReason(sc.label)}
+                            className={cn(
+                              "h-8 px-2 text-xs font-medium justify-start gap-1.5 truncate cursor-pointer transition-colors",
+                              isSelected && "border-primary text-primary font-semibold"
+                            )}
+                          >
+                            <Icon className="size-3.5 shrink-0 opacity-70" />
+                            <span className="truncate">{sc.label}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Amount Field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="cash-amount" className="text-xs font-semibold">
+                    Amount ({currencySymbol}) *
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-bold pointer-events-none">
+                      {currencySymbol}
+                    </span>
+                    <Input
+                      id="cash-amount"
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="pl-8 h-9 text-sm font-bold tabular-nums"
+                    />
+                  </div>
+                </div>
+
+                {/* Reason Field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="cash-reason" className="text-xs font-semibold">
+                    Reason / Description *
+                  </Label>
+                  <Input
+                    id="cash-reason"
+                    type="text"
+                    required
+                    placeholder={
+                      entryType === 'OUT'
+                        ? 'e.g. Chai / Nashta or Daily Milk'
+                        : 'e.g. Extra Drawer Cash Deposit'
+                    }
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  variant={entryType === 'OUT' ? 'destructive' : 'default'}
+                  className="w-full h-9 text-xs font-semibold cursor-pointer gap-2 shadow-xs"
+                >
+                  {entryType === 'OUT' ? (
+                    <>
+                      <Minus className="size-3.5" />
+                      <span>Record Expense (Cash OUT)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="size-3.5" />
+                      <span>Record Deposit (Cash IN)</span>
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Right Column: Cash Activity Ledger (8 cols on lg) */}
+          <Card className="lg:col-span-8 shadow-xs">
+            <CardHeader className="pb-3 border-b flex flex-row items-center justify-between space-y-0">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Cash Activity Ledger
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs font-semibold">
+                  {filteredEntries.length} Entries
+                </Badge>
+              </div>
+
+              <div className="flex items-center gap-1">
                 {(['ALL', 'IN', 'OUT', 'OPENING'] as const).map((mode) => (
                   <Button
                     key={mode}
@@ -424,245 +437,116 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
                   </Button>
                 ))}
               </div>
+            </CardHeader>
 
-              <Button
-                size="xs"
-                variant="default"
-                onClick={() => setIsModalOpen(true)}
-                className="md:hidden h-7 px-2.5 text-xs font-medium gap-1"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Log</span>
-              </Button>
-            </div>
-          </div>
+            <CardContent className="p-0">
+              {filteredEntries.length === 0 ? (
+                <div className="h-56 flex flex-col items-center justify-center text-muted-foreground p-6 text-center space-y-2">
+                  <Receipt className="size-8 stroke-[1.5] text-muted-foreground/60" />
+                  <p className="text-xs font-medium text-foreground">
+                    No cash transactions recorded
+                  </p>
+                  <p className="text-[11px] text-muted-foreground max-w-xs">
+                    Entries recorded via Cash IN / OUT or billing receipts will automatically appear here.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20 text-[11px]">Type</TableHead>
+                      <TableHead className="text-[11px]">Description</TableHead>
+                      <TableHead className="w-32 text-[11px]">Operator</TableHead>
+                      <TableHead className="w-32 text-[11px]">Date & Time</TableHead>
+                      <TableHead className="w-28 text-right text-[11px]">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEntries.map((entry) => {
+                      const isPositive = entry.type === 'IN' || entry.type === 'OPENING';
+                      const dateObj = new Date(entry.createdAt);
+                      const timeStr = dateObj.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      });
+                      const dateStr = dateObj.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                      });
 
-          {/* Audit Log Entries List */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
-            {filteredEntries.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-muted-foreground text-xs">
-                No cash transactions recorded for this filter
-              </div>
-            ) : (
-              filteredEntries.map((entry) => {
-                const isPositive = entry.type === 'IN' || entry.type === 'OPENING';
-                const dateObj = new Date(entry.createdAt);
-                const timeStr = dateObj.toLocaleTimeString('en-GB', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                });
-                const dateStr = dateObj.toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                });
+                      return (
+                        <TableRow key={entry.id}>
+                          <TableCell className="py-2.5">
+                            <Badge
+                              variant={
+                                entry.type === 'OPENING'
+                                  ? 'outline'
+                                  : entry.type === 'IN'
+                                  ? 'secondary'
+                                  : 'destructive'
+                              }
+                              className={cn(
+                                "text-[9px] px-1.5 py-0 uppercase font-bold",
+                                entry.type === 'IN' && "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+                                entry.type === 'OPENING' && "border-amber-500/40 text-amber-700 dark:text-amber-300 bg-amber-500/10"
+                              )}
+                            >
+                              {entry.type === 'IN' ? 'JAMA' : entry.type === 'OUT' ? 'KHARCHA' : 'FLOAT'}
+                            </Badge>
+                          </TableCell>
 
-                return (
-                  <div
-                    key={entry.id}
-                    className="p-3 flex flex-row items-center justify-between rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors gap-3"
-                  >
-                    {/* Left: Type Icon + Description & Metadata */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                          entry.type === 'OPENING'
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                            : entry.type === 'IN'
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-destructive/10 text-destructive'
-                        }`}
-                      >
-                        {entry.type === 'OPENING' ? (
-                          <Clock className="w-4 h-4" />
-                        ) : entry.type === 'IN' ? (
-                          <ArrowDownLeft className="w-4 h-4" />
-                        ) : (
-                          <ArrowUpRight className="w-4 h-4" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              entry.type === 'OPENING'
-                                ? 'default'
-                                : entry.type === 'IN'
-                                ? 'secondary'
-                                : 'destructive'
-                            }
-                            className={`text-[9px] px-1.5 py-0 uppercase font-bold shrink-0 ${
-                              entry.type === 'IN'
-                                ? 'bg-primary/10 text-primary border-primary/20'
-                                : ''
-                            }`}
-                          >
-                            {entry.type === 'IN' ? 'JAMA' : entry.type === 'OUT' ? 'KHARCHA' : 'FLOAT'}
-                          </Badge>
-                          <h4 className="font-medium text-xs sm:text-sm text-foreground truncate">
+                          <TableCell className="py-2.5 font-medium text-xs text-foreground">
                             {entry.reason}
-                          </h4>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                          By <strong className="text-foreground font-medium">{entry.staffName}</strong> • {dateStr} at {timeStr}
-                        </p>
-                      </div>
-                    </div>
+                          </TableCell>
 
-                    {/* Right: Amount */}
-                    <div className="text-right shrink-0">
-                      <span
-                        className={`font-bold text-sm sm:text-base tabular-nums tracking-tight font-medium ${
-                          isPositive
-                            ? 'text-primary'
-                            : 'text-destructive'
-                        }`}
-                      >
-                        {isPositive ? '+' : '-'}
-                        {currencySymbol}
-                        {entry.amount.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                          <TableCell className="py-2.5 text-xs text-muted-foreground">
+                            {entry.staffName}
+                          </TableCell>
+
+                          <TableCell className="py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                            {dateStr}, {timeStr}
+                          </TableCell>
+
+                          <TableCell className="py-2.5 text-right font-bold text-xs tabular-nums whitespace-nowrap">
+                            <span
+                              className={cn(
+                                isPositive
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-destructive"
+                              )}
+                            >
+                              {isPositive ? '+' : '-'}
+                              {currencySymbol}
+                              {entry.amount.toFixed(2)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      {/* Add Cash Entry Modal (Mobile View) */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/40 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-lg border border-border shadow-2xl p-4 space-y-3 text-foreground bg-card">
-            <div className="flex justify-between items-center border-b border-border pb-2">
-              <h3 className="font-bold text-sm">
-                Record {entryType === 'OUT' ? 'Cash OUT (Kharcha)' : 'Cash IN (Jama)'}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground cursor-pointer p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEntry} className="space-y-3">
-              <div className="grid grid-cols-2 gap-1.5 bg-muted p-1 rounded-lg border border-border">
-                <Button
-                  type="button"
-                  size="xs"
-                  variant={entryType === 'OUT' ? 'default' : 'ghost'}
-                  onClick={() => setEntryType('OUT')}
-                  className={`h-7 text-xs font-medium ${
-                    entryType === 'OUT'
-                      ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  Cash OUT (Kharcha)
-                </Button>
-                <Button
-                  type="button"
-                  size="xs"
-                  variant={entryType === 'IN' ? 'default' : 'ghost'}
-                  onClick={() => setEntryType('IN')}
-                  className={`h-7 text-xs font-medium ${
-                    entryType === 'IN'
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  Cash IN (Jama)
-                </Button>
-              </div>
-
-              {entryType === 'OUT' && (
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                    Shortcuts:
-                  </span>
-                  <div className="grid grid-cols-2 gap-1">
-                    {EXPENSE_SHORTCUTS.map((sc) => (
-                      <Button
-                        key={sc.label}
-                        type="button"
-                        size="xs"
-                        variant={reason === sc.label ? 'default' : 'outline'}
-                        onClick={() => setReason(sc.label)}
-                        className="h-7 px-2 text-[10px] font-medium truncate justify-start"
-                      >
-                        {sc.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Amount ({currencySymbol}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">
-                    {currencySymbol}
-                  </span>
-                  <Input
-                    type="number"
-                    step="any"
-                    required
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-7 h-8 text-xs bg-background"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Expense Reason / Remarks *
-                </label>
-                <Input
-                  type="text"
-                  required
-                  placeholder={
-                    entryType === 'OUT'
-                      ? 'e.g. Chai / Nashta or Daily Milk'
-                      : 'e.g. Extra Drawer Cash Deposit'
-                  }
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-full h-8 text-xs bg-background"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-8 text-xs font-medium cursor-pointer"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="default"
-                  className={`flex-1 h-8 text-xs font-medium cursor-pointer ${
-                    entryType === 'OUT'
-                      ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
-                      : 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                  }`}
-                >
-                  Save Entry
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Denomination Counter Modal strictly using shadcn Dialog */}
+      <Dialog open={isDenomDialogOpen} onOpenChange={setIsDenomDialogOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <CashDenominationCounter
+            currencySymbol={currencySymbol}
+            expectedTotal={drawerBalance}
+            onApplyTotal={(total) => {
+              setAmount(total.toString());
+              setReason('Physical cash drawer count');
+              setEntryType('IN');
+              setIsDenomDialogOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

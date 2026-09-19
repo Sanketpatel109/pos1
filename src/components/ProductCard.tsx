@@ -1,7 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Tag, Check, AlertTriangle, Layers, ChevronDown, X } from 'lucide-react';
+import { Tag, Check, AlertTriangle, Layers, ChevronDown, Plus } from 'lucide-react';
 import { CatalogItem, PackagingOption } from '../types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { cn } from 'cn';
 
 export interface ProductCardProps {
   item: CatalogItem;
@@ -29,18 +39,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     item.stock > 0 &&
     item.stock <= (item.lowStockThreshold ?? 5);
 
-  // Close popup on escape key
-  useEffect(() => {
-    if (!showPackPopover) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowPackPopover(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showPackPopover]);
-
   const handleCardClick = () => {
     if (disabled) return;
     if (hasPacks) {
@@ -52,45 +50,55 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <div ref={cardRef} className={`relative w-full ${showPackPopover ? 'z-40' : ''}`}>
-      <button
-        type="button"
+    <>
+      <Card
+        ref={cardRef}
         id={`product-card-${item.id}`}
         onClick={handleCardClick}
-        disabled={disabled || (!hasPacks && isOutOfStock)}
         aria-label={`Add ${item.name} to bill, ${currencySymbol}${(Number(item.price) || 0).toFixed(2)}`}
-        className={`group relative flex flex-col justify-between w-full p-1.5 sm:p-2 rounded-lg border border-border bg-card text-left transition-all active:scale-[0.98] select-none cursor-pointer shadow-xs ${
+        className={cn(
+          "group relative flex flex-col justify-between w-full p-2 text-left transition-all active:scale-[0.98] select-none cursor-pointer shadow-xs",
           isInCart
-            ? 'border-primary ring-2 ring-primary/20 shadow-xs'
-            : 'hover:border-muted-foreground/40 hover:shadow-xs'
-        } ${isOutOfStock ? 'opacity-55 cursor-not-allowed bg-muted/40' : ''}`}
+            ? "border-primary ring-2 ring-primary/25 bg-card"
+            : "hover:border-foreground/30 hover:shadow-xs",
+          (disabled || (!hasPacks && isOutOfStock)) && "opacity-55 cursor-not-allowed bg-muted/40"
+        )}
       >
-        {/* Top Floating Status Badges */}
-        <div className="absolute top-1 left-1 right-1 sm:top-1.5 sm:left-1.5 sm:right-1.5 z-10 flex items-center justify-between pointer-events-none">
+        {/* Top Floating Status Badges using shadcn Badge */}
+        <div className="absolute top-1.5 left-1.5 right-1.5 z-10 flex items-center justify-between pointer-events-none">
           {/* Low Stock / Out of Stock Badge */}
           {isOutOfStock ? (
-            <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-sm shadow-xs">
+            <Badge
+              variant="destructive"
+              className="text-[8px] font-bold uppercase tracking-wider py-0 px-1.5 h-4"
+            >
               Out
-            </span>
+            </Badge>
           ) : isLowStock ? (
-            <span className="text-[7.5px] sm:text-[8.5px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-sm shadow-2xs flex items-center gap-0.5 tabular-nums tracking-tight font-medium">
-              <AlertTriangle className="w-2.5 h-2.5 stroke-[2.5]" />
+            <Badge
+              variant="outline"
+              className="text-[8.5px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 py-0 px-1.5 h-4 gap-0.5"
+            >
+              <AlertTriangle className="size-2.5 stroke-[2.5]" />
               <span>{item.stock} left</span>
-            </span>
+            </Badge>
           ) : (
             <span />
           )}
 
           {/* Active Cart Counter Badge */}
           {isInCart && (
-            <span className="bg-primary text-primary-foreground text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs flex items-center gap-0.5 ml-auto tabular-nums tracking-tight font-medium">
-              <Check className="w-2.5 h-2.5 stroke-[3]" />
+            <Badge
+              variant="default"
+              className="gap-0.5 text-[9px] font-bold py-0 px-1.5 h-4 ml-auto shadow-xs"
+            >
+              <Check className="size-2.5 stroke-[3]" />
               <span>{quantityInCart}</span>
-            </span>
+            </Badge>
           )}
         </div>
 
-        {/* Image wrapper */}
+        {/* Product Image / Visual Placeholder */}
         <div className="h-16 sm:h-24 w-full bg-muted/30 rounded-md overflow-hidden shrink-0 relative flex items-center justify-center border border-border/60">
           {item.image ? (
             <img
@@ -103,20 +111,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               }}
             />
           ) : (
-            <Tag className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+            <Tag className="size-5 sm:size-6 text-muted-foreground" />
           )}
 
           {/* Packaging Tiers Indicator Pill */}
           {hasPacks && (
-            <div className="absolute bottom-1 right-1 z-10 flex items-center gap-0.5 px-1.5 py-0.5 bg-background/90 text-primary border border-primary/30 rounded text-[7.5px] sm:text-[8.5px] font-semibold backdrop-blur-xs shadow-xs">
-              <Layers className="w-2.5 h-2.5" />
+            <Badge
+              variant="secondary"
+              className="absolute bottom-1 right-1 z-10 gap-0.5 text-[8.5px] py-0 px-1.5 h-4 shadow-xs"
+            >
+              <Layers className="size-2.5" />
               <span>{item.packagingOptions!.length + 1} Sizes</span>
-            </div>
+            </Badge>
           )}
         </div>
 
         {/* Product Metadata & Price */}
-        <div className="flex flex-col justify-between flex-1 min-w-0 w-full mt-0.5 sm:mt-1 px-0.5">
+        <CardContent className="p-0 pt-1.5 flex flex-col justify-between flex-1 min-w-0 w-full">
           <p
             title={item.name}
             className="text-xs sm:text-sm font-medium text-foreground truncate leading-tight"
@@ -124,103 +135,85 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {item.name}
           </p>
 
-          {/* Bottom row (Category & Price) */}
-          <div className="mt-0.5 flex items-center justify-between">
-            <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider truncate max-w-[55%]">
+          <div className="mt-1 flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider truncate max-w-[55%] font-medium">
               {item.category}
             </span>
-            <div className="flex items-center gap-0.5 text-xs sm:text-sm font-medium text-foreground tabular-nums tracking-tight">
+            <div className="flex items-center gap-0.5 text-xs sm:text-sm font-bold text-foreground tabular-nums">
               <span>{currencySymbol}{(Number(item.price) || 0).toFixed(2)}</span>
-              {hasPacks && <ChevronDown className="w-3 h-3 text-muted-foreground" />}
+              {hasPacks && <ChevronDown className="size-3 text-muted-foreground" />}
             </div>
           </div>
-        </div>
-      </button>
+        </CardContent>
+      </Card>
 
-      {/* Responsive Modal Popup for Size / Pack Tier Selection */}
-      {showPackPopover && hasPacks && createPortal(
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Select Pack or Size for ${item.name}`}
-          className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setShowPackPopover(false)}
-        >
-          <div
-            className="w-full sm:max-w-md bg-card text-card-foreground rounded-t-xl sm:rounded-xl border border-border shadow-xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 p-4 sm:p-5 flex flex-col max-h-[85vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header with Product details */}
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-3 min-w-0">
+      {/* Responsive Shadcn Dialog for Size / Pack Tier Selection */}
+      {hasPacks && (
+        <Dialog open={showPackPopover} onOpenChange={setShowPackPopover}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
                 {item.image ? (
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-11 h-11 rounded-2xl object-cover border border-zinc-200 shadow-2xs shrink-0 bg-white"
+                    className="size-11 rounded-lg object-cover border border-border shrink-0"
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center shrink-0 text-zinc-400">
-                    <Layers className="w-5 h-5 text-primary" />
+                  <div className="size-11 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
+                    <Layers className="size-5 text-primary" />
                   </div>
                 )}
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                <div>
+                  <Badge variant="outline" className="text-[9px] uppercase font-bold text-primary mb-1">
                     Select Pack / Size
-                  </span>
-                  <h3 className="text-sm sm:text-base font-bold text-zinc-900 truncate">
+                  </Badge>
+                  <DialogTitle className="text-sm sm:text-base font-bold text-foreground">
                     {item.name}
-                  </h3>
-                  <span className="text-[11px] text-zinc-500 truncate">
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
                     {item.category} • In Stock: {item.stock ?? '∞'} {item.unit || 'units'}
-                  </span>
+                  </DialogDescription>
                 </div>
               </div>
-
-              <button
-                type="button"
-                id="btn-close-pack-modal"
-                onClick={() => setShowPackPopover(false)}
-                className="w-8 h-8 rounded-full hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            </DialogHeader>
 
             {/* List of Pack options */}
-            <div className="space-y-2 py-3 overflow-y-auto flex-1 pr-0.5">
+            <div className="space-y-2 py-2 max-h-[60vh] overflow-y-auto">
               {/* Standard Single Unit Option */}
-              <button
-                type="button"
+              <Card
                 id="btn-select-pack-single"
                 onClick={() => {
                   onSelect(item, null);
                   setShowPackPopover(false);
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-2xl border border-zinc-200/90 bg-zinc-50/50 hover:bg-blue-50/60 hover:border-blue-500/50 transition-all text-left group cursor-pointer shadow-2xs active:scale-[0.99]"
+                className="p-3 border hover:border-primary cursor-pointer transition-all hover:bg-muted/40 shadow-xs"
               >
-                <div className="flex flex-col">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-foreground">
+                        Single {item.unit ? `(${item.unit})` : 'Piece'}
+                      </span>
+                      <Badge variant="secondary" className="text-[9px]">
+                        Standard 1x
+                      </Badge>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">
+                      Standard base unit pricing
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-zinc-900 group-hover:text-blue-700 transition-colors">
-                      Single {item.unit ? `(${item.unit})` : 'Piece'}
+                    <span className="text-sm sm:text-base font-bold text-foreground">
+                      {currencySymbol}{(Number(item.price) || 0).toFixed(2)}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-200/70 text-zinc-700">
-                      Standard 1x
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-zinc-500 mt-0.5">
-                    Standard base unit pricing
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-bold font-mono text-zinc-900 group-hover:text-blue-700">
-                    {currencySymbol}{(Number(item.price) || 0).toFixed(2)}
-                  </span>
-                  <div className="w-7 h-7 rounded-xl bg-white border border-zinc-200 group-hover:border-blue-300 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center text-zinc-400 transition-all font-bold">
-                    +
+                    <Button size="icon-sm" variant="outline" className="size-7">
+                      <Plus className="size-3.5" />
+                    </Button>
                   </div>
                 </div>
-              </button>
+              </Card>
 
               {/* Configured Packaging Options */}
               {item.packagingOptions!.map((pack) => {
@@ -234,69 +227,51 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     : 0;
 
                 return (
-                  <button
+                  <Card
                     key={pack.id}
-                    type="button"
                     id={`btn-select-pack-${pack.id}`}
                     onClick={() => {
                       onSelect(item, pack);
                       setShowPackPopover(false);
                     }}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl border border-zinc-200/90 bg-zinc-50/50 hover:bg-blue-50/60 hover:border-blue-500/50 transition-all text-left group cursor-pointer shadow-2xs active:scale-[0.99]"
+                    className="p-3 border hover:border-primary cursor-pointer transition-all hover:bg-muted/40 shadow-xs"
                   >
-                    <div className="flex flex-col min-w-0 pr-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm font-bold text-zinc-900 group-hover:text-blue-700 transition-colors truncate">
-                          {pack.packName}
-                        </span>
-                        {savingsPercent > 0 && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300/60 rounded-full shrink-0">
-                            Save {savingsPercent}%
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-foreground truncate">
+                            {pack.packName}
                           </span>
-                        )}
+                          <Badge variant="secondary" className="text-[9px]">
+                            {mult}x Pack
+                          </Badge>
+                          {savingsPercent > 0 && (
+                            <Badge variant="default" className="text-[9px] bg-emerald-600 text-white">
+                              Save {savingsPercent}%
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground block mt-0.5">
+                          {currencySymbol}{perUnit.toFixed(2)} / unit
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-zinc-500 flex-wrap">
-                        <span>{mult} {item.unit || 'units'}</span>
-                        <span>•</span>
-                        <span>{currencySymbol}{perUnit.toFixed(2)} / {item.unit || 'ea'}</span>
-                        {pack.barcode && (
-                          <>
-                            <span>•</span>
-                            <span className="font-mono text-[10px] text-zinc-400">
-                              EAN: {pack.barcode}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm sm:text-base font-bold font-mono text-zinc-900 group-hover:text-blue-700">
-                        {currencySymbol}{pack.sellingPrice.toFixed(2)}
-                      </span>
-                      <div className="w-7 h-7 rounded-xl bg-white border border-zinc-200 group-hover:border-blue-300 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center text-zinc-400 transition-all font-bold">
-                        +
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm sm:text-base font-bold text-foreground">
+                          {currencySymbol}{packPrice.toFixed(2)}
+                        </span>
+                        <Button size="icon-sm" variant="outline" className="size-7">
+                          <Plus className="size-3.5" />
+                        </Button>
                       </div>
                     </div>
-                  </button>
+                  </Card>
                 );
               })}
             </div>
-
-            {/* Quick Cancel footer for phone users */}
-            <div className="pt-2 sm:hidden border-t border-zinc-100">
-              <button
-                type="button"
-                onClick={() => setShowPackPopover(false)}
-                className="w-full py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+          </DialogContent>
+        </Dialog>
       )}
-    </div>
+    </>
   );
 };

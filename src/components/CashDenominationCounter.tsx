@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Banknote, Coins, RotateCcw, Check, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Banknote, Coins, RotateCcw, Check, CheckCircle2, AlertTriangle, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 export interface DenominationBreakdown {
   banknotes: Record<number, number>; // 500, 200, 100, 50, 20, 10
@@ -16,7 +27,7 @@ interface CashDenominationCounterProps {
   compact?: boolean;
 }
 
-// Strictly active Indian currency notes (₹2000 has been withdrawn by RBI)
+// Strictly active Indian currency notes (₹2000 withdrawn by RBI)
 export const ACTIVE_BANKNOTES = [500, 200, 100, 50, 20, 10] as const;
 export const ACTIVE_COINS = [5, 2, 1] as const;
 
@@ -26,7 +37,6 @@ export const CashDenominationCounter: React.FC<CashDenominationCounterProps> = (
   initialCounts,
   onChange,
   onApplyTotal,
-  compact = false,
 }) => {
   const [banknoteCounts, setBanknoteCounts] = useState<Record<number, number>>(() => {
     if (initialCounts?.banknotes) return { ...initialCounts.banknotes };
@@ -91,228 +101,239 @@ export const CashDenominationCounter: React.FC<CashDenominationCounterProps> = (
   const isShort = variance < -0.01;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-3.5 sm:p-4 space-y-4 shadow-xs text-foreground">
+    <Card className="shadow-xs border-border">
       {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
+      <CardHeader className="pb-3 border-b flex flex-row items-center justify-between space-y-0">
         <div>
-          <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Banknote className="w-4 h-4 text-primary" />
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <Banknote className="size-4 text-primary" />
             <span>Physical Cash Denomination Counter</span>
-          </h4>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            Count active legal banknotes & coins in till drawer (₹2000 withdrawn)
-          </p>
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground mt-0.5">
+            Count active legal banknotes & coins in till drawer (₹2000 withdrawn by RBI)
+          </CardDescription>
         </div>
 
         <Button
           type="button"
-          size="xs"
+          size="sm"
           variant="outline"
           onClick={handleReset}
-          className="h-7 text-xs font-medium cursor-pointer gap-1"
+          className="gap-1.5 cursor-pointer h-7 text-xs"
           title="Reset all counts to 0"
         >
-          <RotateCcw className="w-3 h-3" />
+          <RotateCcw className="size-3.5" />
           <span>Reset</span>
         </Button>
-      </div>
+      </CardHeader>
 
       {/* Grid of Banknotes & Coins */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Banknotes column */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase px-1">
-            <span className="flex items-center gap-1">
-              <Banknote className="w-3.5 h-3.5 text-primary" />
-              <span>Banknotes ({totalNotesCount} notes)</span>
-            </span>
-            <span className="text-primary font-bold">
-              {currencySymbol}{banknoteTotal.toFixed(2)}
-            </span>
-          </div>
-
-          <div className="divide-y divide-border border border-border rounded-lg overflow-hidden bg-background">
-            {ACTIVE_BANKNOTES.map((denom) => {
-              const count = banknoteCounts[denom] || 0;
-              const subtotal = denom * count;
-              return (
-                <div
-                  key={denom}
-                  className="flex items-center justify-between p-2 hover:bg-muted/40 transition-colors gap-2"
-                >
-                  <div className="w-16 shrink-0 flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-bold text-xs">
-                      {currencySymbol}{denom}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground ">×</span>
-                  </div>
-
-                  {/* Quick increment/decrement buttons */}
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleUpdateBanknote(denom, count - 1)}
-                      className="w-6 h-6 text-xs font-bold"
-                    >
-                      -
-                    </Button>
-                    <input
-                      type="number"
-                      min="0"
-                      value={count === 0 ? '' : count}
-                      onChange={(e) => handleUpdateBanknote(denom, parseInt(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-14 h-7 text-center font-bold text-xs bg-background border border-border rounded-md focus:outline-hidden focus:ring-1 focus:ring-primary"
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleUpdateBanknote(denom, count + 1)}
-                      className="w-6 h-6 text-xs font-bold"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <div className="w-20 text-right font-bold text-xs text-foreground truncate">
-                    {currencySymbol}{subtotal.toFixed(0)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Coins column */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase px-1">
-            <span className="flex items-center gap-1">
-              <Coins className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Coins ({totalCoinsCount} coins)</span>
-            </span>
-            <span className="text-amber-600 dark:text-amber-400 font-bold">
-              {currencySymbol}{coinTotal.toFixed(2)}
-            </span>
-          </div>
-
-          <div className="divide-y divide-border border border-border rounded-lg overflow-hidden bg-background">
-            {ACTIVE_COINS.map((denom) => {
-              const count = coinCounts[denom] || 0;
-              const subtotal = denom * count;
-              return (
-                <div
-                  key={denom}
-                  className="flex items-center justify-between p-2 hover:bg-muted/40 transition-colors gap-2"
-                >
-                  <div className="w-16 shrink-0 flex items-center gap-1.5">
-                    <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/70 dark:text-amber-300 font-bold text-xs">
-                      {currencySymbol}{denom}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground ">×</span>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleUpdateCoin(denom, count - 1)}
-                      className="w-6 h-6 text-xs font-bold"
-                    >
-                      -
-                    </Button>
-                    <input
-                      type="number"
-                      min="0"
-                      value={count === 0 ? '' : count}
-                      onChange={(e) => handleUpdateCoin(denom, parseInt(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-14 h-7 text-center font-bold text-xs bg-background border border-border rounded-md focus:outline-hidden focus:ring-1 focus:ring-primary"
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleUpdateCoin(denom, count + 1)}
-                      className="w-6 h-6 text-xs font-bold"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <div className="w-20 text-right font-bold text-xs text-foreground truncate">
-                    {currencySymbol}{subtotal.toFixed(0)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Denomination summary box */}
-          <div className="p-3 bg-muted/40 border border-border rounded-lg text-xs space-y-1.5">
-            <div className="flex justify-between items-center text-muted-foreground">
-              <span>Total Banknotes:</span>
-              <span className="font-bold text-foreground">{totalNotesCount} notes</span>
+      <CardContent className="p-4 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Banknotes Column */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-1.5 border-b">
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                <Banknote className="size-3.5 text-primary" />
+                <span>Banknotes ({totalNotesCount} notes)</span>
+              </span>
+              <span className="text-xs font-bold text-primary tabular-nums">
+                {currencySymbol}{banknoteTotal.toFixed(2)}
+              </span>
             </div>
-            <div className="flex justify-between items-center text-muted-foreground">
-              <span>Total Coins:</span>
-              <span className="font-bold text-foreground">{totalCoinsCount} coins</span>
+
+            <div className="divide-y divide-border border rounded-md overflow-hidden bg-background">
+              {ACTIVE_BANKNOTES.map((denom) => {
+                const count = banknoteCounts[denom] || 0;
+                const subtotal = denom * count;
+                return (
+                  <div
+                    key={denom}
+                    className="flex items-center justify-between p-2 hover:bg-muted/40 transition-colors gap-2"
+                  >
+                    <div className="w-16 shrink-0 flex items-center gap-1.5">
+                      <Badge variant="outline" className="font-bold text-xs px-2 py-0.5 min-w-[50px] justify-center bg-primary/5 text-primary border-primary/20">
+                        {currencySymbol}{denom}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">×</span>
+                    </div>
+
+                    {/* Stepper with shadcn Button and Input */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="outline"
+                        onClick={() => handleUpdateBanknote(denom, count - 1)}
+                        disabled={count <= 0}
+                        className="size-6 cursor-pointer"
+                      >
+                        <Minus className="size-3" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={count === 0 ? '' : count}
+                        placeholder="0"
+                        onChange={(e) =>
+                          handleUpdateBanknote(denom, parseInt(e.target.value, 10) || 0)
+                        }
+                        className="w-14 h-6 text-center text-xs font-bold tabular-nums p-0"
+                      />
+                      <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="outline"
+                        onClick={() => handleUpdateBanknote(denom, count + 1)}
+                        className="size-6 cursor-pointer"
+                      >
+                        <Plus className="size-3" />
+                      </Button>
+                    </div>
+
+                    {/* Line Subtotal */}
+                    <span className="w-16 text-right font-bold text-xs tabular-nums text-foreground">
+                      {currencySymbol}{subtotal.toFixed(0)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Grand Total & Action Footer */}
-      <div className="p-3 bg-muted/40 rounded-lg border border-border flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div>
-          <span className="text-[10px] uppercase font-bold text-muted-foreground block">
-            Counted Drawer Total
-          </span>
-          <div className="text-xl sm:text-2xl font-bold text-foreground">
-            {currencySymbol}{grandTotal.toFixed(2)}
+          {/* Coins Column */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-1.5 border-b">
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                <Coins className="size-3.5 text-amber-600" />
+                <span>Coins ({totalCoinsCount} coins)</span>
+              </span>
+              <span className="text-xs font-bold text-foreground tabular-nums">
+                {currencySymbol}{coinTotal.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="divide-y divide-border border rounded-md overflow-hidden bg-background">
+              {ACTIVE_COINS.map((denom) => {
+                const count = coinCounts[denom] || 0;
+                const subtotal = denom * count;
+                return (
+                  <div
+                    key={denom}
+                    className="flex items-center justify-between p-2 hover:bg-muted/40 transition-colors gap-2"
+                  >
+                    <div className="w-16 shrink-0 flex items-center gap-1.5">
+                      <Badge variant="outline" className="font-bold text-xs px-2 py-0.5 min-w-[50px] justify-center bg-amber-500/5 text-amber-700 dark:text-amber-400 border-amber-500/20">
+                        {currencySymbol}{denom}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">×</span>
+                    </div>
+
+                    {/* Stepper with shadcn Button and Input */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="outline"
+                        onClick={() => handleUpdateCoin(denom, count - 1)}
+                        disabled={count <= 0}
+                        className="size-6 cursor-pointer"
+                      >
+                        <Minus className="size-3" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={count === 0 ? '' : count}
+                        placeholder="0"
+                        onChange={(e) =>
+                          handleUpdateCoin(denom, parseInt(e.target.value, 10) || 0)
+                        }
+                        className="w-14 h-6 text-center text-xs font-bold tabular-nums p-0"
+                      />
+                      <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="outline"
+                        onClick={() => handleUpdateCoin(denom, count + 1)}
+                        className="size-6 cursor-pointer"
+                      >
+                        <Plus className="size-3" />
+                      </Button>
+                    </div>
+
+                    {/* Line Subtotal */}
+                    <span className="w-16 text-right font-bold text-xs tabular-nums text-foreground">
+                      {currencySymbol}{subtotal.toFixed(0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Quick summary notes */}
+            <div className="p-3 bg-muted/40 rounded-md border text-xs text-muted-foreground space-y-1">
+              <div className="flex justify-between">
+                <span>Total Banknotes:</span>
+                <strong className="text-foreground font-semibold">{totalNotesCount} notes</strong>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Coins:</span>
+                <strong className="text-foreground font-semibold">{totalCoinsCount} coins</strong>
+              </div>
+            </div>
           </div>
         </div>
+      </CardContent>
 
-        {expectedTotal !== undefined && (
-          <div
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 ${
-              isExact
-                ? 'bg-primary/10 border-primary/20 text-primary'
-                : isShort
-                ? 'bg-destructive/10 border-destructive/20 text-destructive'
-                : 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
-            }`}
-          >
-            {isExact ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-            ) : (
-              <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
-            )}
-            <span>
-              {isExact
-                ? 'Matches Expected Drawer Cash'
-                : isShort
-                ? `Short by ${currencySymbol}${Math.abs(variance).toFixed(2)}`
-                : `Excess by ${currencySymbol}${variance.toFixed(2)}`}
+      {/* Footer: Counted Total & System Match */}
+      <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-muted/20 border-t">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Counted Drawer Total:
+            </span>
+            <span className="text-lg sm:text-xl font-bold text-primary tabular-nums">
+              {currencySymbol}{grandTotal.toFixed(2)}
             </span>
           </div>
-        )}
+
+          {expectedTotal !== undefined && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                System Expected: <strong>{currencySymbol}{expectedTotal.toFixed(2)}</strong>
+              </span>
+              {isExact ? (
+                <Badge variant="default" className="bg-emerald-600 text-white gap-1 text-[10px] py-0 px-2">
+                  <CheckCircle2 className="size-3" />
+                  Exact Match
+                </Badge>
+              ) : isShort ? (
+                <Badge variant="destructive" className="gap-1 text-[10px] py-0 px-2">
+                  <AlertTriangle className="size-3" />
+                  {currencySymbol}{Math.abs(variance).toFixed(2)} Shortage
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-emerald-500 text-emerald-600 dark:text-emerald-400 gap-1 text-[10px] py-0 px-2 bg-emerald-500/10">
+                  +{currencySymbol}{variance.toFixed(2)} Surplus
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
 
         {onApplyTotal && (
           <Button
             type="button"
-            variant="default"
+            size="sm"
             onClick={() => onApplyTotal(grandTotal)}
-            className="w-full sm:w-auto px-4 h-9 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+            className="gap-2 cursor-pointer w-full sm:w-auto shadow-xs"
           >
-            <Check className="w-3.5 h-3.5" />
-            <span>Apply to Till Count</span>
+            <Check className="size-4" />
+            <span>Apply Total to Cashier Drawer</span>
           </Button>
         )}
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 };
