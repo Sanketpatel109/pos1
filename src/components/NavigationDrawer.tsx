@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  X,
   Layers,
   Zap,
   FileSpreadsheet,
@@ -8,15 +7,17 @@ import {
   CreditCard,
   Wallet,
   UserCheck,
-  Printer,
   ChevronRight,
   Lock,
   Settings,
   LogOut,
-  Sparkles,
   Barcode,
   Tag,
   TrendingUp,
+  ArrowRightLeft,
+  Cloud,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { ActiveScreen, ShopSettings, StaffRole } from '../types';
 import { User } from '../firebase';
@@ -29,6 +30,19 @@ import {
 } from '../utils/permissions';
 import { LicenseStatus } from '../services/subscriptionService';
 import { SubscriptionStatusInfo } from '../store/useSubscriptionStore';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 
 export interface NavigationDrawerProps {
   isOpen: boolean;
@@ -89,14 +103,12 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   subscriptionStatusInfo,
   onOpenSubscriptionSettings,
 }) => {
-  if (!isOpen) return null;
-
   const currentRole = normalizeRole(activeStaffRole);
   const roleMeta = ROLE_DEFINITIONS[currentRole];
 
   const menuGroups: MenuGroup[] = [
     {
-      groupTitle: 'BILLING REGISTERS',
+      groupTitle: 'Billing Registers',
       items: [
         {
           id: 'item-wise',
@@ -113,7 +125,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       ],
     },
     {
-      groupTitle: 'STORE OPERATIONS',
+      groupTitle: 'Store Operations',
       items: [
         {
           id: 'cash-management',
@@ -148,7 +160,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       ],
     },
     {
-      groupTitle: 'ADMIN & SETTINGS (Owner PIN)',
+      groupTitle: 'Admin & Settings',
       items: [
         {
           id: 'analytics',
@@ -179,74 +191,71 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-in fade-in duration-150">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="relative w-84 max-w-[85vw] bg-card h-full shadow-2xl flex flex-col z-10 border-r border-border">
-        {/* Store Brand Header */}
-        <div className="p-4 border-b border-border bg-card flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-              M
-            </div>
-            <div className="min-w-0">
-              <h2 className="font-bold text-sm text-foreground leading-none truncate">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={true}
+        className="!fixed !top-0 !left-0 !translate-x-0 !translate-y-0 !w-[340px] !max-w-[85vw] !h-full !max-h-none !rounded-none !rounded-r-xl !p-0 flex flex-col data-open:!animate-in data-open:!slide-in-from-left data-open:!duration-200 data-closed:!animate-out data-closed:!slide-out-to-left data-closed:!duration-150"
+      >
+        {/* ── Store Brand Header ─────────────────────────────────── */}
+        <DialogHeader className="p-4 pb-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-10 rounded-lg">
+              <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+                {(shopSettings.shopName || 'M').charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-sm font-bold text-foreground truncate">
                 {shopSettings.shopName || 'MonoPOS Retail'}
-              </h2>
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <span className="w-2 h-2 rounded-full bg-primary inline-block shrink-0" />
+              </DialogTitle>
+              <DialogDescription className="flex items-center gap-1.5 mt-1">
+                <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
                 <span className="text-xs font-medium text-muted-foreground truncate">
                   {activeStaffName}
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-bold uppercase">
                   {roleMeta.badgeLabel || currentRole}
-                </span>
-              </div>
+                </Badge>
+              </DialogDescription>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close menu"
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
-        {/* Quick Shift / Operator Switcher Bar */}
+        <Separator />
+
+        {/* ── Quick Shift / Operator Switcher ───────────────────── */}
         {onOpenStaffSwitch && (
-          <div className="px-3 pt-1.5 pb-1.5 border-b border-border/60 bg-muted/30">
-            <button
-              type="button"
+          <div className="px-3 py-2">
+            <Button
               id="btn-drawer-switch-staff"
+              variant="outline"
+              size="sm"
+              className="w-full justify-between h-9 text-xs font-semibold"
               onClick={() => {
                 onClose();
                 onOpenStaffSwitch();
               }}
-              className="w-full py-1.5 px-2.5 rounded-lg bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground flex items-center justify-between transition-colors shadow-2xs cursor-pointer"
             >
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-3.5 h-3.5 text-primary" />
-                <span>Switch Shift / Lock PIN</span>
-              </div>
+              <span className="flex items-center gap-2">
+                <ArrowRightLeft className="size-3.5 text-primary" />
+                Switch Shift / Lock PIN
+              </span>
               <span className="text-[11px] text-muted-foreground font-normal">Change →</span>
-            </button>
+            </Button>
           </div>
         )}
 
-        {/* Menu Navigation Items grouped cleanly */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4 no-scrollbar">
+        {/* ── Menu Navigation Items ────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-4 no-scrollbar">
           {menuGroups.map((group) => (
             <div key={group.groupTitle} className="space-y-1">
-              <div className="px-2 pb-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                {group.groupTitle}
+              <div className="px-1 pt-2 pb-1">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  {group.groupTitle}
+                </span>
               </div>
-              <div className="space-y-1">
+
+              <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isOffersItem = item.id === 'offers';
@@ -259,9 +268,18 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     : getRequiredRoleForScreen(item.id as ActiveScreen);
 
                   return (
-                    <button
+                    <Button
                       key={item.id}
                       id={`nav-item-${item.id}`}
+                      variant={isActive ? 'default' : 'ghost'}
+                      size="sm"
+                      className={`w-full justify-start h-auto py-2.5 px-2.5 gap-3 text-left ${
+                        isActive
+                          ? 'shadow-xs'
+                          : !isAccessible
+                          ? 'opacity-80'
+                          : ''
+                      }`}
                       onClick={() => {
                         if (isOffersItem) {
                           onClose();
@@ -276,64 +294,57 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                           onRequestManagerOverride(item.id as ActiveScreen);
                         }
                       }}
-                      className={`w-full p-2.5 rounded-lg flex items-center gap-3 transition-all text-left cursor-pointer ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground shadow-xs'
-                          : isAccessible
-                          ? 'hover:bg-muted text-foreground'
-                          : 'hover:bg-amber-500/10 text-foreground opacity-85'
-                      }`}
                     >
                       <div
-                        className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+                        className={`size-8 rounded-md flex items-center justify-center shrink-0 ${
                           isActive
                             ? 'bg-primary-foreground/20 text-primary-foreground'
                             : isAccessible
-                            ? 'bg-secondary text-secondary-foreground'
-                            : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'
+                            ? 'bg-muted text-foreground'
+                            : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
                         }`}
                       >
-                        <Icon className="w-4 h-4" />
+                        <Icon className="size-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p
+                          <span
                             className={`text-xs font-semibold leading-tight ${
                               isActive ? 'text-primary-foreground' : 'text-foreground'
                             }`}
                           >
                             {item.label}
-                          </p>
+                          </span>
                           {isOffersItem && typeof offersCount === 'number' && offersCount > 0 && (
-                            <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
                               {offersCount} Active
-                            </span>
+                            </Badge>
                           )}
                           {!isAccessible && (
-                            <span className="text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5 border border-amber-500/30">
-                              <Lock className="w-2.5 h-2.5" />
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-amber-700 dark:text-amber-400 border-amber-500/40 bg-amber-500/10 gap-0.5">
+                              <Lock className="size-2.5" />
                               {reqRole}
-                            </span>
+                            </Badge>
                           )}
                         </div>
-                        <p
-                          className={`text-[11px] truncate mt-0.5 ${
-                            isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                        <span
+                          className={`text-[11px] truncate block mt-0.5 ${
+                            isActive ? 'text-primary-foreground/75' : 'text-muted-foreground'
                           }`}
                         >
                           {item.description}
-                        </p>
+                        </span>
                       </div>
                       {isAccessible ? (
                         <ChevronRight
-                          className={`w-3.5 h-3.5 shrink-0 ${
-                            isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                          className={`size-3.5 shrink-0 ${
+                            isActive ? 'text-primary-foreground/60' : 'text-muted-foreground/50'
                           }`}
                         />
                       ) : (
-                        <Lock className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <Lock className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -341,55 +352,61 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           ))}
         </div>
 
-        {/* PWA In-App Install Card */}
-        <div className="px-3 pt-1 pb-1">
+        {/* ── PWA Install ───────────────────────────────────────── */}
+        <div className="px-3 py-1">
           <PWAInstallButton variant="sidebar" />
         </div>
 
-        {/* User Account / Sign Out Section */}
+        {/* ── User Account Section ──────────────────────────────── */}
         {user && onSignOut && (
-          <div className="p-3 border-t border-border bg-card flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName || 'Owner'}
-                  className="w-7 h-7 rounded-full object-cover shrink-0 border border-border"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'O'}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-foreground truncate">
-                  {user.displayName || 'Store Owner'}
-                </p>
-                <p className="text-[10px] text-muted-foreground truncate">
-                  {user.email}
-                </p>
-              </div>
+          <>
+            <Separator />
+            <div className="p-3">
+              <Card className="border-border/60">
+                <CardContent className="p-2.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Avatar className="size-8 rounded-full">
+                      {user.photoURL ? (
+                        <AvatarImage src={user.photoURL} alt={user.displayName || 'Owner'} />
+                      ) : null}
+                      <AvatarFallback className="rounded-full bg-primary/15 text-primary text-xs font-bold">
+                        {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'O'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {user.displayName || 'Store Owner'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      onClose();
+                      onSignOut();
+                    }}
+                    title="Sign Out of Store Account"
+                    className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="size-4" />
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onSignOut();
-              }}
-              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer shrink-0"
-              title="Sign Out of Store Account"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          </>
         )}
 
-        {/* Minimal Subscription Status Pill Footer */}
+        {/* ── Subscription Status ───────────────────────────────── */}
         {subscriptionStatusInfo && (
-          <div className="px-2.5 py-1.5 border-t border-border bg-card/60">
-            <button
-              type="button"
+          <div className="px-3 pb-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-between h-8 text-xs"
               onClick={() => {
                 onClose();
                 if (onOpenSubscriptionSettings) {
@@ -398,9 +415,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                   onOpenSubscription();
                 }
               }}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-border bg-muted/40 hover:bg-muted text-xs transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <span className="flex items-center gap-2 min-w-0">
                 <span
                   className={`size-2 rounded-full shrink-0 ${
                     subscriptionStatusInfo.dotColor === 'green'
@@ -413,35 +429,40 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <span className="font-semibold text-xs text-foreground truncate">
                   {subscriptionStatusInfo.label}
                 </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground hover:text-foreground font-medium">
+              </span>
+              <span className="text-[10px] text-muted-foreground font-medium">
                 Manage →
               </span>
-            </button>
+            </Button>
           </div>
         )}
 
-        {/* Cloud Sync & Thermal Paper Format Footer */}
-        <div className="p-2.5 border-t border-border bg-muted/40 flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                isSyncing
-                  ? 'bg-primary animate-ping'
-                  : navigator.onLine !== false
-                  ? 'bg-emerald-500'
-                  : 'bg-muted-foreground'
-              }`}
-            />
-            <span className="font-medium text-[11px] text-foreground">
-              {isSyncing ? 'Syncing...' : navigator.onLine !== false ? 'Cloud Live' : 'Offline Mode'}
-            </span>
-          </div>
-          <span className="text-[10px] font-semibold bg-card text-foreground px-2 py-0.5 rounded border border-border shadow-2xs">
+        {/* ── Cloud Sync & Thermal Footer ───────────────────────── */}
+        <Separator />
+        <div className="px-3 py-2 flex items-center justify-between">
+          <Badge variant="secondary" className="text-[10px] gap-1.5 px-2 py-0.5 font-medium">
+            {isSyncing ? (
+              <>
+                <Cloud className="size-3 animate-pulse text-primary" />
+                <span>Syncing...</span>
+              </>
+            ) : navigator.onLine !== false ? (
+              <>
+                <Wifi className="size-3 text-emerald-500" />
+                <span>Cloud Live</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="size-3 text-muted-foreground" />
+                <span>Offline Mode</span>
+              </>
+            )}
+          </Badge>
+          <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">
             {shopSettings.printerPaperWidth || shopSettings.paperWidth || '58mm'} Thermal
-          </span>
+          </Badge>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
