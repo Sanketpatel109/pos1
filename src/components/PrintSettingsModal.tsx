@@ -75,7 +75,6 @@ import {
 import {
   User,
   signInWithPopup,
-  signInWithRedirect,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -359,21 +358,16 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
       setTimeout(() => setSyncSuccessMsg(null), 3000);
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
-      const isStandalone =
-        typeof window !== 'undefined' &&
-        (('standalone' in window.navigator && (window.navigator as any).standalone === true) ||
-          window.matchMedia('(display-mode: standalone)').matches);
-
-      if (
-        !isStandalone &&
-        (err.code === 'auth/popup-blocked' ||
-          err.code === 'auth/cancelled-popup-request' ||
-          err.code === 'auth/internal-error')
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, no error needed
+      } else if (
+        err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/cancelled-popup-request'
       ) {
-        await signInWithRedirect(auth, googleProvider);
-        return;
+        setAuthError('Google sign-in popup was blocked. Please allow popups for this site and try again.');
+      } else {
+        setAuthError(err.message || 'Failed to sign in with Google.');
       }
-      setAuthError(err.message || 'Failed to sign in with Google.');
     } finally {
       setAuthLoading(false);
     }

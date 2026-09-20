@@ -3,7 +3,6 @@ import {
   auth,
   googleProvider,
   signInWithPopup,
-  signInWithRedirect,
   getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -59,64 +58,34 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
       });
   }, [onAuthenticated]);
 
-  const handleGoogleRedirectSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setIsUnauthorizedDomain(false);
-      await signInWithRedirect(auth, googleProvider);
-    } catch (err: any) {
-      console.error('Redirect sign-in error:', err);
-      if (err.code === 'auth/unauthorized-domain') {
-        setIsUnauthorizedDomain(true);
-        setError('Domain unauthorized in Firebase: "localhost" is not in Authorized Domains list.');
-      } else {
-        setError(err.message || 'Failed to start Google sign-in redirect.');
-      }
-      setLoading(false);
-    }
-  };
-
-  const isStandaloneMode = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    return (
-      ('standalone' in window.navigator && (window.navigator as any).standalone === true) ||
-      window.matchMedia('(display-mode: standalone)').matches
-    );
-  };
-
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setError(null);
       setIsUnauthorizedDomain(false);
 
-      // Attempt popup sign-in across all modern browsers and standalone PWAs.
-      // Same-origin authDomain prevents ITP cookie issues.
+      // Always use popup sign-in. signInWithRedirect is broken on modern mobile
+      // browsers due to third-party storage partitioning (Chrome 115+, Safari ITP).
+      // This causes "Unable to process request due to missing initial state" errors.
       const result = await signInWithPopup(auth, googleProvider);
       onAuthenticated(result.user);
     } catch (err: any) {
       console.warn('Google popup sign-in encountered an issue:', err);
       if (err.code === 'auth/unauthorized-domain') {
         setIsUnauthorizedDomain(true);
-        setError('Domain unauthorized in Firebase: "localhost" is not added to Authorized Domains in your Firebase console.');
+        setError('Domain unauthorized in Firebase: This domain is not added to Authorized Domains in your Firebase console.');
       } else if (err.code === 'auth/popup-closed-by-user') {
         setError(null);
       } else if (
         err.code === 'auth/popup-blocked' ||
-        err.code === 'auth/cancelled-popup-request' ||
-        err.code === 'auth/internal-error' ||
-        err.code === 'auth/operation-not-supported-in-this-environment'
+        err.code === 'auth/cancelled-popup-request'
       ) {
-        // In iOS Standalone PWA (Home Screen mode), signInWithRedirect causes WebKit
-        // to freeze on a blank white /__/auth/handler screen. Do NOT redirect in standalone mode!
-        if (isStandaloneMode()) {
-          setError('Google popup was blocked in Home Screen mode. Please sign in with Email & Password or use Sign In with Redirect.');
-        } else {
-          // Regular browser tab: safe to fallback to redirect
-          await handleGoogleRedirectSignIn();
-          return;
-        }
+        setError('Google sign-in popup was blocked by your browser. Please allow popups for this site, or sign in with Email & Password below.');
+      } else if (
+        err.code === 'auth/operation-not-supported-in-this-environment' ||
+        err.code === 'auth/internal-error'
+      ) {
+        setError('Google sign-in is not supported in this browser mode. Please use Email & Password sign-in, or open this page in your regular browser (Chrome / Safari).');
       } else {
         setError(err.message || 'Google sign-in failed. Please try again or use email login.');
       }
@@ -378,23 +347,10 @@ export const AuthGateScreen: React.FC<AuthGateScreenProps> = ({ onAuthenticated 
               </svg>
               Continue with Google
             </Button>
-            {!isStandaloneMode() ? (
-              <div className="flex items-center justify-center text-[11px] text-muted-foreground gap-1">
-                <span>Popup blocked?</span>
-                <button
-                  type="button"
-                  onClick={handleGoogleRedirectSignIn}
-                  disabled={loading}
-                  className="underline underline-offset-2 hover:text-foreground font-medium cursor-pointer"
-                >
-                  Sign in with redirect
-                </button>
-              </div>
-            ) : (
-              <p className="text-[11px] text-center text-muted-foreground">
-                Installed Web App Mode
-              </p>
-            )}
+            {/* Tip for popup-blocked users */}
+            <p className="text-[11px] text-center text-muted-foreground">
+              Popup blocked? Allow popups for this site or use Email sign-in below.
+            </p>
           </div>
 
           {/* Feedback Alerts using standard shadcn tokens */}
