@@ -2958,8 +2958,12 @@ export default function App() {
       <CustomItemModal
         isOpen={isCustomProductModalOpen}
         currencySymbol={shopSettings.currencySymbol}
+        categories={categories}
         onClose={() => setIsCustomProductModalOpen(false)}
         onAddCustomItem={handleAddCustomProduct}
+        onSaveToCatalog={(productData) => {
+          handleAddProduct(productData);
+        }}
       />
 
       {/* Store & Admin Settings Modal (Hardware, Store Profile, Cloud & Backup -> Advanced Diagnostics) */}

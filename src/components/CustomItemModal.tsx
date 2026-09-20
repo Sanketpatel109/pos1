@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Tag } from 'lucide-react';
-import { BillItem } from '../types';
+import { Tag, Save, PackagePlus } from 'lucide-react';
+import { BillItem, CatalogItem, Category } from '../types';
 import { GST_SLABS, calculateItemTaxSnapshot } from '../constants/taxRates';
 import {
   Dialog,
@@ -13,6 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -24,21 +26,30 @@ import {
 export interface CustomItemModalProps {
   isOpen: boolean;
   currencySymbol: string;
+  categories?: Category[];
   onClose: () => void;
   onAddCustomItem: (item: BillItem) => void;
+  onSaveToCatalog?: (product: Omit<CatalogItem, 'id'>) => void;
 }
 
 export const CustomItemModal: React.FC<CustomItemModalProps> = ({
   isOpen,
   currencySymbol,
+  categories = [],
   onClose,
   onAddCustomItem,
+  onSaveToCatalog,
 }) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [gstRate, setGstRate] = useState<string>('0');
   const [customGstRate, setCustomGstRate] = useState<string>('');
+
+  // New: Save to catalog feature
+  const [alsoSaveToCatalog, setAlsoSaveToCatalog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const isCustom = gstRate === 'custom';
 
@@ -55,11 +66,21 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
     const validQty = isNaN(qtyNum) || qtyNum <= 0 ? 1 : qtyNum;
     const taxSnapshot = calculateItemTaxSnapshot(priceNum, validQty, effectiveGstRate);
 
+    // Determine the category name
+    const categoryName = selectedCategory === '__new__'
+      ? newCategoryName.trim()
+      : selectedCategory || 'General';
+
+    const billItemId = alsoSaveToCatalog ? `item-${Date.now()}` : `custom-${Date.now()}`;
+
+    // Add to current bill
     onAddCustomItem({
-      id: `custom-${Date.now()}`,
+      id: billItemId,
+      itemId: alsoSaveToCatalog ? billItemId : undefined,
       name: name.trim(),
       unitPrice: priceNum,
       quantity: validQty,
+      category: alsoSaveToCatalog ? categoryName : undefined,
       gstRate: taxSnapshot.gstRate,
       taxableAmount: taxSnapshot.taxableAmount,
       cgst: taxSnapshot.cgst,
@@ -68,12 +89,26 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
       itemTotal: taxSnapshot.itemTotal,
     });
 
+    // Also save as a permanent catalog product
+    if (alsoSaveToCatalog && onSaveToCatalog) {
+      onSaveToCatalog({
+        name: name.trim(),
+        price: priceNum,
+        category: categoryName,
+        gstRate: effectiveGstRate,
+      });
+    }
+
+    // Reset form
     onClose();
     setName('');
     setPrice('');
     setQuantity('1');
     setGstRate('0');
     setCustomGstRate('');
+    setAlsoSaveToCatalog(false);
+    setSelectedCategory('');
+    setNewCategoryName('');
   };
 
   return (
@@ -170,6 +205,76 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
             )}
           </div>
 
+          {/* ── Save to Catalog Toggle ─────────────────────────────── */}
+          {onSaveToCatalog && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <Checkbox
+                  id="save-to-catalog-toggle"
+                  checked={alsoSaveToCatalog}
+                  onCheckedChange={(checked) => setAlsoSaveToCatalog(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <Label
+                    htmlFor="save-to-catalog-toggle"
+                    className="text-xs font-semibold text-foreground cursor-pointer flex items-center gap-1.5"
+                  >
+                    <PackagePlus className="size-3.5 text-primary" />
+                    Also save as a permanent product
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                    Save to catalog so you don't have to type it again next time. Add image & other details later from Inventory.
+                  </p>
+                </div>
+                {alsoSaveToCatalog && (
+                  <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30 shrink-0">
+                    <Save className="size-2.5 mr-0.5" /> Saving
+                  </Badge>
+                )}
+              </div>
+
+              {alsoSaveToCatalog && (
+                <div className="space-y-1.5 pl-6">
+                  <Label htmlFor="custom-item-category" className="text-xs font-medium">
+                    Category
+                  </Label>
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={(val) => {
+                      setSelectedCategory(val);
+                      if (val !== '__new__') setNewCategoryName('');
+                    }}
+                  >
+                    <SelectTrigger id="custom-item-category" className="w-full">
+                      <SelectValue placeholder="Select or create category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__new__">
+                        + Create New Category
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {selectedCategory === '__new__' && (
+                    <Input
+                      type="text"
+                      placeholder="New category name (e.g. Beverages)"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="mt-1.5"
+                      autoFocus
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <DialogFooter className="pt-2 gap-2 sm:gap-2">
             <Button
               type="button"
@@ -181,7 +286,7 @@ export const CustomItemModal: React.FC<CustomItemModalProps> = ({
             <Button
               type="submit"
             >
-              Add to Bill
+              {alsoSaveToCatalog ? 'Add to Bill & Save Product' : 'Add to Bill'}
             </Button>
           </DialogFooter>
         </form>
