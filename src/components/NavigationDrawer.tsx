@@ -129,19 +129,19 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       groupTitle: 'Store Operations',
       items: [
         {
-          id: 'cash-drawer',
+          id: 'cash-management',
           label: 'Cash Drawer (Till / Galla)',
           description: 'Cash In, Cash Out & denomination count',
           icon: Wallet,
         },
         {
-          id: 'customer-credit',
+          id: 'customers',
           label: 'Customer Credit & Khata',
           description: 'Khata ledger, credit limits & WhatsApp',
           icon: CreditCard,
         },
         {
-          id: 'products',
+          id: 'categories-products',
           label: 'Products & Stock Inventory',
           description: 'Manage items, barcodes & stock levels',
           icon: Package,
@@ -259,7 +259,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isOffersItem = item.id === 'offers';
-                  const isActive = activeScreen === item.id;
+                  const isActive =
+                    activeScreen === item.id ||
+                    (item.id === 'customers' && activeScreen === 'credit-ledger');
                   const isAccessible = isOffersItem
                     ? true
                     : canAccessScreen(currentRole, item.id as ActiveScreen);

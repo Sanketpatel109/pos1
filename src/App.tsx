@@ -120,10 +120,12 @@ import { SubscriptionModal } from './components/SubscriptionModal';
 import { StoreOnboardingModal } from './components/StoreOnboardingModal';
 import { OffersModal } from './components/OffersModal';
 import { soundbox } from './utils/soundbox';
+import { resolveInitialStage, syncScreenToUrl, normalizeScreen, isModalScreen } from './utils/navigationRouter';
 
 export default function App() {
-  // Screen Routing
-  const [activeScreen, setActiveScreen] = useState<ActiveScreen>('item-wise');
+  // Screen Routing & Stage Persistence across page reloads
+  const initialStage = useRef(resolveInitialStage()).current;
+  const [activeScreen, setActiveScreen] = useState<ActiveScreen>(initialStage.activeScreen);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Firebase Auth & Cloud Sync State
@@ -139,7 +141,9 @@ export default function App() {
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud' | 'subscription'>('hardware');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'hardware' | 'store' | 'cloud' | 'subscription'>(
+    initialStage.settingsTab || 'hardware'
+  );
   const [settingsInitialSubView, setSettingsInitialSubView] = useState<'overview' | 'diagnostics'>('overview');
 
   // Settings State - strictly partitioned per user
@@ -639,14 +643,14 @@ export default function App() {
 
   const [isReceiptDuplicate, setIsReceiptDuplicate] = useState<boolean>(false);
   const [isCustomProductModalOpen, setIsCustomProductModalOpen] = useState<boolean>(false);
-  const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState<boolean>(false);
-  const [isTrainingVideosOpen, setIsTrainingVideosOpen] = useState<boolean>(false);
+  const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState<boolean>(initialStage.initialModal === 'print-settings');
+  const [isTrainingVideosOpen, setIsTrainingVideosOpen] = useState<boolean>(initialStage.initialModal === 'training-videos');
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [scannerMode, setScannerMode] = useState<ScannerMode>('add-to-bill');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
   const [isStaffSwitchModalOpen, setIsStaffSwitchModalOpen] = useState<boolean>(false);
-  const [isPurchaseInwardOpen, setIsPurchaseInwardOpen] = useState<boolean>(false);
-  const [isBarcodeGeneratorOpen, setIsBarcodeGeneratorOpen] = useState<boolean>(false);
+  const [isPurchaseInwardOpen, setIsPurchaseInwardOpen] = useState<boolean>(initialStage.initialModal === 'purchase-inward');
+  const [isBarcodeGeneratorOpen, setIsBarcodeGeneratorOpen] = useState<boolean>(initialStage.initialModal === 'barcode-generator');
   const [barcodeSelectedProductId, setBarcodeSelectedProductId] = useState<string | undefined>(undefined);
   const [isPriceCheckOpen, setIsPriceCheckOpen] = useState<boolean>(false);
   const [quickAddBarcode, setQuickAddBarcode] = useState<string | null>(null);
@@ -2433,9 +2437,39 @@ export default function App() {
     playSfx('success');
   };
 
-  // Navigation router with RBAC access control
+  // Listen to browser Back/Forward (popstate) for native deep-link navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const stage = resolveInitialStage();
+      if (stage.activeScreen) {
+        setActiveScreen(stage.activeScreen);
+      }
+      setIsPrintSettingsOpen(stage.initialModal === 'print-settings');
+      setIsTrainingVideosOpen(stage.initialModal === 'training-videos');
+      setIsBarcodeGeneratorOpen(stage.initialModal === 'barcode-generator');
+      setIsPurchaseInwardOpen(stage.initialModal === 'purchase-inward');
+      if (stage.settingsTab) {
+        setSettingsInitialTab(stage.settingsTab);
+      }
+    };
 
-  const handleNavigate = (screen: ActiveScreen) => {
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Ensure current URL & storage reflect initial stage on mount
+  useEffect(() => {
+    if (initialStage.initialModal) {
+      syncScreenToUrl(initialStage.initialModal, { replace: true });
+    } else {
+      syncScreenToUrl(activeScreen, { replace: true });
+    }
+  }, []);
+
+  // Navigation router with RBAC access control & URL deep-linking
+  const handleNavigate = (rawScreen: ActiveScreen | string, options?: { replace?: boolean }) => {
+    const screen = (normalizeScreen(rawScreen as string) || rawScreen) as ActiveScreen;
+
     if (screen === 'print-settings') {
       const currentRole = activeStaff?.role || 'CASHIER';
       if (!canAccessScreen(currentRole, 'print-settings')) {
@@ -2448,6 +2482,7 @@ export default function App() {
           onAuthorize: () => {
             setSettingsInitialTab('hardware');
             setSettingsInitialSubView('overview');
+            syncScreenToUrl('print-settings', { replace: options?.replace });
             setIsPrintSettingsOpen(true);
             setIsSidebarOpen(false);
           },
@@ -2457,18 +2492,21 @@ export default function App() {
       }
       setSettingsInitialTab('hardware');
       setSettingsInitialSubView('overview');
+      syncScreenToUrl('print-settings', { replace: options?.replace });
       setIsPrintSettingsOpen(true);
       setIsSidebarOpen(false);
       return;
     }
 
     if (screen === 'training-videos') {
+      syncScreenToUrl('training-videos', { replace: options?.replace });
       setIsTrainingVideosOpen(true);
       setIsSidebarOpen(false);
       return;
     }
 
     if (screen === 'barcode-generator') {
+      syncScreenToUrl('barcode-generator', { replace: options?.replace });
       setIsBarcodeGeneratorOpen(true);
       setIsSidebarOpen(false);
       return;
@@ -2485,6 +2523,7 @@ export default function App() {
           requiredRoleLabel: 'MANAGER / OWNER',
           requiredRole: 'MANAGER',
           onAuthorize: () => {
+            syncScreenToUrl('purchase-inward', { replace: options?.replace });
             setIsPurchaseInwardOpen(true);
             setIsSidebarOpen(false);
           },
@@ -2492,6 +2531,7 @@ export default function App() {
         setIsManagerPinModalOpen(true);
         return;
       }
+      syncScreenToUrl('purchase-inward', { replace: options?.replace });
       setIsPurchaseInwardOpen(true);
       setIsSidebarOpen(false);
       return;
@@ -2499,6 +2539,7 @@ export default function App() {
 
     if (canAccessScreen(currentRole, screen)) {
       setActiveScreen(screen);
+      syncScreenToUrl(screen, { replace: options?.replace });
       setIsSidebarOpen(false);
     } else {
       const reqRole = getRequiredRoleForScreen(screen);
@@ -2509,6 +2550,7 @@ export default function App() {
         requiredRole: 'MANAGER',
         onAuthorize: () => {
           setActiveScreen(screen);
+          syncScreenToUrl(screen, { replace: options?.replace });
           setIsSidebarOpen(false);
         },
       });
@@ -2650,7 +2692,7 @@ export default function App() {
               onSaveBill={() => guardCheckoutAction(() => setIsPaymentModalOpen(true))}
               onSwitchMode={() => {
                 playSfx('tap');
-                setActiveScreen('quick-bill');
+                handleNavigate('quick-bill');
               }}
             />
           )}
@@ -2670,7 +2712,7 @@ export default function App() {
               onPrintQuickBill={(items) => guardCheckoutAction(() => handlePrintQuickBill(items))}
               onSwitchMode={() => {
                 playSfx('tap');
-                setActiveScreen('item-wise');
+                handleNavigate('item-wise');
               }}
             />
           )}
@@ -2815,6 +2857,7 @@ export default function App() {
         onOpenSubscriptionSettings={() => {
           setIsSidebarOpen(false);
           setSettingsInitialTab('subscription');
+          syncScreenToUrl('print-settings');
           setIsPrintSettingsOpen(true);
         }}
       />
@@ -2851,7 +2894,7 @@ export default function App() {
           handleAddItemWithPack(item, pack);
         }}
         onSearchItem={(item) => {
-          setActiveScreen('item-wise');
+          handleNavigate('item-wise');
         }}
         onRegisterBarcode={(barcode) => {
           setIsScannerOpen(false);
@@ -2973,6 +3016,7 @@ export default function App() {
         onClose={() => {
           setIsPrintSettingsOpen(false);
           setIsCloudModalOpen(false);
+          syncScreenToUrl(activeScreen, { replace: true });
         }}
         onSaveSettings={(newSettings) => {
           setShopSettings(newSettings);
@@ -3017,17 +3061,21 @@ export default function App() {
         ownerEmail={currentUser?.email || ''}
         onOpenSettings={() => {
           setSettingsInitialTab('subscription');
+          syncScreenToUrl('print-settings');
           setIsPrintSettingsOpen(true);
         }}
         onOpenReports={() => {
-          setActiveScreen('reports');
+          handleNavigate('reports');
         }}
       />
 
       {/* Training Videos Modal */}
       <TrainingVideosModal
         isOpen={isTrainingVideosOpen}
-        onClose={() => setIsTrainingVideosOpen(false)}
+        onClose={() => {
+          setIsTrainingVideosOpen(false);
+          syncScreenToUrl(activeScreen, { replace: true });
+        }}
       />
 
       {/* 1-Second 4-Digit Staff Shift Switch Modal */}
@@ -3039,7 +3087,7 @@ export default function App() {
         onClose={() => setIsStaffSwitchModalOpen(false)}
         onSwitchStaff={handleSwitchStaff}
         onPinReset={handleUpdatePin}
-        onNavigateToStaffManagement={() => setActiveScreen('staff-management')}
+        onNavigateToStaffManagement={() => handleNavigate('staff-management')}
       />
 
       {/* Purchase Inward Stock Receiving Modal */}
@@ -3048,7 +3096,10 @@ export default function App() {
         catalog={catalog}
         currencySymbol={shopSettings.currencySymbol}
         activeStaffName={activeStaff.name}
-        onClose={() => setIsPurchaseInwardOpen(false)}
+        onClose={() => {
+          setIsPurchaseInwardOpen(false);
+          syncScreenToUrl(activeScreen, { replace: true });
+        }}
         onInwardStock={handleInwardStock}
       />
 
@@ -3062,6 +3113,7 @@ export default function App() {
         onClose={() => {
           setIsBarcodeGeneratorOpen(false);
           setBarcodeSelectedProductId(undefined);
+          syncScreenToUrl(activeScreen, { replace: true });
         }}
       />
 
