@@ -242,7 +242,7 @@ export const CashManagementScreen: React.FC<CashManagementScreenProps> = ({
 
         {/* Morning Shift Opening Float Notice */}
         {!hasOpeningFloatToday && (
-          <Card className="border-amber-500/30 bg-amber-500/5 shadow-xs">
+          <Card className="border-amber-500/30 bg-amber-500/5 shadow-xs py-0">
             <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-start sm:items-center gap-3">
                 <div className="p-2 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 shrink-0">

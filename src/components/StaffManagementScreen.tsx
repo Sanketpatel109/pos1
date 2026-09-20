@@ -134,7 +134,7 @@ export const StaffManagementScreen: React.FC<StaffManagementScreenProps> = ({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Active Session Indicator Card */}
-          <Card className="border-border shadow-xs bg-card">
+          <Card className="border-border shadow-xs bg-card py-0">
             <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <Avatar className="size-12 rounded-xl bg-primary text-primary-foreground font-bold text-lg ring-2 ring-primary/20 shadow-xs">
