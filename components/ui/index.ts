@@ -11,3 +11,5 @@ export * from "./table";
 export * from "./tabs";
 export * from "./switch";
 export * from "./avatar";
+export * from "./sheet";
+export * from "./sidebar";
