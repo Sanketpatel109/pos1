@@ -356,10 +356,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
         {/* ── User Account Section ──────────────────────────────── */}
         {user && onSignOut && (
-          <div className="px-3 pt-1 pb-1.5">
-            <Card className="rounded-xl border border-border/70 shadow-none bg-card">
-              <CardContent className="p-2.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
+          <div className="px-3 py-1">
+            <Card className="rounded-xl border border-border/70 shadow-none bg-card py-0">
+              <CardContent className="p-2.5 px-2.5 py-2.5 flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar className="size-7.5 rounded-full shrink-0">
                     {user.photoURL ? (
                       <AvatarImage src={user.photoURL} alt={user.displayName || 'Owner'} />
