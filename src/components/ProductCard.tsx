@@ -57,7 +57,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         onClick={handleCardClick}
         aria-label={`Add ${item.name} to bill, ${currencySymbol}${(Number(item.price) || 0).toFixed(2)}`}
         className={cn(
-          "group relative flex flex-col justify-between w-full p-2 text-left transition-all active:scale-[0.98] select-none cursor-pointer shadow-xs",
+          "group relative flex flex-col justify-start gap-1.5 w-full p-2 text-left transition-all active:scale-[0.98] select-none cursor-pointer shadow-xs",
           isInCart
             ? "border-primary ring-2 ring-primary/25 bg-card"
             : "hover:border-foreground/30 hover:shadow-xs",
@@ -127,7 +127,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Product Metadata & Price */}
-        <CardContent className="p-0 pt-1.5 flex flex-col justify-between flex-1 min-w-0 w-full">
+        <CardContent className="p-0 pt-0 flex flex-col justify-between flex-1 min-w-0 w-full">
           <p
             title={item.name}
             className="text-xs sm:text-sm font-medium text-foreground truncate leading-tight"
