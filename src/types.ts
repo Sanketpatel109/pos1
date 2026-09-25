@@ -237,6 +237,10 @@ export interface ShopSettings {
   upiVerificationMode?: 'manual' | 'auto';
   razorpayKeyId?: string;
   upiAutoDetectTimeoutSec?: number;
+  upiAutoPrintAndReset?: boolean;       // Auto-print receipt and clear cart on UPI auto-detect
+  upiAutoResetDelayMs?: number;          // Buffer delay before auto-reset (default: 800ms)
+  upiQrTimeoutSeconds?: number;          // QR expiration window (default: 180s)
+  upiSoundboxAnnouncement?: boolean;     // Voice readout on payment confirmation
   currencySymbol: string;
   taxRate: number; // percentage, e.g. 5
   taxLabel?: string; // 'GST' or 'Sales Tax'
@@ -442,4 +446,17 @@ export interface AppliedPromotion {
   offerType: OfferType;
   discountAmount: number;
   description: string;
+}
+
+export interface UPITransactionRecord {
+  id: string;
+  billNo: number;
+  amount: number;
+  currency: string;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED';
+  gatewayReferenceId?: string;
+  bankUtrNumber?: string;
+  payerVpa?: string;
+  createdAt: string;
+  settledAt?: string;
 }

@@ -10,8 +10,7 @@ service cloud.firestore {
     function isTenantOwner(tenantId) {
       return isAuthenticated() && (
         tenantId == 'tenant_' + request.auth.uid ||
-        tenantId == request.auth.uid ||
-        request.auth.uid == 'demo_retail_owner'
+        tenantId == request.auth.uid
       );
     }
 
@@ -69,6 +68,11 @@ service cloud.firestore {
 
     // Platform Admin & Founder whitelist configuration
     match /admin_config/{configId} {
+      allow read, write: if true;
+    }
+
+    // Dynamic UPI Transactions for auto-settlement webhook verification
+    match /upi_transactions/{txnId} {
       allow read, write: if true;
     }
   }

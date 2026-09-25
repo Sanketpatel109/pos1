@@ -895,7 +895,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                 </CardContent>
               </Card>
 
-              {/* UPI Counter QR & Verification */}
+              {/* UPI & Digital Settlement */}
               <Card className="bg-muted/20 border-border shadow-none">
                 <CardContent className="p-3 space-y-2.5">
                   <div className="space-y-1">
@@ -927,7 +927,7 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px] font-semibold text-muted-foreground">
-                        UPI Verification Mode
+                        Default UPI Mode
                       </Label>
                       <Select
                         value={formData.upiVerificationMode || 'manual'}
@@ -949,6 +949,113 @@ export const PrintSettingsModal: React.FC<PrintSettingsModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Auto-Print & Reset Toggle */}
+                  <div className="pt-1.5 border-t border-border/60 space-y-2 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <Label className="text-[11px] font-semibold text-foreground block">
+                          Auto-Print & Reset on UPI
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          Automatically print receipt, clear cart, and focus search bar when UPI auto-detect confirms payment.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={formData.upiAutoPrintAndReset !== false ? 'default' : 'outline'}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            upiAutoPrintAndReset: formData.upiAutoPrintAndReset === false ? true : false,
+                          })
+                        }
+                        className="h-7 text-[10px] font-semibold px-2.5 shrink-0"
+                      >
+                        {formData.upiAutoPrintAndReset !== false ? 'ON' : 'OFF'}
+                      </Button>
+                    </div>
+
+                    {formData.upiAutoPrintAndReset !== false && (
+                      <div className="grid grid-cols-2 gap-2.5 animate-in fade-in duration-150">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">
+                            Reset Delay Buffer
+                          </Label>
+                          <Select
+                            value={String(formData.upiAutoResetDelayMs || 800)}
+                            onValueChange={(val) =>
+                              val && setFormData({
+                                ...formData,
+                                upiAutoResetDelayMs: Number(val),
+                              })
+                            }
+                          >
+                            <SelectTrigger className="w-full h-7 text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="500">500ms (Fast)</SelectItem>
+                              <SelectItem value="800">800ms (Recommended)</SelectItem>
+                              <SelectItem value="1200">1200ms (Relaxed)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">
+                            QR Expiration Timeout
+                          </Label>
+                          <Select
+                            value={String(formData.upiQrTimeoutSeconds || 180)}
+                            onValueChange={(val) =>
+                              val && setFormData({
+                                ...formData,
+                                upiQrTimeoutSeconds: Number(val),
+                              })
+                            }
+                          >
+                            <SelectTrigger className="w-full h-7 text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="60">60 seconds</SelectItem>
+                              <SelectItem value="120">120 seconds</SelectItem>
+                              <SelectItem value="180">180 seconds (Recommended)</SelectItem>
+                              <SelectItem value="300">300 seconds</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Voice Soundbox Toggle */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
+                    <div>
+                      <Label className="text-[11px] font-semibold text-foreground block">
+                        Voice Payment Announcement
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        Reads aloud "₹483 received via UPI" on payment confirmation.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={formData.upiSoundboxAnnouncement !== false ? 'default' : 'outline'}
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          upiSoundboxAnnouncement: formData.upiSoundboxAnnouncement === false ? true : false,
+                        })
+                      }
+                      className="h-7 text-[10px] font-semibold px-2.5 shrink-0"
+                    >
+                      {formData.upiSoundboxAnnouncement !== false ? 'ON' : 'OFF'}
+                    </Button>
+                  </div>
+
+                  {/* Gateway API Key (Auto-Detect mode) */}
                   {formData.upiVerificationMode === 'auto' && (
                     <div className="pt-1.5 border-t border-border/60 space-y-2 animate-in fade-in duration-150">
                       <div className="space-y-1">

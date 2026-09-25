@@ -1698,6 +1698,12 @@ export default function App() {
       setDirectPrintOrder(orderToPrint);
       printDirectThermalReceipt(orderToPrint, shopSettings);
     }
+
+    // 5. Refocus product search / barcode input for next customer
+    setTimeout(() => {
+      const searchInput = document.getElementById('input-inline-product-search');
+      searchInput?.focus();
+    }, 100);
   };
 
   // Checkout completion flow: "Done (No Print)"
@@ -1713,6 +1719,12 @@ export default function App() {
 
     // 3. Increment the bill number for the next customer (e.g. #44 to #45)
     setOrderNumber((prev) => prev + 1);
+
+    // 4. Refocus product search / barcode input for next customer
+    setTimeout(() => {
+      const searchInput = document.getElementById('input-inline-product-search');
+      searchInput?.focus();
+    }, 100);
   };
 
   // INWARD STOCK RECEIVING
@@ -2932,6 +2944,10 @@ export default function App() {
         storeName={shopSettings.shopName || 'Store'}
         upiVerificationMode={shopSettings.upiVerificationMode || 'manual'}
         razorpayKeyId={shopSettings.razorpayKeyId}
+        upiAutoPrintAndReset={shopSettings.upiAutoPrintAndReset}
+        upiAutoResetDelayMs={shopSettings.upiAutoResetDelayMs}
+        upiQrTimeoutSeconds={shopSettings.upiQrTimeoutSeconds}
+        upiSoundboxAnnouncement={shopSettings.upiSoundboxAnnouncement}
         discount={discount}
         discountType={discountType}
         discountAmount={discountAmount}

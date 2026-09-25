@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   Star,
   Users,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,7 @@ export interface CompletedSnapshot {
   tendered: number;
   changeDue: number;
   customerName?: string;
+  customerPhone?: string;
   upiRefNumber?: string;
   timestamp: string;
 }
@@ -55,6 +57,10 @@ export interface PaymentModalProps {
   storeName?: string;
   upiVerificationMode?: 'manual' | 'auto';
   razorpayKeyId?: string;
+  upiAutoPrintAndReset?: boolean;
+  upiAutoResetDelayMs?: number;
+  upiQrTimeoutSeconds?: number;
+  upiSoundboxAnnouncement?: boolean;
   discount?: number;
   discountType?: 'percentage' | 'flat';
   discountAmount?: number;
@@ -103,6 +109,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   storeName = 'Store',
   upiVerificationMode = 'manual',
   razorpayKeyId,
+  upiAutoPrintAndReset = true,
+  upiAutoResetDelayMs = 800,
+  upiQrTimeoutSeconds = 180,
+  upiSoundboxAnnouncement = true,
   discount = 0,
   discountType = 'percentage',
   discountAmount = 0,
@@ -122,6 +132,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [activeTab, setActiveTab] = useState<PaymentTab>('CASH');
   const [tenderedInput, setTenderedInput] = useState<string>('');
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
+  const [isAutoResetting, setIsAutoResetting] = useState<boolean>(false);
   const [completedSnapshot, setCompletedSnapshot] = useState<CompletedSnapshot | null>(null);
   const [completedBillNo, setCompletedBillNo] = useState<number>(orderNumber);
   const [completedMethod, setCompletedMethod] = useState<'CASH' | 'UPI' | 'KHATA'>('CASH');
@@ -287,6 +298,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       tendered: method === 'CASH' ? parsedTendered : netTotal,
       changeDue: method === 'CASH' ? changeDue : 0,
       customerName: extraDetails?.customerName,
+      customerPhone: extraDetails?.customerPhone || selectedCustomer?.phone,
       upiRefNumber: extraDetails?.upiRefNumber,
       timestamp,
     };
@@ -322,6 +334,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     } catch (cbErr) {
       console.warn('onCompleteSale callback warning:', cbErr);
     }
+
+    return snapshot;
   };
 
 
@@ -343,7 +357,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   // 2. UPI COMPLETION
-  const handleCompleteUpiSale = (details: {
+  const handleCompleteUpiSale = async (details: {
     upiRefNumber?: string;
     isVerified: boolean;
     verificationMethod: 'soundbox' | 'utr' | 'gateway';
@@ -353,14 +367,37 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     try {
       setIsSubmitting(true);
       posSound?.playSuccess?.();
-      persistBillRecord('UPI', {
+      const snapshot = await persistBillRecord('UPI', {
         upiRefNumber: details.upiRefNumber,
         isVerified: details.isVerified,
         verificationMethod: details.verificationMethod,
       });
+
+      // ZERO-TOUCH AUTO-SETTLEMENT:
+      // If payment was verified via gateway and upiAutoPrintAndReset is enabled (default: true)
+      if (details.verificationMethod === 'gateway' && upiAutoPrintAndReset !== false) {
+        setIsAutoResetting(true);
+        const delay = upiAutoResetDelayMs || 800;
+
+        setTimeout(() => {
+          setIsAutoResetting(false);
+          if (onPrintAndNextCustomer && snapshot) {
+            onPrintAndNextCustomer(snapshot);
+          } else {
+            handleDoneNoPrint();
+          }
+
+          // Refocus barcode / search input
+          setTimeout(() => {
+            const searchInput = document.getElementById('input-inline-product-search');
+            searchInput?.focus();
+          }, 100);
+        }, delay);
+      }
     } catch (err) {
       console.error('Failed to complete UPI sale:', err);
       setIsSubmitting(false);
+      setIsAutoResetting(false);
     }
   };
 
@@ -462,7 +499,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const handleShareWhatsApp = () => {
     posSound?.playTap?.();
     const receiptSummaryText = generateReceiptSummaryText();
-    const url = `https://wa.me/?text=${encodeURIComponent(receiptSummaryText)}`;
+    const rawPhone = completedSnapshot?.customerPhone || selectedCustomer?.phone || '';
+    const cleanDigits = rawPhone.replace(/\D/g, '');
+    const phoneParam = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+    const url = phoneParam
+      ? `https://wa.me/${phoneParam}?text=${encodeURIComponent(receiptSummaryText)}`
+      : `https://wa.me/?text=${encodeURIComponent(receiptSummaryText)}`;
     window.open(url, '_blank');
   };
 
@@ -584,6 +626,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         {/* ================= SUCCESS SCREEN ================= */}
         {isSuccess ? (
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center justify-start text-center">
+            {/* Zero-Touch Ambient Auto-Resetting Pill */}
+            {isAutoResetting && (
+              <div className="w-full max-w-sm mb-2 p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="size-3.5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-foreground">Zero-Touch Auto-Settling</p>
+                    <p className="text-[10px] text-muted-foreground">Printing receipt & loading next customer...</p>
+                  </div>
+                </div>
+                <Loader2 className="size-4 animate-spin text-emerald-600 dark:text-emerald-400" />
+              </div>
+            )}
+
             {/* Animated Celebration Icon */}
             <div className="relative my-2">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-xs border border-primary/20 animate-in zoom-in-75 duration-200">
@@ -975,8 +1033,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   storeName={storeName}
                   verificationMode={upiVerificationMode}
                   razorpayKeyId={razorpayKeyId}
+                  qrTimeoutSeconds={upiQrTimeoutSeconds}
+                  soundboxAnnouncement={upiSoundboxAnnouncement}
                   onConfirmPayment={handleCompleteUpiSale}
-                  isSubmitting={isSubmitting}
+                  isSubmitting={isSubmitting || isAutoResetting}
                 />
               )}
 
